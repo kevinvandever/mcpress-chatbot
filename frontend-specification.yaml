@@ -1,0 +1,615 @@
+# PDF Chatbot Frontend Specification
+# Version: 1.0
+# Date: 2025-07-16
+
+project:
+  name: "PDF Chatbot Frontend"
+  description: "A comprehensive multi-modal PDF processing and chat interface with real-time streaming and semantic search capabilities"
+  version: "1.0.0"
+  repository: "pdf-chatbot"
+  
+technology_stack:
+  frontend:
+    framework: "Next.js 14"
+    runtime: "React 18"
+    language: "TypeScript"
+    styling: "Tailwind CSS"
+    build_tool: "Next.js built-in"
+    package_manager: "npm"
+  
+  backend_integration:
+    api_framework: "FastAPI"
+    communication: "REST API + Server-Sent Events"
+    base_url: "http://localhost:8001"
+    cors_origins: ["http://localhost:3000", "http://127.0.0.1:3000"]
+  
+  libraries:
+    ui_components:
+      - name: "react-dropzone"
+        version: "^14.2.3"
+        purpose: "Drag and drop file upload interface"
+      - name: "react-markdown"
+        version: "^9.0.1"
+        purpose: "Markdown rendering for AI responses"
+      - name: "remark-gfm"
+        version: "^4.0.0"
+        purpose: "GitHub Flavored Markdown support"
+    
+    http_client:
+      - name: "axios"
+        version: "^1.6.2"
+        purpose: "HTTP requests and API communication"
+    
+    development:
+      - name: "typescript"
+        version: "^5"
+        purpose: "Type safety and development experience"
+      - name: "tailwindcss"
+        version: "^3.3.0"
+        purpose: "Utility-first CSS framework"
+      - name: "autoprefixer"
+        version: "^10.0.1"
+        purpose: "CSS vendor prefixing"
+      - name: "postcss"
+        version: "^8"
+        purpose: "CSS processing"
+
+architecture:
+  pattern: "Component-Based Architecture"
+  structure:
+    - "App Router (Next.js 14)"
+    - "Server and Client Components"
+    - "Modular component design"
+    - "Shared state management via props"
+    - "Event-driven communication"
+  
+  directory_structure:
+    - "app/ - Next.js App Router pages and layouts"
+    - "components/ - Reusable UI components"
+    - "lib/ - Utility functions and API clients"
+    - "types/ - TypeScript type definitions"
+    - "styles/ - Global styles and Tailwind configuration"
+    - "public/ - Static assets"
+    - "hooks/ - Custom React hooks"
+
+api_endpoints:
+  upload:
+    method: "POST"
+    path: "/upload"
+    description: "Upload and process PDF files"
+    content_type: "multipart/form-data"
+    max_file_size: "50MB"
+    supported_formats: ["PDF"]
+    response:
+      success:
+        status: "success"
+        chunks_created: "number"
+        images_processed: "number"
+        code_blocks_found: "number"
+        total_pages: "number"
+      error:
+        status: "error"
+        detail: "string"
+  
+  chat:
+    method: "POST"
+    path: "/chat"
+    description: "Stream AI responses with conversation history"
+    content_type: "application/json"
+    streaming: true
+    protocol: "Server-Sent Events"
+    payload:
+      message: "string"
+      conversation_id: "string (default: 'default')"
+    response:
+      stream_events:
+        - type: "content"
+          content: "string (partial response)"
+        - type: "done"
+          sources: "array (citation sources)"
+  
+  search:
+    method: "GET"
+    path: "/search"
+    description: "Semantic search across document content"
+    parameters:
+      q: "string (search query)"
+      n_results: "number (default: 5)"
+    response:
+      query: "string"
+      results: "array of search results"
+  
+  documents:
+    method: "GET"
+    path: "/documents"
+    description: "List all uploaded documents with metadata"
+    response:
+      documents:
+        - filename: "string"
+          total_chunks: "number"
+          has_images: "boolean"
+          has_code: "boolean"
+          total_pages: "number"
+  
+  delete_document:
+    method: "DELETE"
+    path: "/documents/{filename}"
+    description: "Remove document from system"
+    parameters:
+      filename: "string (path parameter)"
+    response:
+      status: "success"
+      message: "string"
+  
+  health:
+    method: "GET"
+    path: "/health"
+    description: "System health check"
+    response:
+      status: "healthy"
+      vector_store: "boolean"
+      openai: "boolean"
+
+components:
+  core:
+    FileUpload:
+      location: "components/FileUpload.tsx"
+      description: "Drag-and-drop PDF upload interface with progress tracking"
+      props:
+        onUploadSuccess: "(filename: string) => void"
+      features:
+        - "Drag and drop support"
+        - "Click to select files"
+        - "PDF file validation"
+        - "Upload progress indication"
+        - "Error handling and display"
+        - "Visual feedback for drag states"
+      styling:
+        - "Tailwind CSS classes"
+        - "Responsive design"
+        - "Hover and focus states"
+        - "Disabled state styling"
+      accessibility:
+        - "ARIA labels"
+        - "Keyboard navigation"
+        - "Screen reader support"
+    
+    ChatInterface:
+      location: "components/ChatInterface.tsx"
+      description: "Real-time streaming chat interface with markdown support"
+      state:
+        messages: "Message[]"
+        input: "string"
+        isStreaming: "boolean"
+      features:
+        - "Real-time message streaming"
+        - "Markdown rendering with syntax highlighting"
+        - "Source citations display"
+        - "Auto-scroll to latest message"
+        - "Typing indicators"
+        - "Message history preservation"
+      streaming:
+        protocol: "Server-Sent Events"
+        chunk_processing: "Incremental text building"
+        error_handling: "Graceful degradation"
+      ui_elements:
+        - "Message bubbles with role-based styling"
+        - "Code block syntax highlighting"
+        - "Source reference cards"
+        - "Animated typing indicator"
+        - "Responsive input area"
+    
+    DocumentList:
+      location: "components/DocumentList.tsx"
+      description: "Document management with metadata display"
+      features:
+        - "Document metadata display"
+        - "Content type indicators (images, code)"
+        - "Delete functionality"
+        - "Responsive list layout"
+        - "Loading states"
+        - "Empty state handling"
+      metadata_display:
+        - "Page count"
+        - "Chunk count"
+        - "Content type badges"
+        - "File size (future)"
+        - "Upload date (future)"
+      actions:
+        - "Delete with confirmation"
+        - "Download (future)"
+        - "View details (future)"
+  
+  layout:
+    RootLayout:
+      location: "app/layout.tsx"
+      description: "Global layout with metadata and font configuration"
+      features:
+        - "Global styles import"
+        - "Font configuration (Inter)"
+        - "HTML structure setup"
+        - "Metadata configuration"
+      seo:
+        title: "PDF Technical Book Chatbot"
+        description: "Chat with your technical PDFs"
+        language: "en"
+    
+    HomePage:
+      location: "app/page.tsx"
+      description: "Main application layout with sidebar and chat area"
+      layout:
+        - "Sidebar: 320px width, fixed"
+        - "Main area: Flexible width"
+        - "Header: Fixed height"
+        - "Chat area: Flexible height"
+      responsive_behavior:
+        - "Mobile: Stack vertically"
+        - "Tablet: Collapsible sidebar"
+        - "Desktop: Side-by-side layout"
+
+features:
+  file_upload:
+    description: "Multi-modal PDF processing with comprehensive content extraction"
+    capabilities:
+      - "PDF text extraction"
+      - "Image extraction and OCR"
+      - "Code block detection"
+      - "Semantic chunking"
+      - "Metadata extraction"
+    user_experience:
+      - "Drag and drop interface"
+      - "Progress indication"
+      - "Error handling with user feedback"
+      - "File validation"
+      - "Upload size limits"
+    technical_implementation:
+      - "FormData for file uploads"
+      - "Axios for HTTP requests"
+      - "React hooks for state management"
+      - "TypeScript for type safety"
+  
+  chat_interface:
+    description: "Real-time streaming chat with AI responses"
+    capabilities:
+      - "Server-sent events for streaming"
+      - "Markdown rendering with syntax highlighting"
+      - "Source citations"
+      - "Conversation history"
+      - "Context-aware responses"
+    user_experience:
+      - "Instant message sending"
+      - "Real-time response streaming"
+      - "Visual typing indicators"
+      - "Auto-scroll to latest messages"
+      - "Message formatting preservation"
+    technical_implementation:
+      - "Fetch API with ReadableStream"
+      - "ReactMarkdown for rendering"
+      - "State management with useState"
+      - "Event-driven architecture"
+  
+  semantic_search:
+    description: "Advanced search across document content"
+    capabilities:
+      - "Vector similarity search"
+      - "Content type filtering"
+      - "Relevance scoring"
+      - "Multi-document search"
+      - "Contextual results"
+    user_experience:
+      - "Search input with autocomplete"
+      - "Filter options"
+      - "Result highlighting"
+      - "Pagination support"
+      - "Search history"
+    technical_implementation:
+      - "REST API integration"
+      - "Debounced search queries"
+      - "Result caching"
+      - "Infinite scroll (future)"
+  
+  document_management:
+    description: "Comprehensive document organization and metadata"
+    capabilities:
+      - "Document listing"
+      - "Metadata display"
+      - "Content type indicators"
+      - "Deletion functionality"
+      - "Search within documents"
+    user_experience:
+      - "Visual document cards"
+      - "Quick actions menu"
+      - "Confirmation dialogs"
+      - "Sort and filter options"
+      - "Bulk operations (future)"
+    technical_implementation:
+      - "RESTful API calls"
+      - "Optimistic updates"
+      - "Error handling"
+      - "State synchronization"
+
+user_experience:
+  navigation:
+    primary_layout: "Sidebar + Main Content"
+    sidebar_sections:
+      - "File Upload Area"
+      - "Document List"
+      - "Search Interface (future)"
+      - "Settings (future)"
+    main_content:
+      - "Chat Interface"
+      - "Document Viewer (future)"
+      - "Search Results (future)"
+  
+  responsive_design:
+    breakpoints:
+      mobile: "< 768px"
+      tablet: "768px - 1024px"
+      desktop: "> 1024px"
+    adaptations:
+      mobile:
+        - "Single column layout"
+        - "Collapsible sidebar"
+        - "Touch-optimized controls"
+        - "Simplified navigation"
+      tablet:
+        - "Adaptive sidebar"
+        - "Optimized chat bubbles"
+        - "Enhanced touch targets"
+        - "Landscape considerations"
+      desktop:
+        - "Full sidebar visibility"
+        - "Keyboard shortcuts"
+        - "Hover interactions"
+        - "Multi-column layouts"
+  
+  accessibility:
+    compliance: "WCAG 2.1 AA"
+    features:
+      - "Semantic HTML structure"
+      - "ARIA labels and roles"
+      - "Keyboard navigation support"
+      - "Screen reader compatibility"
+      - "Color contrast compliance"
+      - "Focus management"
+      - "Alternative text for images"
+    testing:
+      - "Automated accessibility testing"
+      - "Manual keyboard testing"
+      - "Screen reader validation"
+      - "Color contrast verification"
+  
+  performance:
+    optimization_targets:
+      - "First Contentful Paint: < 1.5s"
+      - "Time to Interactive: < 3s"
+      - "Cumulative Layout Shift: < 0.1"
+      - "File upload: < 30s for 50MB"
+      - "Chat response: < 2s first chunk"
+    strategies:
+      - "Code splitting"
+      - "Lazy loading"
+      - "Image optimization"
+      - "Bundle size optimization"
+      - "Caching strategies"
+      - "Streaming responses"
+
+styling:
+  framework: "Tailwind CSS"
+  design_system:
+    colors:
+      primary: "Blue (blue-600, blue-700)"
+      secondary: "Gray (gray-50, gray-100, gray-200)"
+      accent: "Green (green-600) for success states"
+      warning: "Yellow (yellow-600) for warnings"
+      error: "Red (red-600, red-700)"
+    typography:
+      font_family: "Inter (Google Fonts)"
+      headings: "font-semibold, font-bold"
+      body: "font-normal"
+      code: "font-mono"
+    spacing:
+      scale: "Tailwind default (0.25rem base)"
+      container: "max-w-7xl"
+      sidebar: "20rem (320px)"
+      gaps: "1rem standard, 0.5rem compact"
+    borders:
+      radius: "rounded-lg (0.5rem)"
+      width: "border (1px), border-2 (2px)"
+      colors: "border-gray-200, border-gray-300"
+  
+  component_styling:
+    buttons:
+      primary: "bg-blue-600 hover:bg-blue-700 text-white"
+      secondary: "bg-gray-200 hover:bg-gray-300 text-gray-800"
+      danger: "bg-red-600 hover:bg-red-700 text-white"
+      disabled: "opacity-50 cursor-not-allowed"
+    inputs:
+      base: "border border-gray-300 rounded-lg px-4 py-2"
+      focus: "focus:ring-2 focus:ring-blue-500 focus:outline-none"
+      error: "border-red-500 focus:ring-red-500"
+    cards:
+      base: "bg-white border border-gray-200 rounded-lg"
+      shadow: "hover:shadow-sm transition-shadow"
+      padding: "p-3, p-4, p-6"
+
+state_management:
+  approach: "React Hooks + Props"
+  patterns:
+    - "useState for component state"
+    - "useEffect for side effects"
+    - "Props for parent-child communication"
+    - "Callback functions for events"
+    - "Key prop for component refresh"
+  
+  state_structure:
+    app_level:
+      - "uploadedFiles: string[]"
+      - "refreshDocuments: number"
+    component_level:
+      chat:
+        - "messages: Message[]"
+        - "input: string"
+        - "isStreaming: boolean"
+      upload:
+        - "uploading: boolean"
+        - "error: string | null"
+      documents:
+        - "documents: Document[]"
+        - "loading: boolean"
+  
+  future_considerations:
+    - "Context API for global state"
+    - "State management library (Zustand/Redux)"
+    - "Persistent state with localStorage"
+    - "Optimistic updates"
+
+testing:
+  strategy: "Comprehensive testing pyramid"
+  levels:
+    unit:
+      framework: "Jest + React Testing Library"
+      coverage: "Components, utilities, hooks"
+      targets: "> 80% code coverage"
+    integration:
+      framework: "Jest + React Testing Library"
+      coverage: "Component interactions, API integration"
+      targets: "Critical user flows"
+    end_to_end:
+      framework: "Playwright/Cypress"
+      coverage: "Full user scenarios"
+      targets: "Happy path + error scenarios"
+  
+  test_cases:
+    file_upload:
+      - "Successful PDF upload"
+      - "File validation errors"
+      - "Upload progress indication"
+      - "Drag and drop functionality"
+      - "File size limit handling"
+    chat:
+      - "Message sending and receiving"
+      - "Streaming response handling"
+      - "Markdown rendering"
+      - "Source citations display"
+      - "Error handling"
+    documents:
+      - "Document list display"
+      - "Document deletion"
+      - "Loading states"
+      - "Empty states"
+      - "Metadata display"
+
+security:
+  considerations:
+    - "File upload validation"
+    - "XSS prevention in markdown"
+    - "CSRF protection"
+    - "Input sanitization"
+    - "Content Security Policy"
+  
+  implementation:
+    file_upload:
+      - "File type validation"
+      - "File size limits"
+      - "Virus scanning (future)"
+      - "Quarantine uploads (future)"
+    content_display:
+      - "Sanitized markdown rendering"
+      - "Safe HTML generation"
+      - "Image source validation"
+      - "Link security"
+    api_communication:
+      - "CORS configuration"
+      - "Request validation"
+      - "Error message sanitization"
+      - "Rate limiting (future)"
+
+deployment:
+  build_process:
+    commands:
+      - "npm run build"
+      - "npm run start"
+    optimization:
+      - "Static generation where possible"
+      - "Bundle splitting"
+      - "Asset optimization"
+      - "Code minification"
+  
+  hosting:
+    development: "localhost:3000"
+    production: "TBD"
+    environment_variables:
+      - "NEXT_PUBLIC_API_URL"
+      - "NEXT_PUBLIC_APP_ENV"
+  
+  monitoring:
+    metrics:
+      - "Core Web Vitals"
+      - "Error rates"
+      - "User interactions"
+      - "Performance metrics"
+    tools:
+      - "Next.js Analytics"
+      - "Error tracking (future)"
+      - "Performance monitoring (future)"
+
+future_enhancements:
+  priority_high:
+    - "Search interface component"
+    - "Document viewer component"
+    - "Mobile-optimized layouts"
+    - "Keyboard shortcuts"
+    - "Error boundary implementation"
+  
+  priority_medium:
+    - "Dark mode support"
+    - "User authentication"
+    - "Multi-language support"
+    - "Advanced search filters"
+    - "Document collaboration"
+  
+  priority_low:
+    - "Offline support"
+    - "Push notifications"
+    - "Document versioning"
+    - "Analytics dashboard"
+    - "Plugin system"
+
+development_guidelines:
+  code_style:
+    - "TypeScript strict mode"
+    - "ESLint configuration"
+    - "Prettier formatting"
+    - "Consistent naming conventions"
+    - "Component documentation"
+  
+  best_practices:
+    - "Component composition over inheritance"
+    - "Props validation with TypeScript"
+    - "Error boundaries for error handling"
+    - "Accessibility-first development"
+    - "Performance optimization"
+    - "Code splitting strategies"
+  
+  file_organization:
+    - "Component co-location"
+    - "Absolute imports"
+    - "Barrel exports"
+    - "Type definition files"
+    - "Test file placement"
+
+documentation:
+  technical:
+    - "API documentation"
+    - "Component documentation"
+    - "Setup instructions"
+    - "Deployment guide"
+    - "Contributing guidelines"
+  
+  user:
+    - "User guide"
+    - "Feature documentation"
+    - "Troubleshooting guide"
+    - "FAQ"
+    - "Release notes"
