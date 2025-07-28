@@ -3,13 +3,14 @@
 import { useCallback, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import axios from 'axios'
+import AuthorPromptDialog from './AuthorPromptDialog'
 
 interface FileUploadProps {
   onUploadSuccess: (filename: string) => void
 }
 
 interface UploadProgress {
-  status: 'idle' | 'uploading' | 'processing' | 'success' | 'error'
+  status: 'idle' | 'uploading' | 'processing' | 'success' | 'error' | 'needs_metadata'
   progress: number
   message: string
   filename?: string
@@ -19,6 +20,7 @@ interface UploadProgress {
     code_blocks_found: number
     total_pages: number
   }
+  needsAuthor?: boolean
 }
 
 export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
@@ -27,6 +29,8 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
     progress: 0,
     message: ''
   })
+  const [showAuthorPrompt, setShowAuthorPrompt] = useState(false)
+  const [pendingFile, setPendingFile] = useState<string | null>(null)
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0]
@@ -110,6 +114,25 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
             message: ''
           })
         }, 3000)
+      } else if (response.data.status === 'needs_metadata') {
+        clearInterval(processingInterval)
+        
+        setUploadProgress({
+          status: 'needs_metadata',
+          progress: 90,
+          message: 'Please provide author information',
+          filename: file.name,
+          stats: {
+            chunks_created: response.data.chunks_created,
+            images_processed: response.data.images_processed,
+            code_blocks_found: response.data.code_blocks_found,
+            total_pages: response.data.total_pages
+          },
+          needsAuthor: true
+        })
+        
+        setPendingFile(file.name)
+        setShowAuthorPrompt(true)
       }
     } catch (err: any) {
       setUploadProgress({
@@ -130,13 +153,56 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
     }
   }, [onUploadSuccess])
 
+  const handleAuthorSubmit = async (author: string) => {
+    if (!pendingFile) return
+    
+    try {
+      const response = await axios.post('http://localhost:8000/complete-upload', {
+        filename: pendingFile,
+        author: author
+      })
+      
+      if (response.data.status === 'success') {
+        setUploadProgress({
+          status: 'success',
+          progress: 100,
+          message: 'Processing complete!',
+          filename: pendingFile,
+          stats: uploadProgress.stats
+        })
+        
+        onUploadSuccess(pendingFile)
+        setShowAuthorPrompt(false)
+        setPendingFile(null)
+        
+        // Reset after 3 seconds
+        setTimeout(() => {
+          setUploadProgress({
+            status: 'idle',
+            progress: 0,
+            message: ''
+          })
+        }, 3000)
+      }
+    } catch (err: any) {
+      setUploadProgress({
+        status: 'error',
+        progress: 0,
+        message: err.response?.data?.detail || 'Failed to complete upload',
+        filename: pendingFile
+      })
+      setShowAuthorPrompt(false)
+      setPendingFile(null)
+    }
+  }
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
       'application/pdf': ['.pdf'],
     },
     maxFiles: 1,
-    disabled: uploadProgress.status === 'uploading' || uploadProgress.status === 'processing',
+    disabled: uploadProgress.status === 'uploading' || uploadProgress.status === 'processing' || uploadProgress.status === 'needs_metadata',
   })
 
   const getStatusColor = () => {
@@ -144,6 +210,8 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
       case 'uploading':
       case 'processing':
         return 'text-blue-600'
+      case 'needs_metadata':
+        return 'text-yellow-600'
       case 'success':
         return 'text-green-600'
       case 'error':
@@ -159,6 +227,12 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
       case 'processing':
         return (
           <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        )
+      case 'needs_metadata':
+        return (
+          <svg className="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
         )
       case 'success':
         return (
@@ -192,7 +266,7 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
             ? 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
             : 'border-gray-300 bg-gray-50'
         } ${
-          uploadProgress.status === 'uploading' || uploadProgress.status === 'processing' 
+          uploadProgress.status === 'uploading' || uploadProgress.status === 'processing' || uploadProgress.status === 'needs_metadata'
             ? 'opacity-75 cursor-not-allowed' 
             : ''
         }`}
@@ -286,6 +360,24 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Author Prompt Dialog */}
+      {showAuthorPrompt && (
+        <AuthorPromptDialog
+          isOpen={showAuthorPrompt}
+          onClose={() => {
+            setShowAuthorPrompt(false)
+            setPendingFile(null)
+            setUploadProgress({
+              status: 'idle',
+              progress: 0,
+              message: ''
+            })
+          }}
+          onSubmit={handleAuthorSubmit}
+          filename={pendingFile || ''}
+        />
       )}
     </div>
   )

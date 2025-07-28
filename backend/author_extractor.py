@@ -2,26 +2,48 @@ import re
 import fitz  # PyMuPDF
 from typing import List, Optional, Set
 import os
+import logging
+
+# Set up logging for author extraction
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class AuthorExtractor:
     def __init__(self):
-        # Common patterns for author identification
+        # Enhanced patterns for author identification
         self.author_patterns = [
-            # "By Author Name" or "by Author Name"
-            r'(?:^|\n)\s*[Bb]y\s+([A-Za-z][A-Za-z\s\.,\'-]+?)(?:\n|$|[,\.]?\s*(?:with|and|&))',
+            # "By Author Name" or "by Author Name" - more flexible
+            r'(?:^|\n)\s*[Bb]y\s+([A-Za-z][A-Za-z\s\.,\'-]+?)(?:\n|$|[,\.]?\s*(?:with|and|&|\s*$))',
             
-            # "Author Name" at start of line after title
-            r'(?:^|\n)\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]*\.?)*(?:\s+[A-Z][a-z]+)+)\s*(?:\n|$)',
-            
-            # "Written by Author Name"
+            # "Written by Author Name" 
             r'[Ww]ritten\s+by\s+([A-Za-z][A-Za-z\s\.,\'-]+?)(?:\n|$|[,\.]?\s*(?:with|and|&))',
             
-            # "Author: Author Name"
-            r'[Aa]uthor\s*:\s*([A-Za-z][A-Za-z\s\.,\'-]+?)(?:\n|$)',
+            # "Author: Author Name" or "Authors: Author Name"
+            r'[Aa]uthors?\s*:\s*([A-Za-z][A-Za-z\s\.,\'-]+?)(?:\n|$)',
             
-            # Common name patterns on title pages
-            r'(?:^|\n)\s*([A-Z][a-z]+\s+[A-Z]\.\s+[A-Z][a-z]+)\s*(?:\n|$)',  # First M. Last
-            r'(?:^|\n)\s*([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s*(?:\n|$)',  # First Last or First Middle Last
+            # "Authored by Author Name"
+            r'[Aa]uthored\s+by\s+([A-Za-z][A-Za-z\s\.,\'-]+?)(?:\n|$)',
+            
+            # Common name patterns on title pages - First M. Last
+            r'(?:^|\n)\s*([A-Z][a-z]+\s+[A-Z]\.\s+[A-Z][a-z]+)\s*(?:\n|$)',  
+            
+            # First Last or First Middle Last - standalone on line
+            r'(?:^|\n)\s*([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s*(?:\n|$)', 
+            
+            # Publisher-specific patterns for technical books
+            r'(?:^|\n)\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]*\.?)*(?:\s+[A-Z][a-z]+)+)\s*\n(?:\s*\n)*\s*(?:MC\s+Press|Pearson|O\'Reilly|Wiley|Manning)',
+            
+            # Copyright line patterns
+            r'©\s*\d{4}\s+(?:by\s+)?([A-Za-z][A-Za-z\s\.,\'-]+?)(?:\n|$|[,\.])',
+            
+            # More flexible "Author Name" at start after title
+            r'(?:^|\n)\s*([A-Z][a-z]{2,}\s+(?:[A-Z]\.\s+)?[A-Z][a-z]{2,}(?:\s+[A-Z][a-z]{2,})?)\s*(?:\n\s*\n|\n\s*[A-Z])',
+            
+            # Multi-line author pattern - captures "First Last and First Last" across lines
+            r'([A-Z][a-z]+\s+[A-Z][a-z]+)\s+and\s+([A-Z][a-z]+\s+[A-Z][a-z]+)',
+            
+            # Pattern for book title pages - authors between edition and publisher
+            r'(?:Edition|Version)\s*\n\s*([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+and\s+[A-Z][a-z]+\s+[A-Z][a-z]+)?)\s*\n',
         ]
         
         # Words that indicate this is NOT an author name
@@ -45,29 +67,44 @@ class AuthorExtractor:
     
     def extract_author(self, file_path: str) -> Optional[str]:
         """Extract author from PDF using multiple methods"""
+        filename = os.path.basename(file_path)
+        logger.info(f"🔍 Starting author extraction for: {filename}")
+        
         try:
             doc = fitz.open(file_path)
             authors = set()
             
             # Method 1: Try PDF metadata
+            logger.info(f"📋 Checking PDF metadata for {filename}")
             metadata_author = self._extract_from_metadata(doc)
             if metadata_author:
+                logger.info(f"✅ Found author in metadata: '{metadata_author}'")
                 authors.add(metadata_author)
+            else:
+                logger.info(f"❌ No author found in metadata for {filename}")
             
             # Method 2: Extract from first few pages (title page, copyright page)
+            logger.info(f"📄 Analyzing first 3 pages of text for {filename}")
             text_authors = self._extract_from_text(doc, max_pages=3)
-            authors.update(text_authors)
+            if text_authors:
+                logger.info(f"✅ Found {len(text_authors)} potential authors in text: {list(text_authors)}")
+                authors.update(text_authors)
+            else:
+                logger.info(f"❌ No authors found in text analysis for {filename}")
             
             doc.close()
             
             # Return the most likely author
             if authors:
-                return self._select_best_author(authors)
-            
-            return None
+                selected_author = self._select_best_author(authors)
+                logger.info(f"🎯 Selected best author for {filename}: '{selected_author}'")
+                return selected_author
+            else:
+                logger.warning(f"⚠️  No author could be extracted from {filename}")
+                return None
             
         except Exception as e:
-            print(f"Error extracting author from {file_path}: {e}")
+            logger.error(f"💥 Error extracting author from {filename}: {e}")
             return None
     
     def _extract_from_metadata(self, doc) -> Optional[str]:
@@ -75,10 +112,23 @@ class AuthorExtractor:
         try:
             metadata = doc.metadata
             author = metadata.get('author', '').strip()
-            if author and self._is_valid_author(author):
-                return self._clean_author_name(author)
-        except:
-            pass
+            logger.debug(f"📋 Raw metadata author: '{author}'")
+            
+            if author:
+                # Handle single name in metadata (like 'senthil')
+                if len(author.split()) == 1 and len(author) > 2:
+                    # Single name - capitalize properly
+                    cleaned = author.title()
+                    logger.debug(f"✅ Single name author from metadata: '{cleaned}'")
+                    return cleaned
+                elif self._is_valid_author(author):
+                    cleaned = self._clean_author_name(author)
+                    logger.debug(f"✅ Valid author from metadata: '{cleaned}'")
+                    return cleaned
+                else:
+                    logger.debug(f"❌ Invalid author in metadata: '{author}'")
+        except Exception as e:
+            logger.debug(f"Error reading metadata: {e}")
         return None
     
     def _extract_from_text(self, doc, max_pages: int = 3) -> Set[str]:
@@ -89,18 +139,42 @@ class AuthorExtractor:
             try:
                 page = doc[page_num]
                 text = page.get_text()
+                logger.debug(f"📖 Page {page_num + 1} text preview: {text[:200].replace(chr(10), ' ')[:100]}...")
                 
                 # Try each pattern
-                for pattern in self.author_patterns:
+                for i, pattern in enumerate(self.author_patterns):
                     matches = re.finditer(pattern, text, re.MULTILINE | re.IGNORECASE)
                     for match in matches:
-                        potential_author = match.group(1).strip()
-                        if self._is_valid_author(potential_author):
-                            cleaned = self._clean_author_name(potential_author)
-                            if cleaned:
-                                authors.add(cleaned)
+                        # Handle patterns with multiple capture groups (like "and" patterns)
+                        if len(match.groups()) > 1:
+                            # Multi-author pattern
+                            for group_num in range(1, len(match.groups()) + 1):
+                                if match.group(group_num):
+                                    potential_author = match.group(group_num).strip()
+                                    logger.debug(f"🔍 Pattern {i+1} group {group_num} found potential author: '{potential_author}'")
+                                    
+                                    if self._is_valid_author(potential_author):
+                                        cleaned = self._clean_author_name(potential_author)
+                                        if cleaned:
+                                            authors.add(cleaned)
+                                            logger.debug(f"✅ Added valid author: '{cleaned}'")
+                                    else:
+                                        logger.debug(f"❌ Rejected invalid author: '{potential_author}'")
+                        else:
+                            # Single author pattern
+                            potential_author = match.group(1).strip()
+                            logger.debug(f"🔍 Pattern {i+1} found potential author: '{potential_author}'")
+                            
+                            if self._is_valid_author(potential_author):
+                                cleaned = self._clean_author_name(potential_author)
+                                if cleaned:
+                                    authors.add(cleaned)
+                                    logger.debug(f"✅ Added valid author: '{cleaned}'")
+                            else:
+                                logger.debug(f"❌ Rejected invalid author: '{potential_author}'")
                 
             except Exception as e:
+                logger.debug(f"Error processing page {page_num + 1}: {e}")
                 continue
         
         return authors

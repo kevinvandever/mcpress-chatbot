@@ -3,13 +3,14 @@
 import { useCallback, useState, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
 import axios from 'axios'
+import AuthorPromptDialog from './AuthorPromptDialog'
 
 interface BatchUploadProps {
   onUploadComplete: () => void
 }
 
 interface FileStatus {
-  status: 'pending' | 'uploading' | 'processing' | 'completed' | 'error'
+  status: 'pending' | 'uploading' | 'processing' | 'completed' | 'error' | 'needs_metadata'
   progress: number
   message: string
   stats?: {
@@ -40,6 +41,9 @@ export default function BatchUpload({ onUploadComplete }: BatchUploadProps) {
   const [isUploading, setIsUploading] = useState(false)
   const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(null)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [showAuthorPrompt, setShowAuthorPrompt] = useState(false)
+  const [pendingAuthors, setPendingAuthors] = useState<string[]>([])
+  const [currentAuthorIndex, setCurrentAuthorIndex] = useState(0)
 
   // Poll for batch status
   useEffect(() => {
@@ -52,6 +56,19 @@ export default function BatchUpload({ onUploadComplete }: BatchUploadProps) {
         )
         setBatchProgress(response.data)
         
+        // Check for files that need author metadata
+        const filesNeedingMetadata = Object.entries(response.data.files_status)
+          .filter(([, status]) => (status as FileStatus).status === 'needs_metadata')
+          .map(([filename]) => filename)
+        
+        // If we have files needing metadata and we're not already showing the prompt
+        if (filesNeedingMetadata.length > 0 && !showAuthorPrompt) {
+          setPendingAuthors(filesNeedingMetadata)
+          setCurrentAuthorIndex(0)
+          setShowAuthorPrompt(true)
+          setIsUploading(false) // Stop showing uploading state
+        }
+        
         if (response.data.status === 'completed') {
           setIsUploading(false)
           onUploadComplete()
@@ -62,7 +79,7 @@ export default function BatchUpload({ onUploadComplete }: BatchUploadProps) {
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [batchProgress, onUploadComplete])
+  }, [batchProgress, onUploadComplete, showAuthorPrompt])
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     // Validate file sizes
@@ -125,6 +142,47 @@ export default function BatchUpload({ onUploadComplete }: BatchUploadProps) {
     disabled: isUploading,
   })
 
+  const handleAuthorSubmit = async (author: string) => {
+    const filename = pendingAuthors[currentAuthorIndex]
+    
+    try {
+      await axios.post('http://localhost:8000/complete-upload', {
+        filename: filename,
+        author: author
+      })
+      
+      // Update the file status in batch progress
+      if (batchProgress) {
+        const updatedProgress = { ...batchProgress }
+        updatedProgress.files_status[filename] = {
+          ...updatedProgress.files_status[filename],
+          status: 'completed',
+          progress: 100,
+          message: 'Processing complete'
+        }
+        // Increment processed files count
+        updatedProgress.processed_files += 1
+        updatedProgress.overall_progress = Math.round(
+          (updatedProgress.processed_files / updatedProgress.total_files) * 100
+        )
+        setBatchProgress(updatedProgress)
+      }
+      
+      // Move to next file or complete
+      if (currentAuthorIndex < pendingAuthors.length - 1) {
+        setCurrentAuthorIndex(currentAuthorIndex + 1)
+      } else {
+        setShowAuthorPrompt(false)
+        setPendingAuthors([])
+        setCurrentAuthorIndex(0)
+        // Don't call onUploadComplete() here - let the polling handle final completion
+      }
+    } catch (error) {
+      console.error('Error completing upload:', error)
+      alert(`Failed to save author information for ${filename}. Please try again.`)
+    }
+  }
+
   const getFileStatusIcon = (status: string) => {
     switch (status) {
       case 'uploading':
@@ -134,6 +192,8 @@ export default function BatchUpload({ onUploadComplete }: BatchUploadProps) {
         return '✅'
       case 'error':
         return '❌'
+      case 'needs_metadata':
+        return '⚠️'
       default:
         return '📄'
     }
@@ -148,6 +208,8 @@ export default function BatchUpload({ onUploadComplete }: BatchUploadProps) {
         return 'text-green-600'
       case 'error':
         return 'text-red-600'
+      case 'needs_metadata':
+        return 'text-yellow-600'
       default:
         return 'text-gray-600'
     }
@@ -278,6 +340,9 @@ export default function BatchUpload({ onUploadComplete }: BatchUploadProps) {
                   {fileStatus.status === 'error' && (
                     <span className="text-xs text-red-600">{fileStatus.message}</span>
                   )}
+                  {fileStatus.status === 'needs_metadata' && (
+                    <span className="text-xs text-yellow-600">Needs author</span>
+                  )}
                 </div>
               </div>
             ))}
@@ -316,6 +381,20 @@ export default function BatchUpload({ onUploadComplete }: BatchUploadProps) {
             </div>
           )}
         </div>
+      )}
+
+      {/* Author Prompt Dialog */}
+      {showAuthorPrompt && pendingAuthors.length > 0 && (
+        <AuthorPromptDialog
+          isOpen={showAuthorPrompt}
+          onClose={() => {
+            setShowAuthorPrompt(false)
+            setPendingAuthors([])
+            setCurrentAuthorIndex(0)
+          }}
+          onSubmit={handleAuthorSubmit}
+          filename={pendingAuthors[currentAuthorIndex]}
+        />
       )}
     </div>
   )

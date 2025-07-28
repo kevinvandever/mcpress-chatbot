@@ -166,6 +166,35 @@ class VectorStore:
                         
         print(f"Deleted {len(ids_to_delete)} chunks for document: {filename}")
     
+    async def update_document_metadata(self, filename: str, title: str, author: str):
+        """Update the title and author metadata for all chunks of a document"""
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, self._update_document_metadata_sync, filename, title, author)
+    
+    def _update_document_metadata_sync(self, filename: str, title: str, author: str):
+        """Synchronous version of update_document_metadata"""
+        all_docs = self.collection.get()
+        ids_to_update = []
+        metadatas_to_update = []
+        
+        for i, metadata in enumerate(all_docs["metadatas"]):
+            if metadata.get("filename") == filename:
+                ids_to_update.append(all_docs["ids"][i])
+                # Update the metadata while preserving other fields
+                updated_metadata = metadata.copy()
+                updated_metadata["title"] = title
+                updated_metadata["author"] = author
+                metadatas_to_update.append(updated_metadata)
+        
+        if ids_to_update:
+            self.collection.update(
+                ids=ids_to_update,
+                metadatas=metadatas_to_update
+            )
+            print(f"Updated metadata for {len(ids_to_update)} chunks of document: {filename}")
+        else:
+            raise Exception(f"Document {filename} not found")
+    
     def reset_database(self):
         """Completely reset the database by deleting the collection and recreating it"""
         try:

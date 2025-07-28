@@ -26,6 +26,9 @@ load_dotenv()
 
 app = FastAPI(title="MC Press Chatbot API")
 
+# Temporary storage for PDFs awaiting metadata
+temp_storage = {}
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
@@ -91,27 +94,57 @@ async def upload_pdf(file: UploadFile = File(...)):
         # Get category from CSV mapping
         category = category_mapper.get_category(file.filename)
         
-        await vector_store.add_documents(
-            documents=extracted_content["chunks"],
-            metadata={
-                "filename": file.filename,
-                "total_pages": extracted_content["total_pages"],
-                "has_images": len(extracted_content["images"]) > 0,
-                "has_code": len(extracted_content["code_blocks"]) > 0,
-                "category": category,
-                "title": file.filename.replace('.pdf', ''),
-                "author": extracted_content.get("author")
-            }
-        )
+        # Check if author metadata is missing
+        author = extracted_content.get("author")
+        needs_author = author is None or author == ""
         
-        return {
-            "status": "success",
-            "message": f"Successfully processed {file.filename}",
-            "chunks_created": len(extracted_content["chunks"]),
-            "images_processed": len(extracted_content["images"]),
-            "code_blocks_found": len(extracted_content["code_blocks"]),
-            "total_pages": extracted_content["total_pages"]
-        }
+        print(f"📝 Upload status for {file.filename}: Author = '{author}', Needs author = {needs_author}")
+        
+        if needs_author:
+            # Store the document temporarily without adding to vector store
+            temp_storage[file.filename] = {
+                "extracted_content": extracted_content,
+                "category": category,
+                "file_path": file_path
+            }
+            
+            print(f"💾 Stored {file.filename} in temporary storage awaiting author metadata")
+            print(f"📊 File stats: {len(extracted_content['chunks'])} chunks, {extracted_content['total_pages']} pages")
+            
+            return {
+                "status": "needs_metadata",
+                "message": f"Author information could not be automatically extracted from {file.filename}. Please provide the author name to complete the upload.",
+                "filename": file.filename,
+                "needs_author": True,
+                "chunks_created": len(extracted_content["chunks"]),
+                "images_processed": len(extracted_content["images"]),
+                "code_blocks_found": len(extracted_content["code_blocks"]),
+                "total_pages": extracted_content["total_pages"],
+                "extraction_details": "Author extraction attempted using PDF metadata and text analysis patterns"
+            }
+        else:
+            # Author exists, proceed normally
+            await vector_store.add_documents(
+                documents=extracted_content["chunks"],
+                metadata={
+                    "filename": file.filename,
+                    "total_pages": extracted_content["total_pages"],
+                    "has_images": len(extracted_content["images"]) > 0,
+                    "has_code": len(extracted_content["code_blocks"]) > 0,
+                    "category": category,
+                    "title": file.filename.replace('.pdf', ''),
+                    "author": author
+                }
+            )
+            
+            return {
+                "status": "success",
+                "message": f"Successfully processed {file.filename}",
+                "chunks_created": len(extracted_content["chunks"]),
+                "images_processed": len(extracted_content["images"]),
+                "code_blocks_found": len(extracted_content["code_blocks"]),
+                "total_pages": extracted_content["total_pages"]
+            }
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -153,6 +186,38 @@ async def process_single_pdf(file_content: bytes, filename: str, batch_id: str, 
         chunks_count = len(extracted_content["chunks"])
         print(f"Adding {chunks_count} chunks to vector store for {filename}")
         
+        # Check if author metadata is missing
+        author = extracted_content.get("author")
+        needs_author = author is None or author == ""
+        
+        print(f"📝 Batch upload status for {filename}: Author = '{author}', Needs author = {needs_author}")
+        
+        if needs_author:
+            # Store temporarily and mark as needing metadata
+            temp_storage[filename] = {
+                "extracted_content": extracted_content,
+                "category": category,
+                "file_path": file_path,
+                "batch_id": batch_id
+            }
+            
+            # Update progress with special status
+            upload_progress[batch_id]["files_status"][filename] = {
+                "status": "needs_metadata",
+                "progress": 90,
+                "message": "Author extraction failed - manual input required",
+                "stats": {
+                    "chunks_created": len(extracted_content["chunks"]),
+                    "images_processed": len(extracted_content["images"]),
+                    "code_blocks_found": len(extracted_content["code_blocks"]),
+                    "total_pages": extracted_content["total_pages"],
+                    "category": category
+                },
+                "extraction_details": "Author extraction attempted using PDF metadata and text patterns"
+            }
+            print(f"📋 File {filename} needs author metadata - stored in temp_storage")
+            return "needs_metadata"
+        
         try:
             await vector_store.add_documents(
                 documents=extracted_content["chunks"],
@@ -160,7 +225,7 @@ async def process_single_pdf(file_content: bytes, filename: str, batch_id: str, 
                     "filename": filename,
                     "title": title,
                     "category": category,
-                    "author": extracted_content.get("author"),
+                    "author": author,
                     "total_pages": extracted_content["total_pages"],
                     "has_images": len(extracted_content["images"]) > 0,
                     "has_code": len(extracted_content["code_blocks"]) > 0,
@@ -297,6 +362,71 @@ async def get_batch_status(batch_id: str):
         raise HTTPException(status_code=404, detail="Batch not found")
     
     return upload_progress[batch_id]
+
+class CompleteUploadRequest(BaseModel):
+    filename: str
+    author: str
+
+class UpdateMetadataRequest(BaseModel):
+    filename: str
+    title: str
+    author: str
+
+@app.post("/complete-upload")
+async def complete_upload_with_metadata(request: CompleteUploadRequest):
+    """Complete the upload of a PDF that was missing author metadata"""
+    print(f"Complete upload request for: '{request.filename}'")
+    print(f"Current temp_storage keys: {list(temp_storage.keys())}")
+    
+    if request.filename not in temp_storage:
+        raise HTTPException(status_code=404, detail=f"File '{request.filename}' not found in temporary storage. Available files: {list(temp_storage.keys())}")
+    
+    try:
+        # Retrieve stored data
+        stored_data = temp_storage[request.filename]
+        extracted_content = stored_data["extracted_content"]
+        category = stored_data["category"]
+        
+        # Add to vector store with provided author
+        await vector_store.add_documents(
+            documents=extracted_content["chunks"],
+            metadata={
+                "filename": request.filename,
+                "total_pages": extracted_content["total_pages"],
+                "has_images": len(extracted_content["images"]) > 0,
+                "has_code": len(extracted_content["code_blocks"]) > 0,
+                "category": category,
+                "title": request.filename.replace('.pdf', ''),
+                "author": request.author
+            }
+        )
+        
+        # Clean up temp storage
+        del temp_storage[request.filename]
+        
+        return {
+            "status": "success",
+            "message": f"Successfully processed {request.filename} with author: {request.author}",
+            "chunks_created": len(extracted_content["chunks"]),
+            "total_pages": extracted_content["total_pages"]
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/documents/{filename}/metadata")
+async def update_document_metadata(filename: str, request: UpdateMetadataRequest):
+    """Update the title and author metadata for a document"""
+    try:
+        await vector_store.update_document_metadata(filename, request.title, request.author)
+        return {
+            "status": "success",
+            "message": f"Successfully updated metadata for {filename}",
+            "title": request.title,
+            "author": request.author
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/chat")
 async def chat(message: ChatMessage):

@@ -66,7 +66,7 @@ export default function Home() {
   }
 
   // Focus management
-  const handleTabChange = (tab: 'documents' | 'search') => {
+  const handleTabChange = (tab: 'documents' | 'search' | 'batch') => {
     setActiveTab(tab)
     // Announce tab change to screen readers
     const announcement = `Switched to ${tab} tab`

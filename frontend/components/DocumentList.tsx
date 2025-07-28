@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import axios from 'axios'
+import MetadataEditDialog from './MetadataEditDialog'
 
 interface Document {
   filename: string
@@ -20,6 +21,7 @@ interface Document {
 interface DocumentCardProps {
   document: Document
   onDelete: (filename: string) => void
+  onEdit: (filename: string, title: string, author: string) => void
   onSelect?: (filename: string) => void
   isSelected?: boolean
   isCompact?: boolean
@@ -128,7 +130,7 @@ function CategoryHeader({ category, count, isExpanded, onToggle }: CategoryHeade
   )
 }
 
-function DocumentCard({ document, onDelete, onSelect, isSelected = false, isCompact = false }: DocumentCardProps) {
+function DocumentCard({ document, onDelete, onEdit, onSelect, isSelected = false, isCompact = false }: DocumentCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -313,16 +315,27 @@ function DocumentCard({ document, onDelete, onSelect, isSelected = false, isComp
                 )}
                 <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">📝 Text</span>
               </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleDelete()
-                }}
-                disabled={isDeleting}
-                className="text-red-600 hover:text-red-800 text-xs underline"
-              >
-                {isDeleting ? 'Deleting...' : 'Delete document'}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onEdit(document.filename, document.filename.replace('.pdf', ''), document.author || '')
+                  }}
+                  className="text-blue-600 hover:text-blue-800 text-xs underline"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleDelete()
+                  }}
+                  disabled={isDeleting}
+                  className="text-red-600 hover:text-red-800 text-xs underline"
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -353,6 +366,19 @@ function DocumentCard({ document, onDelete, onSelect, isSelected = false, isComp
               >
                 <svg className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onEdit(document.filename, document.filename.replace('.pdf', ''), document.author || '')
+                }}
+                className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                title="Edit metadata"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
               </button>
               
@@ -453,6 +479,8 @@ export default function DocumentList({ onDocumentChange }: DocumentListProps) {
   const [error, setError] = useState<string | null>(null)
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
   const [selectedDocument, setSelectedDocument] = useState<string | null>(null)
+  const [showEditDialog, setShowEditDialog] = useState(false)
+  const [editingDocument, setEditingDocument] = useState<{filename: string, title: string, author: string} | null>(null)
 
   useEffect(() => {
     fetchDocuments()
@@ -487,6 +515,15 @@ export default function DocumentList({ onDocumentChange }: DocumentListProps) {
   const handleDocumentSelect = (filename: string) => {
     setSelectedDocument(selectedDocument === filename ? null : filename)
     console.log('Selected document:', filename)
+  }
+
+  const handleEdit = (filename: string, title: string, author: string) => {
+    setEditingDocument({ filename, title, author })
+    setShowEditDialog(true)
+  }
+
+  const handleEditSuccess = async () => {
+    await fetchDocuments()
   }
 
   const toggleCategory = (category: string) => {
@@ -638,6 +675,7 @@ export default function DocumentList({ onDocumentChange }: DocumentListProps) {
                       key={doc.filename}
                       document={doc}
                       onDelete={deleteDocument}
+                      onEdit={handleEdit}
                       onSelect={handleDocumentSelect}
                       isSelected={selectedDocument === doc.filename}
                       isCompact={true}
@@ -649,6 +687,21 @@ export default function DocumentList({ onDocumentChange }: DocumentListProps) {
           </div>
         ))}
       </div>
+
+      {/* Metadata Edit Dialog */}
+      {editingDocument && (
+        <MetadataEditDialog
+          isOpen={showEditDialog}
+          onClose={() => {
+            setShowEditDialog(false)
+            setEditingDocument(null)
+          }}
+          onSuccess={handleEditSuccess}
+          filename={editingDocument.filename}
+          currentTitle={editingDocument.title}
+          currentAuthor={editingDocument.author}
+        />
+      )}
     </div>
   )
 }

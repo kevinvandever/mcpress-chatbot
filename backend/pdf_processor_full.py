@@ -31,8 +31,13 @@ class PDFProcessorFull:
             doc = fitz.open(file_path)
             total_pages = len(doc)
             
-            # Extract author information
+            # Extract author information with debug logging
+            print(f"🔍 Extracting author information for: {os.path.basename(file_path)}")
             author = self.author_extractor.extract_author(file_path)
+            if author:
+                print(f"✅ Author extracted: '{author}'")
+            else:
+                print(f"⚠️  No author found for: {os.path.basename(file_path)}")
             
             # First pass: Extract all text content
             all_text = ""
