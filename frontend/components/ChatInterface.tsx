@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import BookLink from './BookLink'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -18,6 +19,7 @@ interface Source {
   page: string | number
   type?: string
   distance?: number
+  mc_press_url?: string
 }
 
 interface ChatInterfaceProps {
@@ -498,13 +500,20 @@ export default function ChatInterface({ hasDocuments = false }: ChatInterfacePro
                                 <h3 className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors truncate">
                                   {getBookDisplayName(filename)}
                                 </h3>
-                                <p className="text-sm text-gray-500">
-                                  {bookSources.length} source{bookSources.length !== 1 ? 's' : ''} • 
-                                  {(() => {
-                                    const pages = [...new Set(bookSources.map(s => s.page).filter(p => p && p !== 'N/A'))]
-                                    return pages.length > 0 ? ` Pages ${pages.join(', ')}` : ' Various pages'
-                                  })()}
-                                </p>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <p className="text-sm text-gray-500">
+                                    {bookSources.length} source{bookSources.length !== 1 ? 's' : ''} • 
+                                    {(() => {
+                                      const pages = [...new Set(bookSources.map(s => s.page).filter(p => p && p !== 'N/A'))]
+                                      return pages.length > 0 ? ` Pages ${pages.join(', ')}` : ' Various pages'
+                                    })()}
+                                  </p>
+                                  <BookLink 
+                                    url={bookSources[0]?.mc_press_url} 
+                                    title={getBookDisplayName(filename)}
+                                    className="text-xs"
+                                  />
+                                </div>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">

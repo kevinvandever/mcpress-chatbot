@@ -293,6 +293,38 @@ body {
   }
 }
 
+/* Enhanced modal content formatting */
+.prose {
+  @apply text-gray-800;
+}
+
+.prose p {
+  @apply mb-4 leading-relaxed;
+}
+
+.prose pre {
+  @apply mb-4;
+}
+
+/* Image container styling */
+.image-container {
+  @apply bg-gray-100 p-4 rounded-lg flex items-center justify-center;
+}
+
+/* Code block improvements */
+pre code {
+  @apply block;
+  white-space: pre;
+  word-wrap: normal;
+  overflow-x: auto;
+}
+
+/* Better text readability in modals */
+.modal-content {
+  @apply leading-relaxed;
+  line-height: 1.75;
+}
+
 /* High contrast mode support */
 @media (prefers-contrast: high) {
   .card {

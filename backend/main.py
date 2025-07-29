@@ -31,7 +31,14 @@ temp_storage = {}
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=[
+        "http://localhost:3000", "http://127.0.0.1:3000",
+        "http://localhost:3001", "http://127.0.0.1:3001", 
+        "http://localhost:3002", "http://127.0.0.1:3002",
+        "http://localhost:3003", "http://127.0.0.1:3003",
+        "http://localhost:3004", "http://127.0.0.1:3004",
+        "http://localhost:3005", "http://127.0.0.1:3005"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -366,11 +373,14 @@ async def get_batch_status(batch_id: str):
 class CompleteUploadRequest(BaseModel):
     filename: str
     author: str
+    mc_press_url: Optional[str] = None
 
 class UpdateMetadataRequest(BaseModel):
     filename: str
     title: str
     author: str
+    category: Optional[str] = None
+    mc_press_url: Optional[str] = None
 
 @app.post("/complete-upload")
 async def complete_upload_with_metadata(request: CompleteUploadRequest):
@@ -387,7 +397,7 @@ async def complete_upload_with_metadata(request: CompleteUploadRequest):
         extracted_content = stored_data["extracted_content"]
         category = stored_data["category"]
         
-        # Add to vector store with provided author
+        # Add to vector store with provided author and URL
         await vector_store.add_documents(
             documents=extracted_content["chunks"],
             metadata={
@@ -397,7 +407,8 @@ async def complete_upload_with_metadata(request: CompleteUploadRequest):
                 "has_code": len(extracted_content["code_blocks"]) > 0,
                 "category": category,
                 "title": request.filename.replace('.pdf', ''),
-                "author": request.author
+                "author": request.author,
+                "mc_press_url": request.mc_press_url
             }
         )
         
@@ -416,14 +427,15 @@ async def complete_upload_with_metadata(request: CompleteUploadRequest):
 
 @app.put("/documents/{filename}/metadata")
 async def update_document_metadata(filename: str, request: UpdateMetadataRequest):
-    """Update the title and author metadata for a document"""
+    """Update the title, author, category, and MC Press URL metadata for a document"""
     try:
-        await vector_store.update_document_metadata(filename, request.title, request.author)
+        await vector_store.update_document_metadata(filename, request.title, request.author, request.category, request.mc_press_url)
         return {
             "status": "success",
             "message": f"Successfully updated metadata for {filename}",
             "title": request.title,
-            "author": request.author
+            "author": request.author,
+            "category": request.category
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

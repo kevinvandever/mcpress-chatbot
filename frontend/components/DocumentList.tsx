@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import MetadataEditDialog from './MetadataEditDialog'
+import BookLink from './BookLink'
 
 interface Document {
   filename: string
@@ -12,6 +13,7 @@ interface Document {
   total_pages: number
   category?: string
   author?: string
+  mc_press_url?: string
   images_processed?: number
   code_blocks_found?: number
   upload_date?: string
@@ -292,6 +294,11 @@ function DocumentCard({ document, onDelete, onEdit, onSelect, isSelected = false
                   <span className="font-medium">By:</span> {document.author}
                 </div>
               )}
+              <BookLink 
+                url={document.mc_press_url} 
+                title={document.filename.replace('.pdf', '')}
+                className="text-xs mb-2"
+              />
               <div className="flex items-center gap-4">
                 <span className="flex items-center gap-1">
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -418,6 +425,20 @@ function DocumentCard({ document, onDelete, onEdit, onSelect, isSelected = false
           {/* Content type indicators */}
           <div className="flex flex-wrap gap-1 mb-2">
             {getContentTypeIndicators()}
+          </div>
+
+          {/* Author and MC Press Link */}
+          <div className="flex items-center gap-4 mb-2">
+            {document.author && (
+              <span className="text-xs text-gray-600">
+                <span className="font-medium">Author:</span> {document.author}
+              </span>
+            )}
+            <BookLink 
+              url={document.mc_press_url} 
+              title={document.filename.replace('.pdf', '')}
+              className="text-xs"
+            />
           </div>
 
           {/* Expanded details */}
@@ -700,6 +721,7 @@ export default function DocumentList({ onDocumentChange }: DocumentListProps) {
           filename={editingDocument.filename}
           currentTitle={editingDocument.title}
           currentAuthor={editingDocument.author}
+          currentUrl={editingDocument.mc_press_url}
         />
       )}
     </div>

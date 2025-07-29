@@ -1,6 +1,7 @@
 from typing import List, Dict, Any, Optional
 import json
 import os
+import re
 from dataclasses import dataclass, asdict
 from datetime import datetime
 
@@ -19,6 +20,7 @@ class BookMetadata:
     has_images: bool = False
     has_code: bool = False
     upload_date: str = None
+    mc_press_url: Optional[str] = None
     
     def __post_init__(self):
         if self.tags is None:
@@ -60,11 +62,32 @@ class BookManager:
             }
         }
     
+    def validate_url(self, url: str) -> bool:
+        """Validate if the provided string is a valid URL"""
+        if not url:
+            return True  # Empty URLs are allowed (field is optional)
+        
+        # Basic URL validation pattern
+        url_pattern = re.compile(
+            r'^https?://'  # http:// or https://
+            r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
+            r'localhost|'  # localhost...
+            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
+            r'(?::\d+)?'  # optional port
+            r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+        
+        return url_pattern.match(url) is not None
+    
     def add_book(self, filename: str, title: str = None, category: str = "general", 
                  subcategory: str = None, **kwargs) -> BookMetadata:
         """Add a new book with metadata"""
         if not title:
             title = filename.replace('.pdf', '').replace('_', ' ').title()
+        
+        # Validate URL if provided
+        mc_press_url = kwargs.get('mc_press_url')
+        if mc_press_url and not self.validate_url(mc_press_url):
+            raise ValueError(f"Invalid URL format: {mc_press_url}")
         
         book = BookMetadata(
             filename=filename,

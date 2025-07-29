@@ -2,7 +2,12 @@ import openai
 from typing import AsyncGenerator, Dict, Any, List
 import os
 import json
+import logging
 from datetime import datetime
+
+# Set up logging for source relevance debugging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class ChatHandler:
     def __init__(self, vector_store):
@@ -11,7 +16,11 @@ class ChatHandler:
         self.conversations = {}
         
     async def stream_response(self, message: str, conversation_id: str) -> AsyncGenerator[Dict[str, Any], None]:
-        relevant_docs = await self.vector_store.search(message, n_results=5)
+        # Get more results initially to have options for filtering
+        search_results = await self.vector_store.search(message, n_results=10)
+        
+        # Filter results by relevance threshold
+        relevant_docs = self._filter_relevant_documents(search_results, message)
         
         context = self._build_context(relevant_docs)
         
@@ -44,13 +53,20 @@ class ChatHandler:
         
         messages.extend(self.conversations[conversation_id][-10:])
         
-        messages.append({
-            "role": "user",
-            "content": f"""Here is the relevant content from the uploaded PDF documents:
+        if context.strip():
+            user_content = f"""Here is the relevant content from the uploaded PDF documents:
 
 {context}
 
 Based on this content, please answer the following question: {message}"""
+        else:
+            user_content = f"""No relevant content was found in the uploaded PDF documents for this query.
+
+Please answer the following question based on your general knowledge, but clearly indicate that your response is not based on the provided documents: {message}"""
+        
+        messages.append({
+            "role": "user", 
+            "content": user_content
         })
         
         try:
@@ -107,6 +123,44 @@ Based on this content, please answer the following question: {message}"""
             context_parts.append(f"{source_info}\n{doc['content']}\n")
         
         return "\n---\n".join(context_parts)
+    
+    def _filter_relevant_documents(self, documents: List[Dict[str, Any]], query: str) -> List[Dict[str, Any]]:
+        """Filter documents by relevance threshold and log the decision process"""
+        # ChromaDB uses cosine distance: 0 = identical, 2 = completely different
+        # We want documents with distance <= 0.7 (roughly 65% similarity or higher)
+        RELEVANCE_THRESHOLD = 0.7
+        MAX_SOURCES = 5
+        
+        logger.info(f"Query: '{query}'")
+        logger.info(f"Initial search returned {len(documents)} documents")
+        
+        filtered_docs = []
+        for i, doc in enumerate(documents):
+            distance = doc.get("distance", 2.0)  # Default to max distance if missing
+            similarity_score = max(0, (2 - distance) / 2)  # Convert to 0-1 scale
+            similarity_percent = similarity_score * 100
+            
+            metadata = doc.get("metadata", {})
+            filename = metadata.get("filename", "Unknown")
+            page = metadata.get("page", "N/A")
+            
+            logger.info(f"  Result {i+1}: {filename} (Page {page}) - Distance: {distance:.3f}, Similarity: {similarity_percent:.1f}%")
+            
+            if distance <= RELEVANCE_THRESHOLD:
+                filtered_docs.append(doc)
+                logger.info(f"    ✓ INCLUDED - Above threshold ({RELEVANCE_THRESHOLD})")
+            else:
+                logger.info(f"    ✗ EXCLUDED - Below threshold ({RELEVANCE_THRESHOLD})")
+        
+        # Limit to MAX_SOURCES and sort by relevance (lowest distance first)
+        filtered_docs = sorted(filtered_docs, key=lambda x: x.get("distance", 2.0))[:MAX_SOURCES]
+        
+        logger.info(f"Final result: {len(filtered_docs)} relevant documents included")
+        
+        if len(filtered_docs) == 0:
+            logger.warning("No documents met the relevance threshold - user query may not match available content")
+        
+        return filtered_docs
     
     def _format_sources(self, documents: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         sources = []

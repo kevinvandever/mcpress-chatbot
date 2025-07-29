@@ -123,7 +123,8 @@ class VectorStore:
                     "has_code": metadata.get("has_code", False),
                     "total_pages": metadata.get("total_pages", 0),
                     "category": metadata.get("category", "technical"),
-                    "author": metadata.get("author")
+                    "author": metadata.get("author"),
+                    "mc_press_url": metadata.get("mc_press_url")
                 }
             documents_by_file[filename]["total_chunks"] += 1
         
@@ -166,12 +167,12 @@ class VectorStore:
                         
         print(f"Deleted {len(ids_to_delete)} chunks for document: {filename}")
     
-    async def update_document_metadata(self, filename: str, title: str, author: str):
-        """Update the title and author metadata for all chunks of a document"""
+    async def update_document_metadata(self, filename: str, title: str, author: str, category: str = None, mc_press_url: str = None):
+        """Update the title, author, category, and MC Press URL metadata for all chunks of a document"""
         loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, self._update_document_metadata_sync, filename, title, author)
+        await loop.run_in_executor(None, self._update_document_metadata_sync, filename, title, author, category, mc_press_url)
     
-    def _update_document_metadata_sync(self, filename: str, title: str, author: str):
+    def _update_document_metadata_sync(self, filename: str, title: str, author: str, category: str = None, mc_press_url: str = None):
         """Synchronous version of update_document_metadata"""
         all_docs = self.collection.get()
         ids_to_update = []
@@ -184,6 +185,10 @@ class VectorStore:
                 updated_metadata = metadata.copy()
                 updated_metadata["title"] = title
                 updated_metadata["author"] = author
+                if category is not None:
+                    updated_metadata["category"] = category
+                if mc_press_url is not None:
+                    updated_metadata["mc_press_url"] = mc_press_url
                 metadatas_to_update.append(updated_metadata)
         
         if ids_to_update:
@@ -192,6 +197,10 @@ class VectorStore:
                 metadatas=metadatas_to_update
             )
             print(f"Updated metadata for {len(ids_to_update)} chunks of document: {filename}")
+            if category:
+                print(f"   Category updated to: {category}")
+            if mc_press_url is not None:
+                print(f"   MC Press URL updated to: {mc_press_url}")
         else:
             raise Exception(f"Document {filename} not found")
     

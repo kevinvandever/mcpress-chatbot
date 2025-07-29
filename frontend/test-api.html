@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test</title>
+</head>
+<body>
+    <h1>API Test</h1>
+    <button id="testBtn">Test Documents API</button>
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            const result = document.getElementById('result');
+            result.innerHTML = 'Loading...';
+            
+            try {
+                console.log('Fetching documents...');
+                const response = await fetch('http://localhost:8000/documents');
+                console.log('Response received:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Data received:', data.total_documents, 'documents');
+                result.innerHTML = `✅ Success! Loaded ${data.total_documents} documents`;
+            } catch (error) {
+                console.error('Error:', error);
+                result.innerHTML = `❌ Error: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+</html>

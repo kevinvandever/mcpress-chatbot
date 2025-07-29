@@ -10,6 +10,7 @@ interface MetadataEditDialogProps {
   filename: string
   currentTitle: string
   currentAuthor: string
+  currentUrl?: string
 }
 
 export default function MetadataEditDialog({
@@ -18,10 +19,12 @@ export default function MetadataEditDialog({
   onSuccess,
   filename,
   currentTitle,
-  currentAuthor
+  currentAuthor,
+  currentUrl
 }: MetadataEditDialogProps) {
   const [title, setTitle] = useState('')
   const [author, setAuthor] = useState('')
+  const [mcPressUrl, setMcPressUrl] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -29,15 +32,32 @@ export default function MetadataEditDialog({
     if (isOpen) {
       setTitle(currentTitle)
       setAuthor(currentAuthor)
+      setMcPressUrl(currentUrl || '')
       setError('')
     }
-  }, [isOpen, currentTitle, currentAuthor])
+  }, [isOpen, currentTitle, currentAuthor, currentUrl])
+
+  const validateUrl = (url: string): boolean => {
+    if (!url.trim()) return true // Empty URL is valid (optional field)
+    
+    try {
+      const urlObj = new URL(url)
+      return urlObj.protocol === 'http:' || urlObj.protocol === 'https:'
+    } catch {
+      return false
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (!title.trim() || !author.trim()) {
       setError('Both title and author are required')
+      return
+    }
+
+    if (mcPressUrl.trim() && !validateUrl(mcPressUrl.trim())) {
+      setError('Please enter a valid URL (must start with http:// or https://)')
       return
     }
 
@@ -48,7 +68,8 @@ export default function MetadataEditDialog({
       await axios.put(`http://localhost:8000/documents/${encodeURIComponent(filename)}/metadata`, {
         filename: filename,
         title: title.trim(),
-        author: author.trim()
+        author: author.trim(),
+        mc_press_url: mcPressUrl.trim() || null
       })
 
       onSuccess()
@@ -122,7 +143,7 @@ export default function MetadataEditDialog({
           </div>
 
           {/* Author input */}
-          <div className="mb-6">
+          <div className="mb-4">
             <label htmlFor="author" className="block text-sm font-medium text-gray-700 mb-1">
               Author(s) *
             </label>
@@ -135,6 +156,25 @@ export default function MetadataEditDialog({
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
               placeholder="Enter author name(s), separate multiple with commas"
             />
+          </div>
+
+          {/* MC Press URL input */}
+          <div className="mb-6">
+            <label htmlFor="mcPressUrl" className="block text-sm font-medium text-gray-700 mb-1">
+              MC Press URL
+            </label>
+            <input
+              type="url"
+              id="mcPressUrl"
+              value={mcPressUrl}
+              onChange={(e) => setMcPressUrl(e.target.value)}
+              disabled={isSubmitting}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+              placeholder="https://www.mc-press.com/product/book-name"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Optional: Link to this book on the MC Press website
+            </p>
           </div>
 
           {/* Error message */}
