@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import axios from 'axios'
+import { API_URL } from '../config/api'
 
 interface MetadataEditDialogProps {
   isOpen: boolean
@@ -65,7 +66,7 @@ export default function MetadataEditDialog({
     setError('')
 
     try {
-      await axios.put(`http://localhost:8000/documents/${encodeURIComponent(filename)}/metadata`, {
+      await axios.put(`${API_URL}/documents/${encodeURIComponent(filename)}/metadata`, {
         filename: filename,
         title: title.trim(),
         author: author.trim(),

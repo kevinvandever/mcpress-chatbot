@@ -6,6 +6,7 @@ import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import BookLink from './BookLink'
+import { API_URL } from '../config/api'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -93,7 +94,7 @@ export default function ChatInterface({ hasDocuments = false }: ChatInterfacePro
     console.log('Sending message:', userMessage)
 
     try {
-      const response = await fetch('http://localhost:8000/chat', {
+      const response = await fetch(`${API_URL}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

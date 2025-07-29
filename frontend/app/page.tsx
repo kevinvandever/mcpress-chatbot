@@ -7,6 +7,7 @@ import ChatInterface from '@/components/ChatInterface'
 import DocumentList from '@/components/DocumentList'
 import SearchInterface from '@/components/SearchInterface'
 import axios from 'axios'
+import { API_URL } from '../config/api'
 
 export default function Home() {
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([])
@@ -22,7 +23,7 @@ export default function Home() {
   useEffect(() => {
     const checkInitialDocuments = async () => {
       try {
-        const response = await axios.get('http://localhost:8000/documents')
+        const response = await axios.get(`${API_URL}/documents`)
         const documents = response.data.documents || []
         setHasDocuments(documents.length > 0)
       } catch (error) {

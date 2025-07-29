@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { debounce } from 'lodash'
+import { API_URL } from '../config/api'
 
 interface SearchResult {
   id: string
@@ -49,7 +50,7 @@ export default function SearchInterface({ onResultSelect }: SearchInterfaceProps
       try {
         // Search all content types without filtering
         const response = await fetch(
-          `http://localhost:8000/search?q=${encodeURIComponent(searchQuery)}&n_results=20`
+          `${API_URL}/search?q=${encodeURIComponent(searchQuery)}&n_results=20`
         )
         
         if (!response.ok) {
@@ -138,7 +139,7 @@ export default function SearchInterface({ onResultSelect }: SearchInterfaceProps
     try {
       // Get context by fetching nearby chunks from the same document
       const response = await fetch(
-        `http://localhost:8000/search?q=${encodeURIComponent(result.content)}&n_results=5&filename=${result.metadata.filename}`
+        `${API_URL}/search?q=${encodeURIComponent(result.content)}&n_results=5&filename=${result.metadata.filename}`
       )
       
       if (!response.ok) {

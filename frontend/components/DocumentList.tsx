@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 import MetadataEditDialog from './MetadataEditDialog'
 import BookLink from './BookLink'
+import { API_URL } from '../config/api'
 
 interface Document {
   filename: string
@@ -510,7 +511,7 @@ export default function DocumentList({ onDocumentChange }: DocumentListProps) {
   const fetchDocuments = async () => {
     try {
       setError(null)
-      const response = await axios.get('http://localhost:8000/documents')
+      const response = await axios.get(`${API_URL}/documents`)
       const documents = response.data.documents || []
       setDocuments(documents)
       onDocumentChange?.(documents.length)
@@ -525,7 +526,7 @@ export default function DocumentList({ onDocumentChange }: DocumentListProps) {
 
   const deleteDocument = async (filename: string) => {
     try {
-      await axios.delete(`http://localhost:8000/documents/${filename}`)
+      await axios.delete(`${API_URL}/documents/${filename}`)
       await fetchDocuments()
     } catch (error) {
       console.error('Error deleting document:', error)
@@ -587,7 +588,7 @@ export default function DocumentList({ onDocumentChange }: DocumentListProps) {
     }
     
     try {
-      const response = await axios.post('http://localhost:8000/reset')
+      const response = await axios.post(`${API_URL}/reset`)
       if (response.data.status === 'success') {
         await fetchDocuments()
         alert('Database reset successfully!')

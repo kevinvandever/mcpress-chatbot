@@ -3,6 +3,7 @@
 import { useCallback, useState, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
 import axios from 'axios'
+import { API_URL } from '../config/api'
 import AuthorPromptDialog from './AuthorPromptDialog'
 
 interface BatchUploadProps {
@@ -52,7 +53,7 @@ export default function BatchUpload({ onUploadComplete }: BatchUploadProps) {
     const interval = setInterval(async () => {
       try {
         const response = await axios.get(
-          `http://localhost:8000/batch-upload/status/${batchProgress.batch_id}`
+          `${API_URL}/batch-upload/status/${batchProgress.batch_id}`
         )
         setBatchProgress(response.data)
         
@@ -105,7 +106,7 @@ export default function BatchUpload({ onUploadComplete }: BatchUploadProps) {
     })
 
     try {
-      const response = await axios.post('http://localhost:8000/batch-upload', formData, {
+      const response = await axios.post(`${API_URL}/batch-upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         }
@@ -146,7 +147,7 @@ export default function BatchUpload({ onUploadComplete }: BatchUploadProps) {
     const filename = pendingAuthors[currentAuthorIndex]
     
     try {
-      await axios.post('http://localhost:8000/complete-upload', {
+      await axios.post(`${API_URL}/complete-upload`, {
         filename: filename,
         author: author
       })

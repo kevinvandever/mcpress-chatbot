@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import axios from 'axios'
+import { API_URL } from '../config/api'
 import AuthorPromptDialog from './AuthorPromptDialog'
 
 interface FileUploadProps {
@@ -47,7 +48,7 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
     formData.append('file', file)
 
     try {
-      const response = await axios.post('http://localhost:8000/upload', formData, {
+      const response = await axios.post(`${API_URL}/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -157,7 +158,7 @@ export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
     if (!pendingFile) return
     
     try {
-      const response = await axios.post('http://localhost:8000/complete-upload', {
+      const response = await axios.post(`${API_URL}/complete-upload`, {
         filename: pendingFile,
         author: author
       })
