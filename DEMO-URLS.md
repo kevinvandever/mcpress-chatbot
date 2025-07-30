@@ -4,12 +4,12 @@
 
 **Frontend URL (Share this with your partner):**
 ```
-https://m-pj-true-space.trycloudflare.com
+https://heater-syndrome-intensive-hostel.trycloudflare.com
 ```
 
 **Backend API URL:**
 ```
-https://journalists-referenced-local-mega.trycloudflare.com
+https://stopping-motor-metabolism-harassment.trycloudflare.com
 ```
 
 ## Important Notes
@@ -19,8 +19,8 @@ https://journalists-referenced-local-mega.trycloudflare.com
    - Backend: `uvicorn main:app --reload` (port 8000)
 
 2. **Tunnels are running in background:**
-   - Frontend tunnel PID: 31074
-   - Backend tunnel PID: 31039
+   - Frontend tunnel PID: 41859
+   - Backend tunnel PID: 41824
 
 3. **To check if tunnels are still running:**
    ```bash
