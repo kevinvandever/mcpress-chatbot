@@ -1,0 +1,12 @@
+[build]
+builder = "nixpacks"
+
+[build.env]
+SENTENCE_TRANSFORMERS_HOME = "/tmp"
+HF_HOME = "/tmp"
+TRANSFORMERS_CACHE = "/tmp"
+HF_DATASETS_OFFLINE = "1"
+TRANSFORMERS_OFFLINE = "1"
+
+[deploy]
+startCommand = "uvicorn backend.main:app --host 0.0.0.0 --port $PORT"

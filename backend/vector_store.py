@@ -11,8 +11,17 @@ class VectorStore:
         self.database_url = os.getenv('DATABASE_URL')
         if not self.database_url:
             raise ValueError("DATABASE_URL environment variable not set")
-        self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+        self._embedding_model = None
         self.pool = None
+    
+    @property
+    def embedding_model(self):
+        """Lazy load the embedding model on first use"""
+        if self._embedding_model is None:
+            print("Loading embedding model for the first time... This may take a minute.")
+            self._embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+            print("Embedding model loaded successfully!")
+        return self._embedding_model
     
     async def init_pool(self):
         """Initialize connection pool"""
