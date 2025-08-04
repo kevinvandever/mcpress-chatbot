@@ -176,19 +176,17 @@ class VectorStore:
                 ORDER BY MIN(created_at) DESC
             """)
             
-            documents = {}
+            documents = []
             for row in rows:
-                documents[row['filename']] = {
+                documents.append({
+                    'filename': row['filename'],
                     'chunk_count': row['chunk_count'],
                     'uploaded_at': row['uploaded_at'].isoformat() if row['uploaded_at'] else None,
                     'metadata': row['metadata'] or {}
-                }
+                })
             
-            return {
-                'documents': documents,
-                'total_documents': len(documents),
-                'total_chunks': sum(doc['chunk_count'] for doc in documents.values())
-            }
+            # Return array directly - frontend expects this format
+            return documents
     
     async def delete_document(self, filename: str):
         """Delete document by filename"""
