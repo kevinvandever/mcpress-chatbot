@@ -82,42 +82,35 @@ class VectorStore:
             """)
     
     async def add_documents(self, documents: List[Dict[str, Any]]):
-        """Add documents with embeddings to the database"""
+        """Add documents to the database"""
         await self.init_pool()
         
-        # Generate embeddings
-        texts = [doc['content'] for doc in documents]
-        embeddings = self.embedding_model.encode(texts)
-        
         async with self.pool.acquire() as conn:
-            for doc, embedding in zip(documents, embeddings):
+            for doc in documents:
                 await conn.execute("""
-                    INSERT INTO documents (filename, content, page_number, chunk_index, embedding, metadata)
-                    VALUES ($1, $2, $3, $4, $5::vector, $6)
+                    INSERT INTO documents (filename, content, page_number, chunk_index, metadata)
+                    VALUES ($1, $2, $3, $4, $5)
                 """, 
                 doc['filename'],
                 doc['content'],
                 doc.get('page_number', 0),
                 doc.get('chunk_index', 0),
-                embedding.tolist(),  # Convert numpy array to list
                 json.dumps(doc.get('metadata', {}))
                 )
     
     async def similarity_search(self, query: str, k: int = 5) -> List[Dict[str, Any]]:
-        """Search for similar documents"""
+        """Search for similar documents using text search"""
         await self.init_pool()
-        
-        # Generate query embedding
-        query_embedding = self.embedding_model.encode([query])[0]
         
         async with self.pool.acquire() as conn:
             rows = await conn.fetch("""
                 SELECT filename, content, page_number, metadata,
-                       embedding <=> $1::vector as distance
+                       ts_rank(to_tsvector('english', content), plainto_tsquery('english', $1)) as rank
                 FROM documents
-                ORDER BY embedding <=> $1::vector
+                WHERE to_tsvector('english', content) @@ plainto_tsquery('english', $1)
+                ORDER BY rank DESC
                 LIMIT $2
-            """, query_embedding.tolist(), k)
+            """, query, k)
             
             results = []
             for row in rows:
@@ -126,7 +119,7 @@ class VectorStore:
                     'content': row['content'],
                     'page_number': row['page_number'],
                     'metadata': json.loads(row['metadata']) if row['metadata'] else {},
-                    'distance': float(row['distance'])
+                    'distance': 1.0 - float(row['rank'])  # Convert rank to distance-like score
                 })
             
             return results
