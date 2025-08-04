@@ -1,0 +1,6 @@
+frontend/
+docs/
+*.md
+.git/
+docker-compose.yml
+requirements.txt
