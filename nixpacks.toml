@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["python38", "gcc", "tesseract", "poppler-utils"]
+nixPkgs = ["python310", "gcc", "tesseract", "poppler_utils", "postgresql", "pkg-config"]
 
 [phases.install]
 cmds = ["cd backend && pip install -r requirements.txt"]
