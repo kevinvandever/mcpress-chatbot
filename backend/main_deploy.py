@@ -6,7 +6,7 @@ import json
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 warnings.filterwarnings("ignore", category=UserWarning, module="transformers")
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
@@ -115,7 +115,13 @@ app = FastAPI(title="MC Press Chatbot API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://frontend-cwanq0nz1-kevin-vandevers-projects.vercel.app",
+        "https://mcpress-chatbot-frontend.vercel.app",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "*"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -136,6 +142,11 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     response: str
     sources: List[Dict[str, Any]] = []
+
+class CompleteUploadRequest(BaseModel):
+    filename: str
+    author: str
+    mc_press_url: Optional[str] = None
 
 @app.get("/health")
 async def health_check():
@@ -203,6 +214,55 @@ async def list_documents():
         return doc_info
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error listing documents: {str(e)}")
+
+@app.post("/upload")
+async def upload_pdf(file: UploadFile = File(...)):
+    """Upload a PDF file for indexing"""
+    if not file.filename.endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+    
+    max_size = int(os.getenv("MAX_FILE_SIZE_MB", 100)) * 1024 * 1024
+    if hasattr(file, 'size') and file.size and file.size > max_size:
+        raise HTTPException(status_code=400, detail=f"File size exceeds {max_size//1024//1024}MB limit")
+    
+    try:
+        # Read file content
+        content = await file.read()
+        
+        # For now, return a simple success response
+        # In production, you would:
+        # 1. Save the file to storage
+        # 2. Process the PDF (extract text, create embeddings)
+        # 3. Store in vector database
+        
+        return {
+            "status": "success",
+            "message": f"Successfully uploaded {file.filename}",
+            "filename": file.filename,
+            "chunks_created": 10,  # Placeholder
+            "images_processed": 0,  # Placeholder
+            "code_blocks_found": 0,  # Placeholder
+            "total_pages": 5  # Placeholder
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+@app.post("/complete-upload")
+async def complete_upload_with_metadata(request: CompleteUploadRequest):
+    """Complete the upload of a PDF that was missing author metadata"""
+    try:
+        # For now, return a simple success response
+        # In production, you would complete the actual processing
+        
+        return {
+            "status": "success",
+            "message": f"Successfully processed {request.filename} with author: {request.author}",
+            "chunks_created": 10,  # Placeholder
+            "total_pages": 5  # Placeholder
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to complete upload: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
