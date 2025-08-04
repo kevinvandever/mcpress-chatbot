@@ -2,7 +2,7 @@
 # Install heavy dependencies at runtime if not present
 if ! python -c "import sentence_transformers" 2>/dev/null; then
     echo "Installing ML dependencies at runtime..."
-    pip install sentence-transformers numpy pandas pdfplumber pytesseract
+    pip install sentence-transformers numpy pandas pdfplumber pytesseract langchain-text-splitters
     echo "ML dependencies installed!"
 fi
 
