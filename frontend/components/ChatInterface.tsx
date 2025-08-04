@@ -382,7 +382,8 @@ export default function ChatInterface({ hasDocuments = false }: ChatInterfacePro
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={{
-                        code({ node, inline, className, children, ...props }) {
+                        code({ node, className, children, ...props }: any) {
+                          const inline = !className
                           const match = /language-(\w+)/.exec(className || '')
                           const language = match ? match[1] : 'text'
                           
@@ -463,7 +464,7 @@ export default function ChatInterface({ hasDocuments = false }: ChatInterfacePro
                       </svg>
                       <span className="text-sm font-semibold text-indigo-700">
                         {(() => {
-                          const uniqueBooks = [...new Set(message.sources.map(s => s.filename))]
+                          const uniqueBooks = Array.from(new Set(message.sources.map(s => s.filename)))
                           return uniqueBooks.length === 1 
                             ? `Found in: ${getBookDisplayName(uniqueBooks[0])}`
                             : `Found in ${uniqueBooks.length} books (${message.sources.length} sources)`
