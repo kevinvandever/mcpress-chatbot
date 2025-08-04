@@ -10,7 +10,7 @@ from typing import List, Dict, Any
 import asyncio
 from dotenv import load_dotenv
 
-from vector_store import VectorStore
+from vector_store_simple import VectorStore
 
 load_dotenv()
 
