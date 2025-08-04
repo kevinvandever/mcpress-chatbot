@@ -17,10 +17,10 @@ from dotenv import load_dotenv
 from concurrent.futures import ThreadPoolExecutor
 import time
 
-from pdf_processor_full import PDFProcessorFull
-from vector_store import VectorStore
-from chat_handler import ChatHandler
-from category_mapper import get_category_mapper
+from backend.pdf_processor_full import PDFProcessorFull
+from backend.vector_store import VectorStore
+from backend.chat_handler import ChatHandler
+from backend.category_mapper import get_category_mapper
 
 load_dotenv()
 
