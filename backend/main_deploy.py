@@ -78,7 +78,7 @@ class VectorStore:
             
             return results
     
-    async def list_documents(self) -> Dict[str, Any]:
+    async def list_documents(self) -> List[Dict[str, Any]]:
         """List all documents in the database"""
         await self.init_pool()
         async with self.pool.acquire() as conn:
@@ -90,19 +90,17 @@ class VectorStore:
                 ORDER BY MIN(created_at) DESC
             """)
             
-            documents = {}
+            documents = []
             for row in rows:
-                documents[row['filename']] = {
+                documents.append({
+                    'filename': row['filename'],
                     'chunk_count': row['chunk_count'],
                     'uploaded_at': row['uploaded_at'].isoformat() if row['uploaded_at'] else None,
                     'metadata': {}
-                }
+                })
             
-            return {
-                'documents': documents,
-                'total_documents': len(documents),
-                'total_chunks': sum(doc['chunk_count'] for doc in documents.values())
-            }
+            # Return array directly - frontend expects this format
+            return documents
     
     async def close(self):
         """Close connection pool"""
