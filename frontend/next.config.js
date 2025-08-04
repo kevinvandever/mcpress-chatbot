@@ -10,4 +10,5 @@ const nextConfig = {
   experimental: {
     esmExternals: false,
   },
+  swcMinify: false,
 }
