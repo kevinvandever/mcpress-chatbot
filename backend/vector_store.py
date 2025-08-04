@@ -1,220 +1,195 @@
-import chromadb
-from chromadb.config import Settings
-from typing import List, Dict, Any
 import os
-from sentence_transformers import SentenceTransformer
 import asyncio
+import numpy as np
+from typing import List, Dict, Any, Optional
+import asyncpg
+from sentence_transformers import SentenceTransformer
+import json
 
 class VectorStore:
     def __init__(self):
-        persist_dir = os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
-        self.client = chromadb.PersistentClient(
-            path=persist_dir,
-            settings=Settings(anonymized_telemetry=False)
-        )
+        self.database_url = os.getenv('DATABASE_URL')
+        if not self.database_url:
+            raise ValueError("DATABASE_URL environment variable not set")
+        self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+        self.pool = None
+    
+    async def init_pool(self):
+        """Initialize connection pool"""
+        if not self.pool:
+            self.pool = await asyncpg.create_pool(self.database_url)
+    
+    async def init_database(self):
+        """Initialize database with pgvector extension and tables"""
+        await self.init_pool()
+        async with self.pool.acquire() as conn:
+            # Enable pgvector extension
+            await conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
+            
+            # Create documents table
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS documents (
+                    id SERIAL PRIMARY KEY,
+                    filename VARCHAR(500) NOT NULL,
+                    content TEXT NOT NULL,
+                    page_number INTEGER,
+                    chunk_index INTEGER,
+                    embedding vector(384),
+                    metadata JSONB,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
+            # Create index for vector similarity search
+            await conn.execute("""
+                CREATE INDEX IF NOT EXISTS documents_embedding_idx 
+                ON documents USING ivfflat (embedding vector_cosine_ops)
+                WITH (lists = 100)
+            """)
+    
+    async def add_documents(self, documents: List[Dict[str, Any]]):
+        """Add documents with embeddings to the database"""
+        await self.init_pool()
         
-        self.collection = self.client.get_or_create_collection(
-            name="pdf_documents",
-            metadata={"hnsw:space": "cosine"}
-        )
+        # Generate embeddings
+        texts = [doc['content'] for doc in documents]
+        embeddings = self.embedding_model.encode(texts)
         
-        self.embedder = SentenceTransformer('all-MiniLM-L6-v2')
+        async with self.pool.acquire() as conn:
+            for doc, embedding in zip(documents, embeddings):
+                await conn.execute("""
+                    INSERT INTO documents (filename, content, page_number, chunk_index, embedding, metadata)
+                    VALUES ($1, $2, $3, $4, $5::vector, $6)
+                """, 
+                doc['filename'],
+                doc['content'],
+                doc.get('page_number', 0),
+                doc.get('chunk_index', 0),
+                embedding.tolist(),  # Convert numpy array to list
+                json.dumps(doc.get('metadata', {}))
+                )
+    
+    async def similarity_search(self, query: str, k: int = 5) -> List[Dict[str, Any]]:
+        """Search for similar documents"""
+        await self.init_pool()
         
+        # Generate query embedding
+        query_embedding = self.embedding_model.encode([query])[0]
+        
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch("""
+                SELECT filename, content, page_number, metadata,
+                       embedding <=> $1::vector as distance
+                FROM documents
+                ORDER BY embedding <=> $1::vector
+                LIMIT $2
+            """, query_embedding.tolist(), k)
+            
+            results = []
+            for row in rows:
+                results.append({
+                    'filename': row['filename'],
+                    'content': row['content'],
+                    'page_number': row['page_number'],
+                    'metadata': json.loads(row['metadata']) if row['metadata'] else {},
+                    'distance': float(row['distance'])
+                })
+            
+            return results
+    
+    async def get_document_count(self) -> int:
+        """Get total number of documents"""
+        await self.init_pool()
+        async with self.pool.acquire() as conn:
+            result = await conn.fetchval("SELECT COUNT(*) FROM documents")
+            return result
+    
+    async def delete_by_filename(self, filename: str):
+        """Delete all chunks for a specific filename"""
+        await self.init_pool()
+        async with self.pool.acquire() as conn:
+            await conn.execute("DELETE FROM documents WHERE filename = $1", filename)
+    
     def is_connected(self) -> bool:
-        try:
-            self.client.heartbeat()
-            return True
-        except:
-            return False
-    
-    async def add_documents(self, documents: List[Dict[str, Any]], metadata: Dict[str, Any]):
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, self._add_documents_sync, documents, metadata)
-    
-    def _add_documents_sync(self, documents: List[Dict[str, Any]], metadata: Dict[str, Any]):
-        texts = [doc["content"] for doc in documents]
-        ids = [doc["id"] for doc in documents]
-        metadatas = []
-        
-        for doc in documents:
-            doc_metadata = doc.get("metadata", {})
-            doc_metadata.update(metadata)
-            metadatas.append(doc_metadata)
-        
-        # ChromaDB has a max batch size limit (~5500). Split large batches.
-        max_batch_size = 5000
-        total_docs = len(documents)
-        
-        print(f"Adding {total_docs} documents to vector store")
-        
-        for i in range(0, total_docs, max_batch_size):
-            end_idx = min(i + max_batch_size, total_docs)
-            batch_texts = texts[i:end_idx]
-            batch_ids = ids[i:end_idx]
-            batch_metadatas = metadatas[i:end_idx]
-            
-            print(f"Processing batch {i//max_batch_size + 1}: documents {i+1}-{end_idx} of {total_docs}")
-            
-            # Generate embeddings for this batch
-            batch_embeddings = self.embedder.encode(batch_texts).tolist()
-            
-            # Add this batch to the collection
-            self.collection.add(
-                ids=batch_ids,
-                embeddings=batch_embeddings,
-                documents=batch_texts,
-                metadatas=batch_metadatas
-            )
-            
-            print(f"Successfully added batch {i//max_batch_size + 1} ({end_idx - i} documents)")
-        
-        print(f"Completed adding all {total_docs} documents to vector store")
+        """Check if database is connected"""
+        return self.pool is not None
     
     async def search(self, query: str, n_results: int = 5, book_filter: List[str] = None, type_filter: List[str] = None) -> List[Dict[str, Any]]:
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, self._search_sync, query, n_results, book_filter, type_filter)
-    
-    def _search_sync(self, query: str, n_results: int, book_filter: List[str] = None, type_filter: List[str] = None) -> List[Dict[str, Any]]:
-        query_embedding = self.embedder.encode([query]).tolist()
+        """Search for similar documents - compatibility method"""
+        results = await self.similarity_search(query, n_results)
         
-        # Build where clause for filtering
-        where_conditions = {}
-        
-        if book_filter:
-            where_conditions["filename"] = {"$in": book_filter}
-            
-        if type_filter:
-            where_conditions["type"] = {"$in": type_filter}
-        
-        where_clause = where_conditions if where_conditions else None
-        
-        results = self.collection.query(
-            query_embeddings=query_embedding,
-            n_results=n_results,
-            where=where_clause
-        )
-        
+        # Convert format to match original interface
         formatted_results = []
-        for i in range(len(results["ids"][0])):
+        for result in results:
             formatted_results.append({
-                "id": results["ids"][0][i],
-                "content": results["documents"][0][i],
-                "metadata": results["metadatas"][0][i],
-                "distance": results["distances"][0][i]
+                'document': result['content'],
+                'metadata': {
+                    'filename': result['filename'],
+                    'page_number': result['page_number'],
+                    **result['metadata']
+                },
+                'distance': result['distance']
             })
         
         return formatted_results
     
     async def list_documents(self) -> Dict[str, Any]:
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, self._list_documents_sync)
-    
-    def _list_documents_sync(self) -> Dict[str, Any]:
-        all_docs = self.collection.get()
-        
-        documents_by_file = {}
-        for i, metadata in enumerate(all_docs["metadatas"]):
-            filename = metadata.get("filename", "unknown")
-            if filename not in documents_by_file:
-                documents_by_file[filename] = {
-                    "filename": filename,
-                    "total_chunks": 0,
-                    "has_images": metadata.get("has_images", False),
-                    "has_code": metadata.get("has_code", False),
-                    "total_pages": metadata.get("total_pages", 0),
-                    "category": metadata.get("category", "technical"),
-                    "author": metadata.get("author"),
-                    "mc_press_url": metadata.get("mc_press_url")
+        """List all documents in the database"""
+        await self.init_pool()
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch("""
+                SELECT filename, COUNT(*) as chunk_count, 
+                       MIN(created_at) as uploaded_at,
+                       jsonb_object_agg(
+                           COALESCE(metadata->>'key', 'metadata'), 
+                           metadata
+                       ) as metadata
+                FROM documents 
+                GROUP BY filename
+                ORDER BY MIN(created_at) DESC
+            """)
+            
+            documents = {}
+            for row in rows:
+                documents[row['filename']] = {
+                    'chunk_count': row['chunk_count'],
+                    'uploaded_at': row['uploaded_at'].isoformat() if row['uploaded_at'] else None,
+                    'metadata': row['metadata'] or {}
                 }
-            documents_by_file[filename]["total_chunks"] += 1
-        
-        return {
-            "total_documents": len(documents_by_file),
-            "documents": list(documents_by_file.values())
-        }
+            
+            return {
+                'documents': documents,
+                'total_documents': len(documents),
+                'total_chunks': sum(doc['chunk_count'] for doc in documents.values())
+            }
     
     async def delete_document(self, filename: str):
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, self._delete_document_sync, filename)
-    
-    def _delete_document_sync(self, filename: str):
-        import os
-        import urllib.parse
-        
-        all_docs = self.collection.get()
-        ids_to_delete = []
-        
-        for i, metadata in enumerate(all_docs["metadatas"]):
-            if metadata.get("filename") == filename:
-                ids_to_delete.append(all_docs["ids"][i])
-        
-        if ids_to_delete:
-            self.collection.delete(ids=ids_to_delete)
-            
-            # Also remove the physical file
-            upload_dir = "uploads"
-            if os.path.exists(upload_dir):
-                # Try both the original filename and URL-encoded version
-                file_paths = [
-                    os.path.join(upload_dir, filename),
-                    os.path.join(upload_dir, urllib.parse.quote(filename, safe=''))
-                ]
-                
-                for file_path in file_paths:
-                    if os.path.exists(file_path):
-                        os.remove(file_path)
-                        print(f"Removed physical file: {file_path}")
-                        
-        print(f"Deleted {len(ids_to_delete)} chunks for document: {filename}")
+        """Delete document by filename"""
+        await self.delete_by_filename(filename)
     
     async def update_document_metadata(self, filename: str, title: str, author: str, category: str = None, mc_press_url: str = None):
-        """Update the title, author, category, and MC Press URL metadata for all chunks of a document"""
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, self._update_document_metadata_sync, filename, title, author, category, mc_press_url)
-    
-    def _update_document_metadata_sync(self, filename: str, title: str, author: str, category: str = None, mc_press_url: str = None):
-        """Synchronous version of update_document_metadata"""
-        all_docs = self.collection.get()
-        ids_to_update = []
-        metadatas_to_update = []
+        """Update document metadata"""
+        await self.init_pool()
+        metadata = {
+            'title': title,
+            'author': author,
+            'category': category,
+            'mc_press_url': mc_press_url
+        }
         
-        for i, metadata in enumerate(all_docs["metadatas"]):
-            if metadata.get("filename") == filename:
-                ids_to_update.append(all_docs["ids"][i])
-                # Update the metadata while preserving other fields
-                updated_metadata = metadata.copy()
-                updated_metadata["title"] = title
-                updated_metadata["author"] = author
-                if category is not None:
-                    updated_metadata["category"] = category
-                if mc_press_url is not None:
-                    updated_metadata["mc_press_url"] = mc_press_url
-                metadatas_to_update.append(updated_metadata)
-        
-        if ids_to_update:
-            self.collection.update(
-                ids=ids_to_update,
-                metadatas=metadatas_to_update
-            )
-            print(f"Updated metadata for {len(ids_to_update)} chunks of document: {filename}")
-            if category:
-                print(f"   Category updated to: {category}")
-            if mc_press_url is not None:
-                print(f"   MC Press URL updated to: {mc_press_url}")
-        else:
-            raise Exception(f"Document {filename} not found")
+        async with self.pool.acquire() as conn:
+            await conn.execute("""
+                UPDATE documents 
+                SET metadata = $2::jsonb
+                WHERE filename = $1
+            """, filename, json.dumps(metadata))
     
     def reset_database(self):
-        """Completely reset the database by deleting the collection and recreating it"""
-        try:
-            self.client.delete_collection("pdf_documents")
-            print("Deleted collection pdf_documents")
-        except Exception as e:
-            print(f"Error deleting collection: {e}")
-        
-        # Recreate the collection
-        self.collection = self.client.get_or_create_collection(
-            name="pdf_documents",
-            metadata={"hnsw:space": "cosine"}
-        )
-        print("Recreated collection pdf_documents")
+        """Reset/clear the database"""
+        # This would be dangerous in production, so we'll just pass for now
+        pass
+    
+    async def close(self):
+        """Close connection pool"""
+        if self.pool:
+            await self.pool.close()

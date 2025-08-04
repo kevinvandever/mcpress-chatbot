@@ -48,6 +48,11 @@ app.add_middleware(
 
 pdf_processor = PDFProcessorFull()
 vector_store = VectorStore()
+
+# Initialize the database on startup
+@app.on_event("startup")
+async def startup_event():
+    await vector_store.init_database()
 chat_handler = ChatHandler(vector_store)
 category_mapper = get_category_mapper()
 
