@@ -164,7 +164,7 @@ async def root():
         "version": "1.0.0",
         "status": "Production Ready",
         "database": "PostgreSQL with pgvector",
-        "endpoints": ["/health", "/chat", "/documents"]
+        "endpoints": ["/health", "/chat", "/documents", "/upload", "/complete-upload"]
     }
 
 @app.post("/chat", response_model=ChatResponse)
