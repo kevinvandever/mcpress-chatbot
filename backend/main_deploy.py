@@ -242,7 +242,8 @@ async def upload_pdf(file: UploadFile = File(...)):
             "chunks_created": 10,  # Placeholder
             "images_processed": 0,  # Placeholder
             "code_blocks_found": 0,  # Placeholder
-            "total_pages": 5  # Placeholder
+            "total_pages": 5,  # Placeholder
+            "needsAuthor": True  # Always require author for demo
         }
         
     except Exception as e:
