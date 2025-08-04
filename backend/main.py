@@ -33,13 +33,9 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000", "http://127.0.0.1:3000",
-        "http://localhost:3001", "http://127.0.0.1:3001", 
-        "http://localhost:3002", "http://127.0.0.1:3002",
-        "http://localhost:3003", "http://127.0.0.1:3003",
-        "http://localhost:3004", "http://127.0.0.1:3004",
-        "http://localhost:3005", "http://127.0.0.1:3005",
-        "https://heater-syndrome-intensive-hostel.trycloudflare.com",  # Frontend tunnel URL
-        "*"  # Allow all origins for demo (less secure but works for tunnels)
+        "https://frontend-qwnql4s2j0s-kevin-vandevers-projects.vercel.app",
+        "https://frontend-cwanq0nz1-kevin-vandevers-projects.vercel.app",
+        os.getenv("CORS_ORIGIN", "*")  # Allow environment override
     ],
     allow_credentials=True,
     allow_methods=["*"],

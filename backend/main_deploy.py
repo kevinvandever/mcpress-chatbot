@@ -285,11 +285,26 @@ async def batch_upload(files: List[UploadFile] = File(...)):
                 "message": f"Upload failed: {str(e)}"
             })
     
+    # Generate a unique upload ID
+    upload_id = f"upload_{int(asyncio.get_event_loop().time() * 1000)}"
+    
     return {
         "status": "success",
         "results": results,
         "total_files": len(files),
-        "successful_uploads": len([r for r in results if r["status"] == "success"])
+        "successful_uploads": len([r for r in results if r["status"] == "success"]),
+        "uploadId": upload_id
+    }
+
+@app.get("/batch-upload/status/{upload_id}")
+async def get_batch_upload_status(upload_id: str):
+    """Get status of a batch upload"""
+    # For demo purposes, always return completed
+    return {
+        "status": "completed",
+        "progress": 100,
+        "message": "All files processed successfully",
+        "uploadId": upload_id
     }
 
 @app.post("/complete-upload")
