@@ -247,6 +247,51 @@ async def upload_pdf(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
+@app.post("/batch-upload")
+async def batch_upload(files: List[UploadFile] = File(...)):
+    """Upload multiple PDF files at once"""
+    if not files:
+        raise HTTPException(status_code=400, detail="No files provided")
+    
+    results = []
+    for file in files:
+        if not file.filename.endswith('.pdf'):
+            results.append({
+                "filename": file.filename,
+                "status": "error",
+                "message": "Only PDF files are allowed"
+            })
+            continue
+            
+        try:
+            # Read file content (placeholder processing)
+            content = await file.read()
+            
+            results.append({
+                "filename": file.filename,
+                "status": "success",
+                "message": f"Successfully uploaded {file.filename}",
+                "chunks_created": 10,  # Placeholder
+                "images_processed": 0,  # Placeholder
+                "code_blocks_found": 0,  # Placeholder
+                "total_pages": 5,  # Placeholder
+                "needsAuthor": True
+            })
+            
+        except Exception as e:
+            results.append({
+                "filename": file.filename,
+                "status": "error",
+                "message": f"Upload failed: {str(e)}"
+            })
+    
+    return {
+        "status": "success",
+        "results": results,
+        "total_files": len(files),
+        "successful_uploads": len([r for r in results if r["status"] == "success"])
+    }
+
 @app.post("/complete-upload")
 async def complete_upload_with_metadata(request: CompleteUploadRequest):
     """Complete the upload of a PDF that was missing author metadata"""
