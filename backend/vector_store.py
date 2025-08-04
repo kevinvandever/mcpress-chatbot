@@ -183,11 +183,26 @@ class VectorStore:
             
             documents = []
             for row in rows:
+                # Parse metadata if it's a JSON string
+                metadata = row['metadata'] or '{}'
+                if isinstance(metadata, str):
+                    try:
+                        metadata = json.loads(metadata)
+                    except:
+                        metadata = {}
+                
                 documents.append({
                     'filename': row['filename'],
-                    'chunk_count': row['chunk_count'],
+                    'total_chunks': row['chunk_count'],  # Frontend expects total_chunks
+                    'chunk_count': row['chunk_count'],   # Keep for compatibility
                     'uploaded_at': row['uploaded_at'].isoformat() if row['uploaded_at'] else None,
-                    'metadata': row['metadata'] or {}
+                    'metadata': metadata,
+                    # Add fields expected by frontend
+                    'has_images': True,  # Assume true for now
+                    'has_code': True,    # Assume true for now  
+                    'total_pages': 100,  # Placeholder
+                    'category': 'Programming',  # Default category
+                    'author': metadata.get('metadata', {}).get('author', 'Unknown')
                 })
             
             # Return array directly - frontend expects this format
