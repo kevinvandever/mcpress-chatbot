@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build --no-lint",
+    "build": "SKIP_TYPE_CHECK=true next build",
     "build:vercel": "SKIP_TYPE_CHECK=true next build",
     "start": "next start",
     "lint": "next lint"
