@@ -1,10 +1,33 @@
 import os
 import asyncio
-import numpy as np
 from typing import List, Dict, Any, Optional
 import asyncpg
-from sentence_transformers import SentenceTransformer
 import json
+import subprocess
+import sys
+
+# Lazy imports for heavy dependencies
+numpy = None
+SentenceTransformer = None
+
+def ensure_dependencies():
+    """Install heavy dependencies at runtime if needed"""
+    global numpy, SentenceTransformer
+    
+    if numpy is None:
+        try:
+            import numpy as np
+            numpy = np
+        except ImportError:
+            print("Installing required ML packages... This is a one-time setup.")
+            subprocess.check_call([sys.executable, "-m", "pip", "install", 
+                                 "sentence-transformers", "numpy", "pandas", "pdfplumber"])
+            import numpy as np
+            numpy = np
+    
+    if SentenceTransformer is None:
+        from sentence_transformers import SentenceTransformer as ST
+        SentenceTransformer = ST
 
 class VectorStore:
     def __init__(self):
@@ -18,6 +41,7 @@ class VectorStore:
     def embedding_model(self):
         """Lazy load the embedding model on first use"""
         if self._embedding_model is None:
+            ensure_dependencies()  # Install packages if needed
             print("Loading embedding model for the first time... This may take a minute.")
             self._embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
             print("Embedding model loaded successfully!")
