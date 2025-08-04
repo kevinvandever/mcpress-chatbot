@@ -86,12 +86,17 @@ class VectorStore:
         await self.init_pool()
         
         async with self.pool.acquire() as conn:
+            # Get filename from metadata parameter, fallback to first document if available
+            filename = (metadata or {}).get('filename', 'unknown.pdf')
+            if not filename and documents:
+                filename = documents[0].get('filename', 'unknown.pdf')
+            
             for doc in documents:
                 await conn.execute("""
                     INSERT INTO documents (filename, content, page_number, chunk_index, metadata)
                     VALUES ($1, $2, $3, $4, $5)
                 """, 
-                doc['filename'],
+                filename,  # Use filename from metadata parameter
                 doc['content'],
                 doc.get('page_number', 0),
                 doc.get('chunk_index', 0),
