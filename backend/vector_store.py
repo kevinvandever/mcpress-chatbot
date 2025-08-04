@@ -56,10 +56,13 @@ class VectorStore:
         """Initialize database with pgvector extension and tables"""
         await self.init_pool()
         async with self.pool.acquire() as conn:
-            # Enable pgvector extension
-            await conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
+            # Enable pgvector extension (skip if not available)
+            try:
+                await conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
+            except Exception as e:
+                print(f"pgvector not available, using text search instead: {e}")
             
-            # Create documents table
+            # Create documents table (without vector column if pgvector not available)
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS documents (
                     id SERIAL PRIMARY KEY,
@@ -67,17 +70,15 @@ class VectorStore:
                     content TEXT NOT NULL,
                     page_number INTEGER,
                     chunk_index INTEGER,
-                    embedding vector(384),
                     metadata JSONB,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
             
-            # Create index for vector similarity search
+            # Create text search index instead of vector index
             await conn.execute("""
-                CREATE INDEX IF NOT EXISTS documents_embedding_idx 
-                ON documents USING ivfflat (embedding vector_cosine_ops)
-                WITH (lists = 100)
+                CREATE INDEX IF NOT EXISTS documents_content_idx 
+                ON documents USING gin(to_tsvector('english', content))
             """)
     
     async def add_documents(self, documents: List[Dict[str, Any]]):
