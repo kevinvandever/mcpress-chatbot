@@ -1,8 +1,6 @@
 // API configuration
-// For production: Using Railway backend URL
-// For local development: Change this back to http://localhost:8000
+// Uses environment variable in production, falls back to Railway URL
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mcpress-chatbot-production.up.railway.app';
 
-export const API_URL = 'https://mcpress-chatbot-production.up.railway.app';
-
-// Uncomment for local development:
+// For local development, you can override with:
 // export const API_URL = 'http://localhost:8000';
