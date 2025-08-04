@@ -24,7 +24,7 @@ interface Document {
 interface DocumentCardProps {
   document: Document
   onDelete: (filename: string) => void
-  onEdit: (filename: string, title: string, author: string) => void
+  onEdit: (filename: string, title: string, author: string, mc_press_url?: string) => void
   onSelect?: (filename: string) => void
   isSelected?: boolean
   isCompact?: boolean
@@ -327,7 +327,7 @@ function DocumentCard({ document, onDelete, onEdit, onSelect, isSelected = false
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
-                    onEdit(document.filename, document.filename.replace('.pdf', ''), document.author || '')
+                    onEdit(document.filename, document.filename.replace('.pdf', ''), document.author || '', document.mc_press_url)
                   }}
                   className="text-blue-600 hover:text-blue-800 text-xs underline"
                 >
@@ -502,7 +502,7 @@ export default function DocumentList({ onDocumentChange }: DocumentListProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
   const [selectedDocument, setSelectedDocument] = useState<string | null>(null)
   const [showEditDialog, setShowEditDialog] = useState(false)
-  const [editingDocument, setEditingDocument] = useState<{filename: string, title: string, author: string} | null>(null)
+  const [editingDocument, setEditingDocument] = useState<{filename: string, title: string, author: string, mc_press_url?: string} | null>(null)
 
   useEffect(() => {
     fetchDocuments()
@@ -539,8 +539,8 @@ export default function DocumentList({ onDocumentChange }: DocumentListProps) {
     console.log('Selected document:', filename)
   }
 
-  const handleEdit = (filename: string, title: string, author: string) => {
-    setEditingDocument({ filename, title, author })
+  const handleEdit = (filename: string, title: string, author: string, mc_press_url?: string) => {
+    setEditingDocument({ filename, title, author, mc_press_url })
     setShowEditDialog(true)
   }
 

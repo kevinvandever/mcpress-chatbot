@@ -485,7 +485,7 @@ export default function ChatInterface({ hasDocuments = false }: ChatInterfacePro
                         return groups
                       }, {} as Record<string, Source[]>)
 
-                      return Object.entries(bookGroups).map(([filename, bookSources]) => (
+                      return Object.entries(bookGroups).map(([filename, bookSources]: [string, Source[]]) => (
                         <div key={filename} className="border border-gray-200 rounded-xl overflow-hidden">
                           {/* Clickable Book Header */}
                           <button
