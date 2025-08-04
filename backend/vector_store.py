@@ -81,7 +81,7 @@ class VectorStore:
                 ON documents USING gin(to_tsvector('english', content))
             """)
     
-    async def add_documents(self, documents: List[Dict[str, Any]]):
+    async def add_documents(self, documents: List[Dict[str, Any]], metadata: Dict[str, Any] = None):
         """Add documents to the database"""
         await self.init_pool()
         
