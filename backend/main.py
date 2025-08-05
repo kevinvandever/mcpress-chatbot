@@ -21,6 +21,7 @@ from backend.pdf_processor_full import PDFProcessorFull
 from backend.vector_store import VectorStore
 from backend.chat_handler import ChatHandler
 from backend.category_mapper import get_category_mapper
+from backend.async_upload import process_pdf_async, create_upload_job, get_job_status, cleanup_old_jobs
 
 load_dotenv()
 
@@ -496,6 +497,49 @@ async def reset_database():
         return {"status": "success", "message": "Database reset successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/upload-async")
+async def upload_pdf_async(file: UploadFile = File(...)):
+    """Upload PDF asynchronously to avoid timeouts"""
+    if not file.filename.endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+    
+    try:
+        # Save file to disk
+        upload_dir = os.getenv("UPLOAD_DIR", "./uploads")
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        file_path = os.path.join(upload_dir, file.filename)
+        with open(file_path, "wb") as buffer:
+            content = await file.read()
+            buffer.write(content)
+        
+        # Create job and start processing in background
+        job_id = create_upload_job(file.filename)
+        
+        # Start async processing
+        asyncio.create_task(process_pdf_async(
+            job_id, 
+            file_path, 
+            pdf_processor, 
+            vector_store, 
+            category_mapper
+        ))
+        
+        return {
+            "status": "accepted",
+            "job_id": job_id,
+            "message": "Upload started. Check status with /upload-status/{job_id}"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/upload-status/{job_id}")
+async def get_upload_status(job_id: str):
+    """Check status of async upload"""
+    cleanup_old_jobs()  # Clean up old jobs periodically
+    return get_job_status(job_id)
 
 @app.get("/health")
 def health_check():
