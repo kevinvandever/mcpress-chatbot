@@ -466,7 +466,8 @@ async def search_documents(q: str, n_results: int = 5, filename: str = None, con
 
 @app.get("/documents")
 async def list_documents():
-    return await vector_store.list_documents()
+    documents = await vector_store.list_documents()
+    return {"documents": documents}
 
 @app.delete("/documents/{filename}")
 async def delete_document(filename: str):

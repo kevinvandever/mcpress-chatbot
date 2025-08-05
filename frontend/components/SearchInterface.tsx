@@ -59,12 +59,15 @@ export default function SearchInterface({ onResultSelect }: SearchInterfaceProps
 
         const data = await response.json()
         
-        // Map backend 'document' field to frontend 'content' field
-        const mappedResults = (data.results || []).map((result: any) => ({
-          ...result,
-          content: result.document || result.content || '', // Prioritize 'document' field
-          id: result.id || `${result.metadata?.filename}-${result.metadata?.page_number || 0}`
-        }))
+        // Map backend 'document' field to frontend 'content' field with safety checks
+        const mappedResults = (data.results || []).map((result: any) => {
+          const content = result.document || result.content || ''
+          return {
+            ...result,
+            content: typeof content === 'string' ? content : '',
+            id: result.id || `${result.metadata?.filename || 'unknown'}-${result.metadata?.page_number || 0}`
+          }
+        })
         
         // Filter out page separator chunks and other low-quality content
         const filteredResults = mappedResults.filter((result: SearchResult) => {
@@ -419,12 +422,16 @@ export default function SearchInterface({ onResultSelect }: SearchInterfaceProps
                               <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-green-400">
                                 <div className="prose prose-sm max-w-none">
                                   <p className="whitespace-pre-wrap leading-relaxed text-gray-800 text-sm font-mono">
-                                    {(selectedResult.content || '').split('\n').map((line, idx) => (
-                                      <span key={idx}>
-                                        {line}
-                                        {idx < (selectedResult.content || '').split('\n').length - 1 && <br />}
-                                      </span>
-                                    ))}
+                                    {(() => {
+                                      const content = selectedResult.content || ''
+                                      const lines = content.split('\n')
+                                      return lines.map((line, idx) => (
+                                        <span key={idx}>
+                                          {line}
+                                          {idx < lines.length - 1 && <br />}
+                                        </span>
+                                      ))
+                                    })()}
                                   </p>
                                 </div>
                               </div>
@@ -434,12 +441,16 @@ export default function SearchInterface({ onResultSelect }: SearchInterfaceProps
                       ) : (
                         <div className="prose prose-sm max-w-none">
                           <p className="whitespace-pre-wrap leading-relaxed text-gray-800">
-                            {(selectedResult.content || '').split('\n').map((line, idx) => (
-                              <span key={idx}>
-                                {line}
-                                {idx < (selectedResult.content || '').split('\n').length - 1 && <br />}
-                              </span>
-                            ))}
+                            {(() => {
+                              const content = selectedResult.content || ''
+                              const lines = content.split('\n')
+                              return lines.map((line, idx) => (
+                                <span key={idx}>
+                                  {line}
+                                  {idx < lines.length - 1 && <br />}
+                                </span>
+                              ))
+                            })()}
                           </p>
                         </div>
                       )}
@@ -495,12 +506,16 @@ export default function SearchInterface({ onResultSelect }: SearchInterfaceProps
                                         </div>
                                         <div className="prose prose-sm max-w-none">
                                           <p className="whitespace-pre-wrap leading-relaxed text-gray-700 text-xs font-mono bg-white p-2 rounded border-l-2 border-green-400">
-                                            {(result.content || '').split('\n').map((line, idx) => (
-                                              <span key={idx}>
-                                                {line}
-                                                {idx < (result.content || '').split('\n').length - 1 && <br />}
-                                              </span>
-                                            ))}
+                                            {(() => {
+                                              const content = result.content || ''
+                                              const lines = content.split('\n')
+                                              return lines.map((line, idx) => (
+                                                <span key={idx}>
+                                                  {line}
+                                                  {idx < lines.length - 1 && <br />}
+                                                </span>
+                                              ))
+                                            })()}
                                           </p>
                                         </div>
                                       </div>
@@ -509,12 +524,16 @@ export default function SearchInterface({ onResultSelect }: SearchInterfaceProps
                                 ) : (
                                   <div className="prose prose-sm max-w-none">
                                     <p className="whitespace-pre-wrap leading-relaxed text-gray-600">
-                                      {(result.content || '').split('\n').map((line, idx) => (
-                                        <span key={idx}>
-                                          {line}
-                                          {idx < (result.content || '').split('\n').length - 1 && <br />}
-                                        </span>
-                                      ))}
+                                      {(() => {
+                                        const content = result.content || ''
+                                        const lines = content.split('\n')
+                                        return lines.map((line, idx) => (
+                                          <span key={idx}>
+                                            {line}
+                                            {idx < lines.length - 1 && <br />}
+                                          </span>
+                                        ))
+                                      })()}
                                     </p>
                                   </div>
                                 )}
