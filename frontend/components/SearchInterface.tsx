@@ -62,7 +62,7 @@ export default function SearchInterface({ onResultSelect }: SearchInterfaceProps
         // Map backend 'document' field to frontend 'content' field
         const mappedResults = (data.results || []).map((result: any) => ({
           ...result,
-          content: result.content || result.document || '',
+          content: result.document || result.content || '', // Prioritize 'document' field
           id: result.id || `${result.metadata?.filename}-${result.metadata?.page_number || 0}`
         }))
         
@@ -419,10 +419,10 @@ export default function SearchInterface({ onResultSelect }: SearchInterfaceProps
                               <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-green-400">
                                 <div className="prose prose-sm max-w-none">
                                   <p className="whitespace-pre-wrap leading-relaxed text-gray-800 text-sm font-mono">
-                                    {selectedResult.content.split('\n').map((line, idx) => (
+                                    {(selectedResult.content || '').split('\n').map((line, idx) => (
                                       <span key={idx}>
                                         {line}
-                                        {idx < selectedResult.content.split('\n').length - 1 && <br />}
+                                        {idx < (selectedResult.content || '').split('\n').length - 1 && <br />}
                                       </span>
                                     ))}
                                   </p>
@@ -434,10 +434,10 @@ export default function SearchInterface({ onResultSelect }: SearchInterfaceProps
                       ) : (
                         <div className="prose prose-sm max-w-none">
                           <p className="whitespace-pre-wrap leading-relaxed text-gray-800">
-                            {selectedResult.content.split('\n').map((line, idx) => (
+                            {(selectedResult.content || '').split('\n').map((line, idx) => (
                               <span key={idx}>
                                 {line}
-                                {idx < selectedResult.content.split('\n').length - 1 && <br />}
+                                {idx < (selectedResult.content || '').split('\n').length - 1 && <br />}
                               </span>
                             ))}
                           </p>
@@ -495,10 +495,10 @@ export default function SearchInterface({ onResultSelect }: SearchInterfaceProps
                                         </div>
                                         <div className="prose prose-sm max-w-none">
                                           <p className="whitespace-pre-wrap leading-relaxed text-gray-700 text-xs font-mono bg-white p-2 rounded border-l-2 border-green-400">
-                                            {result.content.split('\n').map((line, idx) => (
+                                            {(result.content || '').split('\n').map((line, idx) => (
                                               <span key={idx}>
                                                 {line}
-                                                {idx < result.content.split('\n').length - 1 && <br />}
+                                                {idx < (result.content || '').split('\n').length - 1 && <br />}
                                               </span>
                                             ))}
                                           </p>
@@ -509,10 +509,10 @@ export default function SearchInterface({ onResultSelect }: SearchInterfaceProps
                                 ) : (
                                   <div className="prose prose-sm max-w-none">
                                     <p className="whitespace-pre-wrap leading-relaxed text-gray-600">
-                                      {result.content.split('\n').map((line, idx) => (
+                                      {(result.content || '').split('\n').map((line, idx) => (
                                         <span key={idx}>
                                           {line}
-                                          {idx < result.content.split('\n').length - 1 && <br />}
+                                          {idx < (result.content || '').split('\n').length - 1 && <br />}
                                         </span>
                                       ))}
                                     </p>
