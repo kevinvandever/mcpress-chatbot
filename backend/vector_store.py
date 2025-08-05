@@ -191,6 +191,11 @@ class VectorStore:
                     except:
                         metadata = {}
                 
+                # Get proper category from category mapper
+                from backend.category_mapper import get_category_mapper
+                category_mapper = get_category_mapper()
+                category = category_mapper.get_category(row['filename'])
+                
                 documents.append({
                     'filename': row['filename'],
                     'total_chunks': row['chunk_count'],  # Frontend expects total_chunks
@@ -200,8 +205,8 @@ class VectorStore:
                     # Add fields expected by frontend
                     'has_images': True,  # Assume true for now
                     'has_code': True,    # Assume true for now  
-                    'total_pages': 100,  # Placeholder
-                    'category': 'Programming',  # Default category
+                    'total_pages': metadata.get('metadata', {}).get('page', 100),  # Get from metadata
+                    'category': category,  # Use real category from CSV
                     'author': metadata.get('metadata', {}).get('author', 'Unknown')
                 })
             
