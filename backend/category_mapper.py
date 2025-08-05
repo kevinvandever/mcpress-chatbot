@@ -69,9 +69,9 @@ class CategoryMapper:
         """Fallback categorization based on filename patterns"""
         filename_lower = filename.lower()
         
-        # RPG Programming
+        # Programming (includes RPG)
         if any(keyword in filename_lower for keyword in ['rpg', 'ile', 'cl', 'subfiles', 'free-format']):
-            return "RPG"
+            return "Programming"
         
         # Database
         elif any(keyword in filename_lower for keyword in ['db2', 'sql', 'database', 'data governance', 'big data', 'analytics', 'informix', 'lakehouse']):

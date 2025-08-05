@@ -154,7 +154,7 @@ class VectorStore:
         formatted_results = []
         for result in results:
             formatted_results.append({
-                'document': result['content'],
+                'content': result['content'],  # Changed from 'document' to 'content'
                 'metadata': {
                     'filename': result['filename'],
                     'page_number': result['page_number'],
