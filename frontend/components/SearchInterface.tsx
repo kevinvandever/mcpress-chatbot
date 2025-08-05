@@ -59,8 +59,15 @@ export default function SearchInterface({ onResultSelect }: SearchInterfaceProps
 
         const data = await response.json()
         
+        // Map backend 'document' field to frontend 'content' field
+        const mappedResults = (data.results || []).map((result: any) => ({
+          ...result,
+          content: result.content || result.document || '',
+          id: result.id || `${result.metadata?.filename}-${result.metadata?.page_number || 0}`
+        }))
+        
         // Filter out page separator chunks and other low-quality content
-        const filteredResults = (data.results || []).filter((result: SearchResult) => {
+        const filteredResults = mappedResults.filter((result: SearchResult) => {
           const content = result.content.trim()
           
           // Skip very short content
