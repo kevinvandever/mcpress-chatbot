@@ -511,8 +511,8 @@ export default function DocumentList({ onDocumentChange }: DocumentListProps) {
   const fetchDocuments = async () => {
     try {
       setError(null)
-      const response = await axios.get(`${API_URL}/documents`)
-      const documents = response.data.documents || []
+      const response = await axios.get(`${API_URL}/api/books`)
+      const documents = response.data.books || []
       setDocuments(documents)
       onDocumentChange?.(documents.length)
     } catch (error) {
@@ -525,13 +525,9 @@ export default function DocumentList({ onDocumentChange }: DocumentListProps) {
   }
 
   const deleteDocument = async (filename: string) => {
-    try {
-      await axios.delete(`${API_URL}/documents/${filename}`)
-      await fetchDocuments()
-    } catch (error) {
-      console.error('Error deleting document:', error)
-      setError('Failed to delete document')
-    }
+    // Disabled in demo mode - books are pre-loaded
+    console.log('Delete disabled in demo mode')
+    alert('Delete is disabled in demo mode. Books are pre-loaded.')
   }
 
   const handleDocumentSelect = (filename: string) => {
