@@ -1,1 +1,1 @@
-web: uvicorn backend.main_query_only:app --host 0.0.0.0 --port $PORT
+web: python -m uvicorn backend.main_query_only:app --host 0.0.0.0 --port $PORT --log-level info
