@@ -240,6 +240,7 @@ class PDFProcessorFull:
             
             return {
                 "chunks": chunks,
+                "text": all_text.strip(),
                 "total_pages": total_pages,
                 "images": images,
                 "code_blocks": code_blocks,
@@ -254,9 +255,11 @@ class PDFProcessorFull:
                     "content": f"Error processing {filename}: {str(e)}",
                     "metadata": {"type": "error", "filename": filename, "book": filename}
                 }],
+                "text": "",
                 "total_pages": 0,
                 "images": [],
-                "code_blocks": []
+                "code_blocks": [],
+                "author": "Unknown"
             }
     
     def _extract_text_from_image(self, pixmap) -> str:

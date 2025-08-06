@@ -460,7 +460,71 @@
     {
       "filename": "Developing Web Services for Web Applications.pdf",
       "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Building Applications with IBM Rational Application Developer and JavaBeans.pdf",
+      "error": "'text'"
+    },
+    {
+      "filename": "DB2 11 for z-OS Database Administration- Certification Study Guide (Exam 312).pdf",
+      "error": "'text'"
+    },
+    {
+      "filename": "IBM i5-iSeries Primer.pdf",
+      "error": "'text'"
+    },
+    {
+      "filename": "IBM DB2 for z-OS- The Database for Gaining a Competitive Advantage!.pdf",
+      "error": "'text'"
+    },
+    {
+      "filename": "i5-OS and Microsoft Office Integration Handbook.pdf",
+      "error": "'text'"
+    },
+    {
+      "filename": "MDM for Customer Data.pdf",
+      "error": "'text'"
+    },
+    {
+      "filename": "IT Virtualization Best Practices.pdf",
+      "error": "'text'"
+    },
+    {
+      "filename": "Business Intelligence Strategy.pdf",
+      "error": "'text'"
+    },
+    {
+      "filename": "Mastering the AS-400.pdf",
+      "error": "'text'"
+    },
+    {
+      "filename": "SQL Built-In Functions and Stored Procedures.pdf",
+      "error": "'text'"
+    },
+    {
+      "filename": "IBM Mainframe Security.pdf",
+      "error": "'text'"
+    },
+    {
+      "filename": "Advanced Guide to PHP on IBM i.pdf",
+      "error": "'text'"
+    },
+    {
+      "filename": "DB2 10 for z-OS Database Administration (Exam 612).pdf",
+      "error": "'text'"
+    },
+    {
+      "filename": "Big Data Governance.pdf",
+      "error": "'text'"
+    },
+    {
+      "filename": "Data Governance Tools.pdf",
+      "error": "'text'"
+    },
+    {
+      "filename": "Functions in Free-Format RPG IV.pdf",
+      "error": "'text'"
     }
   ],
-  "timestamp": "2025-08-06T11:45:20.970156"
+  "timestamp": "2025-08-06T12:21:11.718794"
 }
