@@ -179,7 +179,7 @@ async def root():
     """Health check endpoint"""
     return {
         "status": "online",
-        "service": "MC Press Chatbot Query API",
+        "service": "MC Press Chatbot Query API v2",
         "mode": "query-only",
         "info": "This is a read-only API. Books are pre-processed."
     }
