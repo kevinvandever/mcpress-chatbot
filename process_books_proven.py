@@ -56,8 +56,15 @@ class ProvenProcessor:
         print("=" * 50)
         
         # Initialize the vector store (same as main.py startup)
-        await self.vector_store.init_database()
-        print("✅ Database initialized")
+        try:
+            await self.vector_store.init_database()
+            print("✅ Database initialized")
+        except Exception as e:
+            print(f"❌ Database initialization failed: {e}")
+            print("Retrying in 5 seconds...")
+            await asyncio.sleep(5)
+            await self.vector_store.init_database()
+            print("✅ Database initialized (retry succeeded)")
         
         # Get all PDF files
         pdf_files = list(self.uploads_dir.glob("*.pdf"))
@@ -106,21 +113,33 @@ class ProvenProcessor:
                         }
                     })
                 
-                # Store using the vector store's actual method
+                # Store using the vector store's actual method with retry logic
                 if documents:
-                    await self.vector_store.add_documents(
-                        documents,
-                        metadata={
-                            'filename': pdf_file.name,
-                            'title': title,
-                            'author': pdf_data.get('author', 'Unknown'),
-                            'category': category,
-                            'total_pages': pdf_data.get('total_pages', 0),
-                            'has_images': len(pdf_data.get('images', [])) > 0,
-                            'has_code': len(pdf_data.get('code_blocks', [])) > 0
-                        }
-                    )
-                    result = True
+                    for attempt in range(3):
+                        try:
+                            await self.vector_store.add_documents(
+                                documents,
+                                metadata={
+                                    'filename': pdf_file.name,
+                                    'title': title,
+                                    'author': pdf_data.get('author', 'Unknown'),
+                                    'category': category,
+                                    'total_pages': pdf_data.get('total_pages', 0),
+                                    'has_images': len(pdf_data.get('images', [])) > 0,
+                                    'has_code': len(pdf_data.get('code_blocks', [])) > 0
+                                }
+                            )
+                            result = True
+                            break
+                        except Exception as conn_err:
+                            if attempt < 2:
+                                print(f"   🔄 Connection error, retrying... ({attempt + 1}/3)")
+                                await asyncio.sleep(2)
+                                # Reinitialize connection
+                                await self.vector_store.init_database()
+                            else:
+                                print(f"   ❌ Connection failed after 3 attempts: {conn_err}")
+                                result = False
                 else:
                     result = False
                 

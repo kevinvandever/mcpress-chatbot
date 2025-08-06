@@ -1,0 +1,10 @@
+{
+  "processed": [],
+  "failed": [
+    {
+      "filename": "Building Applications with IBM Rational Application Developer and JavaBeans.pdf",
+      "error": "connection was closed in the middle of operation"
+    }
+  ],
+  "timestamp": "2025-08-06T13:28:02.599583"
+}
