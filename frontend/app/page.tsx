@@ -1,11 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import ChatInterface from '@/components/ChatInterface'
 import DocumentList from '@/components/DocumentList'
 import SearchInterface from '@/components/SearchInterface'
-import axios from 'axios'
-import { API_URL } from '../config/api'
 
 export default function Home() {
   const [hasDocuments, setHasDocuments] = useState(true) // Always true for demo
