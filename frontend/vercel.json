@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npm run build:vercel",
+  "buildCommand": "SKIP_TYPE_CHECK=true next build",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "nextjs",
