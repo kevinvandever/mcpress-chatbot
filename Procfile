@@ -1,1 +1,1 @@
-web: ./startup.sh
+web: uvicorn backend.main_query_only:app --host 0.0.0.0 --port $PORT
