@@ -81,12 +81,12 @@ class PDFProcessorFull:
                             if pix.n - pix.alpha == 4:  # CMYK
                                 try:
                                     rgb_pix = fitz.Pixmap(fitz.csRGB, pix)
-                                    if hasattr(pix, "drop"): pix.drop()  # Clean up original pixmap
+                                    pix.drop()  # Clean up original pixmap
                                     pix = rgb_pix
                                 except Exception as e:
                                     # Silently skip CMYK conversion issues - these are common and non-critical
                                     if pix:
-                                        if hasattr(pix, "drop"): pix.drop()
+                                        pix.drop()
                                     img_doc.close()
                                     continue
                             
@@ -95,12 +95,12 @@ class PDFProcessorFull:
                                 try:
                                     # Try to convert to RGB
                                     rgb_pix = fitz.Pixmap(fitz.csRGB, pix)
-                                    if hasattr(pix, "drop"): pix.drop()
+                                    pix.drop()
                                     pix = rgb_pix
                                 except Exception as e:
                                     # Silently skip colorspace conversion issues - these are common and non-critical
                                     if pix:
-                                        if hasattr(pix, "drop"): pix.drop()
+                                        pix.drop()
                                     img_doc.close()
                                     continue
                             
@@ -133,7 +133,7 @@ class PDFProcessorFull:
                             
                             # Clean up pixmap memory
                             if pix:
-                                if hasattr(pix, "drop"): pix.drop()
+                                pix.drop()
                                 pix = None
                             img_doc.close()
                             

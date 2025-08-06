@@ -524,7 +524,19 @@
     {
       "filename": "Functions in Free-Format RPG IV.pdf",
       "error": "'text'"
+    },
+    {
+      "filename": "DB2 9 for z-OS Database Administration (Exam 732).pdf",
+      "error": "'text'"
+    },
+    {
+      "filename": "Building Applications with IBM Rational Application Developer and JavaBeans.pdf",
+      "error": "'text'"
+    },
+    {
+      "filename": "DB2 11 for z-OS Database Administration- Certification Study Guide (Exam 312).pdf",
+      "error": "'text'"
     }
   ],
-  "timestamp": "2025-08-06T12:21:11.718794"
+  "timestamp": "2025-08-06T12:36:32.324714"
 }
