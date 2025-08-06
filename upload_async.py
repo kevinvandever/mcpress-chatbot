@@ -15,7 +15,6 @@ PDF_DIRECTORY = "/Users/kevinvandever/kev-dev/pdf-chatbot/backend/uploads"
 
 # List of remaining files to upload
 REMAINING_FILES = [
-    "WDSC- Step by Step.pdf",
     "Fundamentals of Technology Project Management- First Edition.pdf",
     "IBM i5-iSeries Primer.pdf",
     "Advanced Java EE Development for Rational Application Developer 7.5.pdf",
@@ -23,13 +22,9 @@ REMAINING_FILES = [
     "IBM System i APIs at Work.pdf",
     "You Want to Do What with PHP?.pdf",
     "DB2 10 for z-OS- The Smarter, Faster Way to Upgrade.pdf",
-    "Extract, Transform, and Load with SQL Server Intergration Services.pdf",
     "IBM DB2 for z-OS- The Database for Gaining a Competitive Advantage!.pdf",
-    "Developing Web Services for Web Applications.pdf",
     "An Introduction to IBM Rational Application Developer.pdf",
-    "Building Applications with IBM Rational Application Developer and JavaBeans.pdf",
-    "Programming Portlets.pdf",
-    "The RPG Progrmmer's Guid to RPG IV and ILE.pdf",
+    "Programming Portlets.pdf"
 ]
 
 def upload_file_async(pdf_path):

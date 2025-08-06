@@ -1,0 +1,56 @@
+[
+  {
+    "filename": "The Modern RPG IV Language.pdf",
+    "reason": "Abnormal ratio: 713.3 chunks/page",
+    "chunks": 2140,
+    "pages": 3
+  },
+  {
+    "filename": "BYTE-ing Satire.pdf",
+    "reason": "Abnormal ratio: 191.0 chunks/page",
+    "chunks": 573,
+    "pages": 3
+  },
+  {
+    "filename": "How to Become a Highly Paid Corporate Programmer.pdf",
+    "reason": "Abnormal ratio: 136.5 chunks/page",
+    "chunks": 546,
+    "pages": 4
+  },
+  {
+    "filename": "IBM Cloud Platform Primer.pdf",
+    "reason": "Abnormal ratio: 434.0 chunks/page",
+    "chunks": 434,
+    "pages": 1
+  },
+  {
+    "filename": "RPG TnT.pdf",
+    "reason": "Abnormal ratio: 958.0 chunks/page",
+    "chunks": 958,
+    "pages": 1
+  },
+  {
+    "filename": "DB2 10 for z-OS- Cost Savings...Right Out of the Box.pdf",
+    "reason": "Abnormal ratio: 291.0 chunks/page",
+    "chunks": 291,
+    "pages": 1
+  },
+  {
+    "filename": "DB2 11- The Ultimate Database for Cloud, Analytics, and Mobile.pdf",
+    "reason": "Abnormal ratio: 142.7 chunks/page",
+    "chunks": 428,
+    "pages": 3
+  },
+  {
+    "filename": "Programming in ILE RPG, Fifth Edition.pdf",
+    "reason": "High ratio: 56.6 chunks/page",
+    "chunks": 2039,
+    "pages": 36
+  },
+  {
+    "filename": "21st Century RPG- -Free, ILE, and MVC.pdf",
+    "reason": "High ratio: 83.1 chunks/page",
+    "chunks": 3740,
+    "pages": 45
+  }
+]

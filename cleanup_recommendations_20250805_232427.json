@@ -1,0 +1,614 @@
+{
+  "analysis_date": "2025-08-05T23:24:27.281555",
+  "high_priority": [],
+  "medium_priority": [
+    {
+      "filename": "The Business Value of DB2 for z-OS.pdf",
+      "reason": "Page mismatch (99 pages off) + high chunks (25.3/page)",
+      "chunks": 1138,
+      "expected_pages": 144,
+      "uploaded_pages": 45,
+      "severity": "MEDIUM"
+    },
+    {
+      "filename": "Java for RPG Programmers.pdf",
+      "reason": "Page mismatch (758 pages off) + high chunks (40.4/page)",
+      "chunks": 2666,
+      "expected_pages": 824,
+      "uploaded_pages": 66,
+      "severity": "MEDIUM"
+    },
+    {
+      "filename": "DB2 10.1 Fundamentals (Exam 610).pdf",
+      "reason": "Page mismatch (460 pages off) + high chunks (25.5/page)",
+      "chunks": 1939,
+      "expected_pages": 536,
+      "uploaded_pages": 76,
+      "severity": "MEDIUM"
+    },
+    {
+      "filename": "SOA for the Business Developer.pdf",
+      "reason": "Page mismatch (294 pages off) + high chunks (22.9/page)",
+      "chunks": 777,
+      "expected_pages": 328,
+      "uploaded_pages": 34,
+      "severity": "MEDIUM"
+    },
+    {
+      "filename": "DB2 10.5 DBA for LUW Upgrade from DB2 10.1- Certification Study Notes.pdf",
+      "reason": "Page mismatch (145 pages off) + high chunks (36.4/page)",
+      "chunks": 546,
+      "expected_pages": 160,
+      "uploaded_pages": 15,
+      "severity": "MEDIUM"
+    }
+  ],
+  "low_priority": [
+    {
+      "filename": "An Introduction to IBM Rational Application Developer.pdf",
+      "reason": "Page count off by 540 pages (84.4%)",
+      "chunks": 1749,
+      "expected_pages": 640,
+      "uploaded_pages": 100,
+      "severity": "LOW"
+    },
+    {
+      "filename": "IBM i5-iSeries Primer.pdf",
+      "reason": "Page count off by 27 pages (4.2%)",
+      "chunks": 1654,
+      "expected_pages": 648,
+      "uploaded_pages": 621,
+      "severity": "LOW"
+    },
+    {
+      "filename": "DB2 10 for z-OS- The Smarter, Faster Way to Upgrade.pdf",
+      "reason": "Page count off by 11 pages (9.8%)",
+      "chunks": 361,
+      "expected_pages": 112,
+      "uploaded_pages": 101,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Fundamentals of Technology Project Management- First Edition.pdf",
+      "reason": "Page count off by 17 pages (3.3%)",
+      "chunks": 1690,
+      "expected_pages": 520,
+      "uploaded_pages": 503,
+      "severity": "LOW"
+    },
+    {
+      "filename": "WDSC- Step by Step.pdf",
+      "reason": "Page count off by 21 pages (3.4%)",
+      "chunks": 1491,
+      "expected_pages": 616,
+      "uploaded_pages": 595,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Extract, Transform, and Load with SQL Server Intergration Services.pdf",
+      "reason": "Page count off by 9 pages (2.3%)",
+      "chunks": 1181,
+      "expected_pages": 396,
+      "uploaded_pages": 387,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Developing Web Services for Web Applications.pdf",
+      "reason": "Page count off by 37 pages (9.4%)",
+      "chunks": 1067,
+      "expected_pages": 392,
+      "uploaded_pages": 355,
+      "severity": "LOW"
+    },
+    {
+      "filename": "DB2 9 System Administration for z-OS (Exam 737).pdf",
+      "reason": "Page count off by 92 pages (21.7%)",
+      "chunks": 1185,
+      "expected_pages": 424,
+      "uploaded_pages": 332,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Eclipse- Step by Step.pdf",
+      "reason": "Page count off by 7 pages (1.9%)",
+      "chunks": 777,
+      "expected_pages": 376,
+      "uploaded_pages": 369,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Developing Web 2.0 Applications with EGL for IBM i.pdf",
+      "reason": "Page count off by 11 pages (3.9%)",
+      "chunks": 899,
+      "expected_pages": 280,
+      "uploaded_pages": 269,
+      "severity": "LOW"
+    },
+    {
+      "filename": "DB2 9 for Linux, UNIX, and Windows Advanced Database Administration (Exam 734).pdf",
+      "reason": "Page count off by 20 pages (2.3%)",
+      "chunks": 2867,
+      "expected_pages": 886,
+      "uploaded_pages": 866,
+      "severity": "LOW"
+    },
+    {
+      "filename": "e-RPG(v2) e-Volving RPG Applications for a Connected World.pdf",
+      "reason": "Page count off by 18 pages (4.5%)",
+      "chunks": 1173,
+      "expected_pages": 400,
+      "uploaded_pages": 382,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Artificial Intelligence- Evolution and Revolution.pdf",
+      "reason": "Page count off by 14 pages (12.1%)",
+      "chunks": 408,
+      "expected_pages": 116,
+      "uploaded_pages": 102,
+      "severity": "LOW"
+    },
+    {
+      "filename": "WebSphere Application Server- Step by Step.pdf",
+      "reason": "Page count off by 48 pages (5.9%)",
+      "chunks": 2629,
+      "expected_pages": 808,
+      "uploaded_pages": 760,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Managing Without Walls.pdf",
+      "reason": "Page count off by 23 pages (5.2%)",
+      "chunks": 1334,
+      "expected_pages": 440,
+      "uploaded_pages": 417,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Identity Management- A Business Perspective.pdf",
+      "reason": "Page count off by 197 pages (77.0%)",
+      "chunks": 840,
+      "expected_pages": 256,
+      "uploaded_pages": 59,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Mastering IBM i Security- A Modern Step-by-Step Guide.pdf",
+      "reason": "Page count off by 8 pages (4.3%)",
+      "chunks": 635,
+      "expected_pages": 185,
+      "uploaded_pages": 177,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Digital Marketplaces for Knowledge Intensive Assets.pdf",
+      "reason": "Page count off by 28 pages (15.2%)",
+      "chunks": 599,
+      "expected_pages": 184,
+      "uploaded_pages": 156,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Identity Management.pdf",
+      "reason": "Page count off by 81 pages (34.9%)",
+      "chunks": 635,
+      "expected_pages": 232,
+      "uploaded_pages": 151,
+      "severity": "LOW"
+    },
+    {
+      "filename": "IBM InfoSphere- A Platform for Big Data Governance and Process Data Governance.pdf",
+      "reason": "Page count off by 13 pages (11.6%)",
+      "chunks": 274,
+      "expected_pages": 112,
+      "uploaded_pages": 99,
+      "severity": "LOW"
+    },
+    {
+      "filename": "HTML for the Business Developer.pdf",
+      "reason": "Page count off by 74 pages (11.9%)",
+      "chunks": 1899,
+      "expected_pages": 624,
+      "uploaded_pages": 550,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Customer Experience Analytics.pdf",
+      "reason": "Page count off by 19 pages (11.9%)",
+      "chunks": 443,
+      "expected_pages": 160,
+      "uploaded_pages": 141,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Advanced, Integrated RPG.pdf",
+      "reason": "Page count off by 38 pages (9.5%)",
+      "chunks": 1363,
+      "expected_pages": 400,
+      "uploaded_pages": 362,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Data Fabric- An Intelligent Data Architecutre for AI.pdf",
+      "reason": "Page count off by 34 pages (26.2%)",
+      "chunks": 372,
+      "expected_pages": 130,
+      "uploaded_pages": 96,
+      "severity": "LOW"
+    },
+    {
+      "filename": "DB2 10.5 Fundamentals for LUW (Exam 615).pdf",
+      "reason": "Page count off by 306 pages (58.8%)",
+      "chunks": 1695,
+      "expected_pages": 520,
+      "uploaded_pages": 214,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Qshell for iSeries.pdf",
+      "reason": "Page count off by 21 pages (3.5%)",
+      "chunks": 1455,
+      "expected_pages": 592,
+      "uploaded_pages": 571,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Driving the Power of AIX.pdf",
+      "reason": "Page count off by 26 pages (10.8%)",
+      "chunks": 565,
+      "expected_pages": 240,
+      "uploaded_pages": 214,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Programming in RPG IV.pdf",
+      "reason": "Page count off by 50 pages (8.7%)",
+      "chunks": 2466,
+      "expected_pages": 576,
+      "uploaded_pages": 526,
+      "severity": "LOW"
+    },
+    {
+      "filename": "IBM i Security Administration and Compliance.pdf",
+      "reason": "Page count off by 68 pages (18.5%)",
+      "chunks": 1319,
+      "expected_pages": 368,
+      "uploaded_pages": 300,
+      "severity": "LOW"
+    },
+    {
+      "filename": "JavaScript for the Business Developer.pdf",
+      "reason": "Page count off by 55 pages (31.2%)",
+      "chunks": 487,
+      "expected_pages": 176,
+      "uploaded_pages": 121,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Open Source Starter Guide for IBM i Developers.pdf",
+      "reason": "Page count off by 186 pages (77.5%)",
+      "chunks": 719,
+      "expected_pages": 240,
+      "uploaded_pages": 54,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Control Language Programming for IBM i.pdf",
+      "reason": "Page count off by 12 pages (2.0%)",
+      "chunks": 2198,
+      "expected_pages": 592,
+      "uploaded_pages": 580,
+      "severity": "LOW"
+    },
+    {
+      "filename": "IBM i Security Administration and Compliance- Second Edition.pdf",
+      "reason": "Page count off by 77 pages (17.2%)",
+      "chunks": 1407,
+      "expected_pages": 448,
+      "uploaded_pages": 371,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Evolve Your RPG Coding- Move from OPM to ILE ... and Beyond.pdf",
+      "reason": "Page count off by 26 pages (5.9%)",
+      "chunks": 1591,
+      "expected_pages": 440,
+      "uploaded_pages": 414,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Enterprise Web 2.0 with EGL.pdf",
+      "reason": "Page count off by 47 pages (13.4%)",
+      "chunks": 1051,
+      "expected_pages": 352,
+      "uploaded_pages": 305,
+      "severity": "LOW"
+    },
+    {
+      "filename": "RPG IV at Work.pdf",
+      "reason": "Page count off by 551 pages (99.8%)",
+      "chunks": 3,
+      "expected_pages": 552,
+      "uploaded_pages": 1,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Complete CL- Sixth Edition.pdf",
+      "reason": "Page count off by 171 pages (36.2%)",
+      "chunks": 1250,
+      "expected_pages": 472,
+      "uploaded_pages": 301,
+      "severity": "LOW"
+    },
+    {
+      "filename": "IBM I Security Administration and Compliance- Third Edition.pdf",
+      "reason": "Page count off by 52 pages (11.9%)",
+      "chunks": 1704,
+      "expected_pages": 438,
+      "uploaded_pages": 386,
+      "severity": "LOW"
+    },
+    {
+      "filename": "SQL for IBM I- A Database Moderzation Guide.pdf",
+      "reason": "Page count off by 30 pages (8.0%)",
+      "chunks": 1340,
+      "expected_pages": 375,
+      "uploaded_pages": 345,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Selling Information Governance to the Business.pdf",
+      "reason": "Page count off by 102 pages (22.4%)",
+      "chunks": 1526,
+      "expected_pages": 456,
+      "uploaded_pages": 354,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Understanding AS-400 System Operations.pdf",
+      "reason": "Page count off by 77 pages (9.4%)",
+      "chunks": 2552,
+      "expected_pages": 816,
+      "uploaded_pages": 739,
+      "severity": "LOW"
+    },
+    {
+      "filename": "IBM Rational Business Developer with EGL.pdf",
+      "reason": "Page count off by 39 pages (17.4%)",
+      "chunks": 670,
+      "expected_pages": 224,
+      "uploaded_pages": 185,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Flexible Input, Dazzling Output with IBM i.pdf",
+      "reason": "Page count off by 95 pages (21.4%)",
+      "chunks": 1399,
+      "expected_pages": 444,
+      "uploaded_pages": 349,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Leadership in My Rearview Mirror.pdf",
+      "reason": "Page count off by 16 pages (5.5%)",
+      "chunks": 789,
+      "expected_pages": 290,
+      "uploaded_pages": 274,
+      "severity": "LOW"
+    },
+    {
+      "filename": "DB2 9 Fundamentals (Exam 730).pdf",
+      "reason": "Page count off by 243 pages (37.0%)",
+      "chunks": 1927,
+      "expected_pages": 656,
+      "uploaded_pages": 413,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Fundamentals of Technology Project Management- Second Edition.pdf",
+      "reason": "Page count off by 34 pages (4.6%)",
+      "chunks": 2259,
+      "expected_pages": 736,
+      "uploaded_pages": 702,
+      "severity": "LOW"
+    },
+    {
+      "filename": "The IBM Data Governance Unified Process.pdf",
+      "reason": "Page count off by 35 pages (20.8%)",
+      "chunks": 427,
+      "expected_pages": 168,
+      "uploaded_pages": 133,
+      "severity": "LOW"
+    },
+    {
+      "filename": "DB2 9 for Developers.pdf",
+      "reason": "Page count off by 47 pages (8.3%)",
+      "chunks": 1429,
+      "expected_pages": 568,
+      "uploaded_pages": 521,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Big Data Analytics.pdf",
+      "reason": "Page count off by 30 pages (31.2%)",
+      "chunks": 310,
+      "expected_pages": 96,
+      "uploaded_pages": 66,
+      "severity": "LOW"
+    },
+    {
+      "filename": "QuickStart Guide to Db2 Development with Python.pdf",
+      "reason": "Page count off by 35 pages (49.3%)",
+      "chunks": 208,
+      "expected_pages": 71,
+      "uploaded_pages": 36,
+      "severity": "LOW"
+    },
+    {
+      "filename": "From Idea to Print.pdf",
+      "reason": "Page count off by 158 pages (36.6%)",
+      "chunks": 1422,
+      "expected_pages": 432,
+      "uploaded_pages": 274,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Subfiles in Free-Format RPG.pdf",
+      "reason": "Page count off by 158 pages (65.6%)",
+      "chunks": 636,
+      "expected_pages": 241,
+      "uploaded_pages": 83,
+      "severity": "LOW"
+    },
+    {
+      "filename": "DB2 12 for z-OS - The #1 Enterprise Database.pdf",
+      "reason": "Page count off by 12 pages (7.5%)",
+      "chunks": 606,
+      "expected_pages": 160,
+      "uploaded_pages": 148,
+      "severity": "LOW"
+    },
+    {
+      "filename": "The Chief Data Officer Handbook for Data Governance.pdf",
+      "reason": "Page count off by 29 pages (36.2%)",
+      "chunks": 190,
+      "expected_pages": 80,
+      "uploaded_pages": 51,
+      "severity": "LOW"
+    },
+    {
+      "filename": "DB2 10.1-10.5 for Linux, UNIX, and Windows Database Administration (Exams 611 and 311).pdf",
+      "reason": "Page count off by 118 pages (9.5%)",
+      "chunks": 4138,
+      "expected_pages": 1247,
+      "uploaded_pages": 1129,
+      "severity": "LOW"
+    },
+    {
+      "filename": "SQL for eServer i5 and iSeries.pdf",
+      "reason": "Page count off by 37 pages (10.1%)",
+      "chunks": 1203,
+      "expected_pages": 368,
+      "uploaded_pages": 331,
+      "severity": "LOW"
+    },
+    {
+      "filename": "DB2 11 System Administrator for z-OS- Certification Study Guide (Exam 317).pdf",
+      "reason": "Page count off by 93 pages (30.6%)",
+      "chunks": 899,
+      "expected_pages": 304,
+      "uploaded_pages": 211,
+      "severity": "LOW"
+    },
+    {
+      "filename": "The Programmer's Guide to iSeries Navigator.pdf",
+      "reason": "Page count off by 22 pages (5.9%)",
+      "chunks": 863,
+      "expected_pages": 376,
+      "uploaded_pages": 354,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Developing Business Applications for the Web- With HTML, CSS, JSP, PHP, ASP.NET, and JavaScript.pdf",
+      "reason": "Page count off by 26 pages (4.5%)",
+      "chunks": 2008,
+      "expected_pages": 576,
+      "uploaded_pages": 550,
+      "severity": "LOW"
+    },
+    {
+      "filename": "iSeries and AS-400 Programmer's Guide to Cool Things.pdf",
+      "reason": "Page count off by 22 pages (6.9%)",
+      "chunks": 2820,
+      "expected_pages": 320,
+      "uploaded_pages": 298,
+      "severity": "LOW"
+    },
+    {
+      "filename": "The Remote System Explorer.pdf",
+      "reason": "Page count off by 64 pages (11.9%)",
+      "chunks": 1706,
+      "expected_pages": 536,
+      "uploaded_pages": 472,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Data Governance Tools.pdf",
+      "reason": "Page count off by 49 pages (13.3%)",
+      "chunks": 916,
+      "expected_pages": 368,
+      "uploaded_pages": 319,
+      "severity": "LOW"
+    },
+    {
+      "filename": "DB2 10 for z-OS Database Administration (Exam 612).pdf",
+      "reason": "Page count off by 115 pages (11.4%)",
+      "chunks": 3564,
+      "expected_pages": 1008,
+      "uploaded_pages": 893,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Big Data Governance.pdf",
+      "reason": "Page count off by 300 pages (81.5%)",
+      "chunks": 1095,
+      "expected_pages": 368,
+      "uploaded_pages": 68,
+      "severity": "LOW"
+    },
+    {
+      "filename": "SQL Built-In Functions and Stored Procedures.pdf",
+      "reason": "Page count off by 17 pages (9.7%)",
+      "chunks": 536,
+      "expected_pages": 176,
+      "uploaded_pages": 159,
+      "severity": "LOW"
+    },
+    {
+      "filename": "IBM Mainframe Security.pdf",
+      "reason": "Page count off by 22 pages (9.8%)",
+      "chunks": 507,
+      "expected_pages": 224,
+      "uploaded_pages": 202,
+      "severity": "LOW"
+    },
+    {
+      "filename": "IT Virtualization Best Practices.pdf",
+      "reason": "Page count off by 22 pages (7.2%)",
+      "chunks": 912,
+      "expected_pages": 304,
+      "uploaded_pages": 282,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Business Intelligence Strategy.pdf",
+      "reason": "Page count off by 32 pages (23.5%)",
+      "chunks": 413,
+      "expected_pages": 136,
+      "uploaded_pages": 104,
+      "severity": "LOW"
+    },
+    {
+      "filename": "i5-OS and Microsoft Office Integration Handbook.pdf",
+      "reason": "Page count off by 11 pages (2.9%)",
+      "chunks": 1062,
+      "expected_pages": 384,
+      "uploaded_pages": 373,
+      "severity": "LOW"
+    },
+    {
+      "filename": "Active Server Pages Primer.pdf",
+      "reason": "Page count off by 40 pages (17.4%)",
+      "chunks": 2292,
+      "expected_pages": 230,
+      "uploaded_pages": 190,
+      "severity": "LOW"
+    }
+  ],
+  "summary": {
+    "high_priority_count": 0,
+    "medium_priority_count": 5,
+    "low_priority_count": 70,
+    "total_recommended": 75
+  }
+}

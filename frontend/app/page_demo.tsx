@@ -155,7 +155,7 @@ export default function Home() {
           {activeTab === 'documents' && (
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Browse Available Books</h2>
-              <DocumentList onDocumentChange={() => {}} />
+              <DocumentList refreshTrigger={0} onDocumentCountChange={() => {}} />
             </div>
           )}
         </div>
