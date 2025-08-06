@@ -11,24 +11,6 @@ export default function Home() {
   const [hasDocuments, setHasDocuments] = useState(true) // Always true for demo
   const [activeTab, setActiveTab] = useState<'documents' | 'search'>('search')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [bookCount, setBookCount] = useState(113)
-  const [isLoading, setIsLoading] = useState(true)
-
-  // Check actual document count on load
-  useEffect(() => {
-    const checkDocuments = async () => {
-      try {
-        const response = await axios.get(`${API_URL}/api/stats`)
-        setBookCount(response.data.books || 113)
-        setIsLoading(false)
-      } catch (error) {
-        console.error('Error checking documents:', error)
-        setBookCount(113) // Default to expected count
-        setIsLoading(false)
-      }
-    }
-    checkDocuments()
-  }, [])
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
