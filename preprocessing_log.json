@@ -1,0 +1,466 @@
+{
+  "processed": [],
+  "failed": [
+    {
+      "filename": "Building Applications with IBM Rational Application Developer and JavaBeans.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "DB2 11 for z-OS Database Administration- Certification Study Guide (Exam 312).pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "IBM i5-iSeries Primer.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "IBM DB2 for z-OS- The Database for Gaining a Competitive Advantage!.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "i5-OS and Microsoft Office Integration Handbook.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "MDM for Customer Data.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "IT Virtualization Best Practices.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Business Intelligence Strategy.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Mastering the AS-400.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "SQL Built-In Functions and Stored Procedures.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "IBM Mainframe Security.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Advanced Guide to PHP on IBM i.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "DB2 10 for z-OS Database Administration (Exam 612).pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Big Data Governance.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Data Governance Tools.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Functions in Free-Format RPG IV.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "DB2 9 for z-OS Database Administration (Exam 732).pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "The Remote System Explorer.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Developing Business Applications for the Web- With HTML, CSS, JSP, PHP, ASP.NET, and JavaScript.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "iSeries and AS-400 Programmer's Guide to Cool Things.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "The Programmer's Guide to iSeries Navigator.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "SQL for eServer i5 and iSeries.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "DB2 11 System Administrator for z-OS- Certification Study Guide (Exam 317).pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "DB2 10.1-10.5 for Linux, UNIX, and Windows Database Administration (Exams 611 and 311).pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Programming Portlets.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Free-Format RPG IV- Second Edition.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "The Chief Data Officer Handbook for Data Governance.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "DB2 12 for z-OS - The #1 Enterprise Database.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Database Design and SQL for DB2.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "DB2 11- The Ultimate Database for Cloud, Analytics, and Mobile.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "DB2 10.5 DBA for LUW Upgrade from DB2 10.1- Certification Study Notes.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Subfiles in Free-Format RPG.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Active Server Pages Primer.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "The IBM i Programmer's Guide to PHP.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Advanced Java EE Development for Rational Application Developer 7.5.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "The RPG Programmers Guide to RPG IV and ILE.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Administering Informix Dynamic Server.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "From Idea to Print.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "QuickStart Guide to Db2 Development with Python.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "DB2 9 for Developers.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Big Data Analytics.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "The Modern RPG IV Language.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Fundamentals of Technology Project Management- Second Edition.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "DB2 10 for z-OS- Cost Savings...Right Out of the Box.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "The IBM Data Governance Unified Process.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "DB2 11- The Database for Big Data and Analytics.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "DB2 9 Fundamentals (Exam 730).pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "21st Century RPG- -Free, ILE, and MVC.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "WDSC- Step by Step.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "RPG TnT.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Leadership in My Rearview Mirror.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "IBM Rational Business Developer with EGL.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Understanding AS-400 System Operations.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Flexible Input, Dazzling Output with IBM i.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "IBM I Security Administration and Compliance- Third Edition.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "SQL for IBM I- A Database Moderzation Guide.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Selling Information Governance to the Business.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Complete CL- Sixth Edition.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Enterprise Web 2.0 with EGL.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "RPG IV at Work.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Control Language Programming for IBM i.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "IBM i Security Administration and Compliance- Second Edition.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Evolve Your RPG Coding- Move from OPM to ILE ... and Beyond.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "JavaScript for the Business Developer.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Programming in RPG IV.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "IBM i Security Administration and Compliance.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Extract, Transform, and Load with SQL Server Intergration Services.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Fundamentals of Technology Project Management- First Edition.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Open Source Starter Guide for IBM i Developers.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Driving the Power of AIX.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Qshell for iSeries.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "An Introduction to IBM Rational Application Developer.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "5 Keys to Business Analytics Program Success.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "DB2 10.5 Fundamentals for LUW (Exam 615).pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Data Fabric- An Intelligent Data Architecutre for AI.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "SOA for the Business Developer.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "IBM Cloud Platform Primer.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Advanced, Integrated RPG.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Mastering IBM i.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "DB2 10.1 Fundamentals (Exam 610).pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "IBM WebSphere Portal Primer.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "The Business Value of DB2 for z-OS.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "DB2 9 System Administration for z-OS (Exam 737).pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "DB2 10 for z-OS- The Smarter, Faster Way to Upgrade.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Free-Format RPG IV- Third Edition.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "HTML for the Business Developer.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Customer Experience Analytics.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Free-Format RPG IV- First Edition.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "IBM InfoSphere- A Platform for Big Data Governance and Process Data Governance.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Identity Management.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "How to Become a Highly Paid Corporate Programmer.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "You Want to Do What with PHP.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Digital Marketplaces for Knowledge Intensive Assets.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Mastering IBM i Security- A Modern Step-by-Step Guide.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "IBM Business Analytics and Cloud Computing.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "The Lakehouse Effect- A New Era for Database Insights and AI.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Managing Without Walls.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Programming in ILE RPG, Fifth Edition.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Identity Management- A Business Perspective.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "New Intelligence for a Smarter Planet.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "WebSphere Application Server- Step by Step.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "System i Disaster Recovery Planning.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Artificial Intelligence- Evolution and Revolution.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Java for RPG Programmers.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "mcpressonline.com-From Legacy to Modern_ Upgrading Your BI Strategy with LANSA BI for IBM i.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "e-RPG(v2) e-Volving RPG Applications for a Connected World.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "DB2 9 for Linux, UNIX, and Windows Advanced Database Administration (Exam 734).pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "BYTE-ing Satire.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Complete CL- Fifth Edition.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "DB2 9.7 for Linux, UNIX, and Windows Database Administration (Exam 541).pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Eclipse- Step by Step.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Developing Web 2.0 Applications with EGL for IBM i.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "mcpressonline.com-Organizing for Data Governance.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "IBM System i APIs at Work.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    },
+    {
+      "filename": "Developing Web Services for Web Applications.pdf",
+      "error": "CategoryMapper.get_category() takes 2 positional arguments but 3 were given"
+    }
+  ],
+  "timestamp": "2025-08-06T11:45:20.970156"
+}

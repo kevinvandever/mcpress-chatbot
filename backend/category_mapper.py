@@ -45,8 +45,8 @@ class CategoryMapper:
         except Exception as e:
             print(f"Error loading categories from CSV: {e}")
     
-    def get_category(self, filename: str) -> str:
-        """Get category for a given filename"""
+    def get_category(self, filename: str, content: str = None) -> str:
+        """Get category for a given filename and optional content"""
         # Clean filename to get potential title
         title = filename.replace('.pdf', '').strip()
         
