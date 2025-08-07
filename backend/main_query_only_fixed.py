@@ -125,12 +125,22 @@ class QueryOnlyBackend:
             
             books = []
             for r in results:
-                metadata = json.loads(r['sample_metadata']) if r['sample_metadata'] else {}
+                # Get first chunk's metadata for this book
+                first_chunk = await conn.fetchrow("""
+                    SELECT metadata 
+                    FROM documents 
+                    WHERE filename = $1 
+                    LIMIT 1
+                """, r['filename'])
+                
+                metadata = json.loads(first_chunk['metadata']) if first_chunk and first_chunk['metadata'] else {}
+                
+                # Ensure no None values
                 books.append(BookInfo(
                     filename=r['filename'],
-                    title=metadata.get('title', r['filename'].replace('.pdf', '')),
-                    author=metadata.get('author', 'Unknown'),
-                    category=metadata.get('category', 'General'),
+                    title=metadata.get('title') or r['filename'].replace('.pdf', ''),
+                    author=metadata.get('author') or 'Unknown',
+                    category=metadata.get('category') or 'General',
                     total_chunks=r['chunk_count'],
                     total_pages=r['max_page'] or 0
                 ))
