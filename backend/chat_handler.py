@@ -188,15 +188,30 @@ Please answer the following question based on your general knowledge, but clearl
         
         for doc in documents:
             metadata = doc.get("metadata", {})
-            key = f"{metadata.get('filename', 'Unknown')}-{metadata.get('page', 'N/A')}"
+            
+            # Extract page from multiple possible locations
+            page = (metadata.get("page") or 
+                   metadata.get("page_number") or 
+                   doc.get("page_number") or 
+                   "N/A")
+            
+            filename = metadata.get("filename", "Unknown")
+            key = f"{filename}-{page}"
             
             if key not in seen:
                 seen.add(key)
+                
+                # Extract content type from metadata
+                content_type = (metadata.get("type") or 
+                               metadata.get("content_type") or 
+                               "text")
+                
                 sources.append({
-                    "filename": metadata.get("filename", "Unknown"),
-                    "page": metadata.get("page", "N/A"),
-                    "type": metadata.get("type", "text"),
-                    "relevance": 1 - doc.get("distance", 0)
+                    "filename": filename,
+                    "page": page,
+                    "type": content_type,
+                    "distance": doc.get("distance", 0),
+                    "mc_press_url": metadata.get("mc_press_url")
                 })
         
         return sources
