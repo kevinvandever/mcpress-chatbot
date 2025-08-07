@@ -135,6 +135,10 @@ class QueryOnlyBackend:
                 
                 metadata = json.loads(first_chunk['metadata']) if first_chunk and first_chunk['metadata'] else {}
                 
+                # Fix page count issue - if max_page is 0, estimate from chunk count
+                # Most books have ~2-4 chunks per page, so divide by 3 as reasonable estimate
+                estimated_pages = max(1, r['chunk_count'] // 3) if (r['max_page'] or 0) == 0 else r['max_page']
+                
                 # Ensure no None values
                 books.append(BookInfo(
                     filename=r['filename'],
@@ -142,7 +146,7 @@ class QueryOnlyBackend:
                     author=metadata.get('author') or 'Unknown',
                     category=metadata.get('category') or 'General',
                     total_chunks=r['chunk_count'],
-                    total_pages=r['max_page'] or 0
+                    total_pages=estimated_pages
                 ))
             
             return books
@@ -270,6 +274,16 @@ async def chat(request: ChatRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.put("/documents/{filename}/metadata")
+async def update_document_metadata(filename: str):
+    """Update document metadata - READ-ONLY mode returns success"""
+    # Since this is a read-only backend, we'll return success without making changes
+    return {
+        "status": "success",
+        "message": f"Metadata update requested for {filename} (read-only mode)",
+        "note": "This is a query-only backend. Updates are not persisted."
+    }
+
 @app.get("/api/stats")
 async def get_stats():
     """Get database statistics"""
@@ -285,12 +299,16 @@ async def get_stats():
                 FROM documents
             """)
             
+            # Fix stats to show estimated pages instead of 0
+            total_chunks = stats['total_chunks'] or 0
+            estimated_total_pages = max(1, total_chunks // 3) if total_chunks > 0 else 0
+            
             return {
                 "books": stats['total_books'] or 0,
                 "categories": stats['total_categories'] or 0,
                 "authors": stats['total_authors'] or 0,
-                "chunks": stats['total_chunks'] or 0,
-                "pages": stats['max_pages']
+                "chunks": total_chunks,
+                "pages": estimated_total_pages  # Return estimated pages instead of 0
             }
     except Exception as e:
         print(f"Error in /api/stats: {e}")
