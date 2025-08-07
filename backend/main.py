@@ -18,7 +18,7 @@ from concurrent.futures import ThreadPoolExecutor
 import time
 
 from backend.pdf_processor_full import PDFProcessorFull
-from backend.vector_store import VectorStore
+from backend.vector_store_chroma import ChromaVectorStore
 from backend.chat_handler import ChatHandler
 from backend.category_mapper import get_category_mapper
 from backend.async_upload import process_pdf_async, create_upload_job, get_job_status, cleanup_old_jobs
@@ -45,7 +45,7 @@ app.add_middleware(
 )
 
 pdf_processor = PDFProcessorFull()
-vector_store = VectorStore()
+vector_store = ChromaVectorStore()
 
 # Initialize the database on startup
 @app.on_event("startup")
