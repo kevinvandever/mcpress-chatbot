@@ -47,6 +47,8 @@ class BookInfo(BaseModel):
     category: str
     total_chunks: int
     total_pages: int
+    has_images: bool = False
+    has_code: bool = False
 
 class SearchResult(BaseModel):
     content: str
