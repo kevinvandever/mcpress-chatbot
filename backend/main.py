@@ -471,6 +471,15 @@ async def list_documents():
     documents = await vector_store.list_documents()
     return {"documents": documents}
 
+@app.get("/api/books")
+async def get_books():
+    """Frontend compatibility endpoint"""
+    documents = await vector_store.list_documents()
+    return {
+        "total": len(documents),
+        "books": documents
+    }
+
 @app.delete("/documents/{filename}")
 async def delete_document(filename: str):
     try:
