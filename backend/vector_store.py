@@ -108,7 +108,7 @@ class VectorStore:
         await self.init_pool()
         
         async with self.pool.acquire() as conn:
-            # Search with content type diversity - get results from different types
+            # Search with content type diversity - get more results while maintaining variety
             rows = await conn.fetch("""
                 WITH ranked_results AS (
                     SELECT filename, content, page_number, metadata,
@@ -117,10 +117,21 @@ class VectorStore:
                            ROW_NUMBER() OVER (PARTITION BY metadata->>'type' ORDER BY ts_rank(to_tsvector('english', content), plainto_tsquery('english', $1)) DESC) as type_rank
                     FROM documents
                     WHERE to_tsvector('english', content) @@ plainto_tsquery('english', $1)
+                ),
+                diverse_results AS (
+                    SELECT filename, content, page_number, metadata, rank
+                    FROM ranked_results
+                    WHERE type_rank <= GREATEST(3, $2::int / 3)  -- At least 3 per type, or limit/3
+                ),
+                top_results AS (
+                    SELECT filename, content, page_number, metadata, rank
+                    FROM ranked_results
+                    ORDER BY rank DESC
+                    LIMIT $2
                 )
-                SELECT filename, content, page_number, metadata, rank
-                FROM ranked_results
-                WHERE type_rank <= 2  -- Get top 2 results from each content type
+                SELECT * FROM diverse_results
+                UNION
+                SELECT * FROM top_results
                 ORDER BY rank DESC
                 LIMIT $2
             """, query, k)
