@@ -42,12 +42,9 @@ temp_storage = {}
 
 app.add_middleware(
     CORSMiddleware,
+    allow_origin_regex=r"https://frontend-.*-kevin-vandever.*\.vercel\.app",
     allow_origins=[
         "http://localhost:3000", "http://127.0.0.1:3000",
-        "https://frontend-qwnql4s2j0s-kevin-vandevers-projects.vercel.app",
-        "https://frontend-cwanq0nz1-kevin-vandevers-projects.vercel.app", 
-        "https://frontend-79buo65mb-kevin-vandevers-projects.vercel.app",
-        "https://frontend-proxy-sch-kevin-vandevers-projects.vercel.app",  # Current Vercel URL
         os.getenv("CORS_ORIGIN", "*")  # Allow environment override
     ],
     allow_credentials=True,
