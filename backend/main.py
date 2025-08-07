@@ -27,11 +27,9 @@ try:
         VectorStoreClass = ChromaVectorStore
         print("Using ChromaDB vector store")
     else:
-        from backend.vector_store import VectorStore  
-        VectorStoreClass = VectorStore
-        print("Using PostgreSQL vector store")
+        raise ImportError("USE_CHROMADB not enabled")
 except ImportError as e:
-    print(f"ChromaDB not available, falling back to PostgreSQL: {e}")
+    print(f"Using PostgreSQL vector store (ChromaDB not available: {e})")
     from backend.vector_store import VectorStore
     VectorStoreClass = VectorStore
 from backend.category_mapper import get_category_mapper
