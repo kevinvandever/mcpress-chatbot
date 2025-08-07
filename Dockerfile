@@ -1,23 +1,17 @@
-# Railway Dockerfile for ChromaDB support
+# Railway Dockerfile - Simple and reliable
 FROM python:3.11-slim
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies needed for ChromaDB
+# Install basic system dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
-    g++ \
-    cmake \
-    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies
+# Copy requirements and install dependencies
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-
-# Verify ChromaDB installation
-RUN python -c "import chromadb; print('✅ ChromaDB installed successfully')"
 
 # Copy application code
 COPY . .
