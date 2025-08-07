@@ -139,6 +139,17 @@ class QueryOnlyBackend:
                 # Most books have ~2-4 chunks per page, so divide by 3 as reasonable estimate
                 estimated_pages = max(1, r['chunk_count'] // 3) if (r['max_page'] or 0) == 0 else r['max_page']
                 
+                # Check for images and code in this book
+                content_types = await conn.fetch("""
+                    SELECT DISTINCT metadata->>'type' as content_type
+                    FROM documents 
+                    WHERE filename = $1 AND metadata->>'type' IS NOT NULL
+                """, r['filename'])
+                
+                types = [row['content_type'] for row in content_types if row['content_type']]
+                has_images = 'image' in types
+                has_code = 'code' in types
+                
                 # Ensure no None values
                 books.append(BookInfo(
                     filename=r['filename'],
@@ -146,7 +157,9 @@ class QueryOnlyBackend:
                     author=metadata.get('author') or 'Unknown',
                     category=metadata.get('category') or 'General',
                     total_chunks=r['chunk_count'],
-                    total_pages=estimated_pages
+                    total_pages=estimated_pages,
+                    has_images=has_images,
+                    has_code=has_code
                 ))
             
             return books
@@ -226,6 +239,33 @@ async def search(request: QueryRequest):
             "results": [r.dict() for r in results],
             "count": len(results)
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/search")
+async def search_get(q: str, n_results: int = 5, filename: str = None, content_types: str = None):
+    """Search endpoint for GET requests (legacy compatibility)"""
+    try:
+        results = await backend.text_search(
+            query=q,
+            category=None,
+            limit=n_results
+        )
+        
+        # Convert to legacy format
+        legacy_results = []
+        for r in results:
+            legacy_results.append({
+                "content": r.content,
+                "metadata": {
+                    "filename": r.filename,
+                    "page_number": r.page,
+                    **r.metadata
+                },
+                "distance": 0.5  # Mock distance for compatibility
+            })
+        
+        return {"query": q, "results": legacy_results}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
