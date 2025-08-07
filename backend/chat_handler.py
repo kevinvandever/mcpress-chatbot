@@ -126,9 +126,9 @@ Please answer the following question based on your general knowledge, but clearl
     
     def _filter_relevant_documents(self, documents: List[Dict[str, Any]], query: str) -> List[Dict[str, Any]]:
         """Filter documents by relevance threshold and log the decision process"""
-        # ChromaDB uses cosine distance: 0 = identical, 2 = completely different
-        # We want documents with distance <= 0.7 (roughly 65% similarity or higher)
-        RELEVANCE_THRESHOLD = 0.7
+        # PostgreSQL with pgvector uses 1.0 - rank, so higher distances can still be relevant
+        # We want documents with distance <= 0.9 to include more potentially relevant results
+        RELEVANCE_THRESHOLD = 0.9
         MAX_SOURCES = 5
         
         logger.info(f"Query: '{query}'")
