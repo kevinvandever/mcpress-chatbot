@@ -1,10 +1,191 @@
 {
-  "processed": [],
+  "processed": [
+    "Building Applications with IBM Rational Application Developer and JavaBeans.pdf",
+    "DB2 11 for z-OS Database Administration- Certification Study Guide (Exam 312).pdf",
+    "IBM i5-iSeries Primer.pdf",
+    "IBM DB2 for z-OS- The Database for Gaining a Competitive Advantage!.pdf",
+    "i5-OS and Microsoft Office Integration Handbook.pdf",
+    "MDM for Customer Data.pdf",
+    "IT Virtualization Best Practices.pdf",
+    "Business Intelligence Strategy.pdf",
+    "SQL Built-In Functions and Stored Procedures.pdf",
+    "IBM Mainframe Security.pdf",
+    "Data Governance Tools.pdf",
+    "Functions in Free-Format RPG IV.pdf",
+    "iSeries and AS-400 Programmer's Guide to Cool Things.pdf",
+    "The Programmer's Guide to iSeries Navigator.pdf",
+    "DB2 11 System Administrator for z-OS- Certification Study Guide (Exam 317).pdf",
+    "Free-Format RPG IV- Second Edition.pdf",
+    "The Chief Data Officer Handbook for Data Governance.pdf",
+    "DB2 12 for z-OS - The #1 Enterprise Database.pdf",
+    "DB2 11- The Ultimate Database for Cloud, Analytics, and Mobile.pdf",
+    "DB2 10.5 DBA for LUW Upgrade from DB2 10.1- Certification Study Notes.pdf",
+    "Subfiles in Free-Format RPG.pdf",
+    "Active Server Pages Primer.pdf",
+    "QuickStart Guide to Db2 Development with Python.pdf",
+    "Big Data Analytics.pdf",
+    "DB2 10 for z-OS- Cost Savings...Right Out of the Box.pdf",
+    "The IBM Data Governance Unified Process.pdf",
+    "DB2 11- The Database for Big Data and Analytics.pdf",
+    "21st Century RPG- -Free, ILE, and MVC.pdf",
+    "WDSC- Step by Step.pdf",
+    "RPG TnT.pdf",
+    "Leadership in My Rearview Mirror.pdf",
+    "IBM Rational Business Developer with EGL.pdf",
+    "Flexible Input, Dazzling Output with IBM i.pdf",
+    "IBM I Security Administration and Compliance- Third Edition.pdf",
+    "SQL for IBM I- A Database Moderzation Guide.pdf",
+    "Selling Information Governance to the Business.pdf",
+    "Complete CL- Sixth Edition.pdf",
+    "Enterprise Web 2.0 with EGL.pdf",
+    "IBM i Security Administration and Compliance- Second Edition.pdf",
+    "Evolve Your RPG Coding- Move from OPM to ILE ... and Beyond.pdf",
+    "JavaScript for the Business Developer.pdf",
+    "Programming in RPG IV.pdf",
+    "IBM i Security Administration and Compliance.pdf",
+    "Extract, Transform, and Load with SQL Server Intergration Services.pdf",
+    "Fundamentals of Technology Project Management- First Edition.pdf",
+    "Open Source Starter Guide for IBM i Developers.pdf",
+    "Driving the Power of AIX.pdf",
+    "Qshell for iSeries.pdf",
+    "An Introduction to IBM Rational Application Developer.pdf",
+    "5 Keys to Business Analytics Program Success.pdf",
+    "DB2 10.5 Fundamentals for LUW (Exam 615).pdf",
+    "Data Fabric- An Intelligent Data Architecutre for AI.pdf",
+    "SOA for the Business Developer.pdf",
+    "IBM Cloud Platform Primer.pdf",
+    "Advanced, Integrated RPG.pdf",
+    "Mastering IBM i.pdf",
+    "DB2 10.1 Fundamentals (Exam 610).pdf",
+    "IBM WebSphere Portal Primer.pdf",
+    "The Business Value of DB2 for z-OS.pdf",
+    "DB2 9 System Administration for z-OS (Exam 737).pdf",
+    "DB2 10 for z-OS- The Smarter, Faster Way to Upgrade.pdf",
+    "Free-Format RPG IV- Third Edition.pdf",
+    "HTML for the Business Developer.pdf",
+    "Customer Experience Analytics.pdf",
+    "Free-Format RPG IV- First Edition.pdf",
+    "IBM InfoSphere- A Platform for Big Data Governance and Process Data Governance.pdf",
+    "Identity Management.pdf",
+    "How to Become a Highly Paid Corporate Programmer.pdf",
+    "You Want to Do What with PHP.pdf",
+    "Digital Marketplaces for Knowledge Intensive Assets.pdf",
+    "Mastering IBM i Security- A Modern Step-by-Step Guide.pdf",
+    "IBM Business Analytics and Cloud Computing.pdf",
+    "The Lakehouse Effect- A New Era for Database Insights and AI.pdf",
+    "Managing Without Walls.pdf",
+    "Programming in ILE RPG, Fifth Edition.pdf",
+    "Identity Management- A Business Perspective.pdf",
+    "New Intelligence for a Smarter Planet.pdf",
+    "WebSphere Application Server- Step by Step.pdf",
+    "System i Disaster Recovery Planning.pdf",
+    "Artificial Intelligence- Evolution and Revolution.pdf",
+    "Java for RPG Programmers.pdf",
+    "mcpressonline.com-From Legacy to Modern_ Upgrading Your BI Strategy with LANSA BI for IBM i.pdf",
+    "e-RPG(v2) e-Volving RPG Applications for a Connected World.pdf",
+    "DB2 9 for Linux, UNIX, and Windows Advanced Database Administration (Exam 734).pdf",
+    "BYTE-ing Satire.pdf",
+    "Complete CL- Fifth Edition.pdf",
+    "DB2 9.7 for Linux, UNIX, and Windows Database Administration (Exam 541).pdf",
+    "Eclipse- Step by Step.pdf",
+    "Developing Web 2.0 Applications with EGL for IBM i.pdf",
+    "mcpressonline.com-Organizing for Data Governance.pdf",
+    "IBM System i APIs at Work.pdf",
+    "Developing Web Services for Web Applications.pdf"
+  ],
   "failed": [
     {
-      "filename": "Building Applications with IBM Rational Application Developer and JavaBeans.pdf",
-      "error": "connection was closed in the middle of operation"
+      "filename": "Mastering the AS-400.pdf",
+      "error": "Database storage failed"
+    },
+    {
+      "filename": "Advanced Guide to PHP on IBM i.pdf",
+      "error": "Database storage failed"
+    },
+    {
+      "filename": "DB2 10 for z-OS Database Administration (Exam 612).pdf",
+      "error": "Database storage failed"
+    },
+    {
+      "filename": "Big Data Governance.pdf",
+      "error": "Database storage failed"
+    },
+    {
+      "filename": "DB2 9 for z-OS Database Administration (Exam 732).pdf",
+      "error": "Database storage failed"
+    },
+    {
+      "filename": "The Remote System Explorer.pdf",
+      "error": "Database storage failed"
+    },
+    {
+      "filename": "Developing Business Applications for the Web- With HTML, CSS, JSP, PHP, ASP.NET, and JavaScript.pdf",
+      "error": "Database storage failed"
+    },
+    {
+      "filename": "SQL for eServer i5 and iSeries.pdf",
+      "error": "Database storage failed"
+    },
+    {
+      "filename": "DB2 10.1-10.5 for Linux, UNIX, and Windows Database Administration (Exams 611 and 311).pdf",
+      "error": "Database storage failed"
+    },
+    {
+      "filename": "Programming Portlets.pdf",
+      "error": "Database storage failed"
+    },
+    {
+      "filename": "Database Design and SQL for DB2.pdf",
+      "error": "Database storage failed"
+    },
+    {
+      "filename": "The IBM i Programmer's Guide to PHP.pdf",
+      "error": "Database storage failed"
+    },
+    {
+      "filename": "Advanced Java EE Development for Rational Application Developer 7.5.pdf",
+      "error": "Database storage failed"
+    },
+    {
+      "filename": "The RPG Programmers Guide to RPG IV and ILE.pdf",
+      "error": "Database storage failed"
+    },
+    {
+      "filename": "Administering Informix Dynamic Server.pdf",
+      "error": "Database storage failed"
+    },
+    {
+      "filename": "From Idea to Print.pdf",
+      "error": "Database storage failed"
+    },
+    {
+      "filename": "DB2 9 for Developers.pdf",
+      "error": "Database storage failed"
+    },
+    {
+      "filename": "The Modern RPG IV Language.pdf",
+      "error": "Database storage failed"
+    },
+    {
+      "filename": "Fundamentals of Technology Project Management- Second Edition.pdf",
+      "error": "Database storage failed"
+    },
+    {
+      "filename": "DB2 9 Fundamentals (Exam 730).pdf",
+      "error": "Database storage failed"
+    },
+    {
+      "filename": "Understanding AS-400 System Operations.pdf",
+      "error": "Database storage failed"
+    },
+    {
+      "filename": "RPG IV at Work.pdf",
+      "error": "Database storage failed"
+    },
+    {
+      "filename": "Control Language Programming for IBM i.pdf",
+      "error": "Database storage failed"
     }
   ],
-  "timestamp": "2025-08-06T13:28:02.599583"
+  "timestamp": "2025-08-07T05:10:00.596906"
 }

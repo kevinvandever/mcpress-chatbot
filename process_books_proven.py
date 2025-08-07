@@ -113,10 +113,12 @@ class ProvenProcessor:
                         }
                     })
                 
-                # Store using the vector store's actual method with retry logic
+                # Store using the vector store's actual method with enhanced retry logic
                 if documents:
-                    for attempt in range(3):
+                    print(f"   📊 Attempting to store {len(documents)} document chunks...")
+                    for attempt in range(5):  # Increased from 3 to 5 attempts
                         try:
+                            print(f"   🔄 Storage attempt {attempt + 1}/5...")
                             await self.vector_store.add_documents(
                                 documents,
                                 metadata={
@@ -129,16 +131,31 @@ class ProvenProcessor:
                                     'has_code': len(pdf_data.get('code_blocks', [])) > 0
                                 }
                             )
+                            print(f"   ✅ Successfully stored all chunks!")
                             result = True
                             break
                         except Exception as conn_err:
-                            if attempt < 2:
-                                print(f"   🔄 Connection error, retrying... ({attempt + 1}/3)")
-                                await asyncio.sleep(2)
-                                # Reinitialize connection
-                                await self.vector_store.init_database()
+                            error_msg = str(conn_err)
+                            print(f"   ❌ Attempt {attempt + 1} failed: {error_msg}")
+                            
+                            if attempt < 4:  # Changed from 2 to 4
+                                wait_time = 5 + (attempt * 2)  # Progressive backoff: 5, 7, 9, 11 seconds
+                                print(f"   ⏳ Waiting {wait_time} seconds before retry...")
+                                await asyncio.sleep(wait_time)
+                                
+                                print(f"   🔄 Reinitializing database connection...")
+                                try:
+                                    # Close existing pool if it exists
+                                    if self.vector_store.pool:
+                                        await self.vector_store.pool.close()
+                                        self.vector_store.pool = None
+                                    # Reinitialize fresh connection
+                                    await self.vector_store.init_database()
+                                    print(f"   ✅ Database connection refreshed")
+                                except Exception as reinit_err:
+                                    print(f"   ⚠️ Database reinit warning: {reinit_err}")
                             else:
-                                print(f"   ❌ Connection failed after 3 attempts: {conn_err}")
+                                print(f"   ❌ All 5 attempts failed. Final error: {error_msg}")
                                 result = False
                 else:
                     result = False
