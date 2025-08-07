@@ -18,8 +18,22 @@ from concurrent.futures import ThreadPoolExecutor
 import time
 
 from backend.pdf_processor_full import PDFProcessorFull
-from backend.vector_store_chroma import ChromaVectorStore
 from backend.chat_handler import ChatHandler
+
+# Try ChromaDB first, fall back to PostgreSQL
+try:
+    if os.getenv('USE_CHROMADB', 'false').lower() == 'true':
+        from backend.vector_store_chroma import ChromaVectorStore
+        VectorStoreClass = ChromaVectorStore
+        print("Using ChromaDB vector store")
+    else:
+        from backend.vector_store import VectorStore  
+        VectorStoreClass = VectorStore
+        print("Using PostgreSQL vector store")
+except ImportError as e:
+    print(f"ChromaDB not available, falling back to PostgreSQL: {e}")
+    from backend.vector_store import VectorStore
+    VectorStoreClass = VectorStore
 from backend.category_mapper import get_category_mapper
 from backend.async_upload import process_pdf_async, create_upload_job, get_job_status, cleanup_old_jobs
 
@@ -46,7 +60,7 @@ app.add_middleware(
 )
 
 pdf_processor = PDFProcessorFull()
-vector_store = ChromaVectorStore()
+vector_store = VectorStoreClass()
 
 # Initialize the database on startup
 @app.on_event("startup")
