@@ -1,14 +1,40 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import ChatInterface from '@/components/ChatInterface'
 import DocumentList from '@/components/DocumentList'
 import SearchInterface from '@/components/SearchInterface'
+import { API_URL } from '@/config/api'
 
 export default function Home() {
-  const [hasDocuments, setHasDocuments] = useState(true) // Always true for demo
+  const [hasDocuments, setHasDocuments] = useState(false)
   const [activeTab, setActiveTab] = useState<'documents' | 'search'>('search')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  
+  // Check if documents are available
+  useEffect(() => {
+    const checkDocuments = async () => {
+      try {
+        const response = await fetch(`${API_URL}/documents`)
+        if (response.ok) {
+          const data = await response.json()
+          // Check if documents object exists and has entries
+          const docCount = data.documents ? Object.keys(data.documents).length : 0
+          setHasDocuments(docCount > 0)
+          console.log(`Found ${docCount} documents in the system`)
+        }
+      } catch (error) {
+        console.error('Error checking documents:', error)
+        setHasDocuments(false)
+      }
+    }
+    
+    checkDocuments()
+    // Check periodically in case documents are added
+    const interval = setInterval(checkDocuments, 10000) // Check every 10 seconds
+    
+    return () => clearInterval(interval)
+  }, [])
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -138,7 +164,7 @@ export default function Home() {
                     </div>
                   </div>
                   
-                  <ChatInterface />
+                  <ChatInterface hasDocuments={hasDocuments} />
                 </div>
               </div>
             </div>
