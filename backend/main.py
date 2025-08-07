@@ -36,6 +36,7 @@ app.add_middleware(
         "http://localhost:3000", "http://127.0.0.1:3000",
         "https://frontend-qwnql4s2j0s-kevin-vandevers-projects.vercel.app",
         "https://frontend-cwanq0nz1-kevin-vandevers-projects.vercel.app",
+        "https://frontend-79buo65mb-kevin-vandevers-projects.vercel.app",
         os.getenv("CORS_ORIGIN", "*")  # Allow environment override
     ],
     allow_credentials=True,
