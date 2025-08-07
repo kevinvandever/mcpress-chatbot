@@ -117,7 +117,7 @@ class QueryOnlyBackend:
                     filename,
                     COUNT(*) as chunk_count,
                     MAX(page_number) as max_page,
-                    MIN(metadata) as sample_metadata
+                    (array_agg(metadata))[1] as sample_metadata
                 FROM documents
                 GROUP BY filename
                 ORDER BY filename
