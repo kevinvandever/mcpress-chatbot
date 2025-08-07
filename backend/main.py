@@ -42,11 +42,7 @@ temp_storage = {}
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"https://frontend-.*\.vercel\.app",
-    allow_origins=[
-        "http://localhost:3000", "http://127.0.0.1:3000",
-        os.getenv("CORS_ORIGIN", "*")  # Allow environment override
-    ],
+    allow_origins=["*"],  # Simple fix - allow all origins for now
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
