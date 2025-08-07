@@ -16,13 +16,29 @@ class ChatHandler:
         self.conversations = {}
         
     async def stream_response(self, message: str, conversation_id: str) -> AsyncGenerator[Dict[str, Any], None]:
+        logger.info(f"=== CHAT REQUEST DEBUG ===")
+        logger.info(f"Query: '{message}'")
+        logger.info(f"Conversation ID: {conversation_id}")
+        
         # Get more results initially to have options for filtering
+        logger.info("Step 1: Calling vector store search...")
         search_results = await self.vector_store.search(message, n_results=10)
+        logger.info(f"Step 1 Result: Found {len(search_results)} initial search results")
+        
+        # Log raw search results
+        for i, result in enumerate(search_results[:3]):
+            logger.info(f"  Raw Result {i+1}: distance={result.get('distance', 'N/A')}, filename={result.get('metadata', {}).get('filename', 'Unknown')}")
         
         # Filter results by relevance threshold
+        logger.info("Step 2: Filtering results by relevance...")
         relevant_docs = self._filter_relevant_documents(search_results, message)
+        logger.info(f"Step 2 Result: {len(relevant_docs)} documents passed filtering")
         
+        # Build context
+        logger.info("Step 3: Building context from relevant documents...")
         context = self._build_context(relevant_docs)
+        logger.info(f"Step 3 Result: Context length = {len(context)} characters")
+        logger.info(f"Context preview: {context[:200]}..." if context else "Context is EMPTY")
         
         if conversation_id not in self.conversations:
             self.conversations[conversation_id] = []
@@ -59,10 +75,14 @@ class ChatHandler:
 {context}
 
 Based on this content, please answer the following question: {message}"""
+            logger.info("Step 4: Context found - sending document-based request to OpenAI")
         else:
             user_content = f"""No relevant content was found in the uploaded PDF documents for this query.
 
 Please answer the following question based on your general knowledge, but clearly indicate that your response is not based on the provided documents: {message}"""
+            logger.info("Step 4: NO CONTEXT - sending general knowledge request to OpenAI")
+        
+        logger.info(f"Final prompt length: {len(user_content)} characters")
         
         messages.append({
             "role": "user", 
