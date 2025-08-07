@@ -13,6 +13,11 @@ class ChromaVectorStore:
         
         logger.info(f"Initializing ChromaDB at path: {chroma_path}")
         
+        # Check if ChromaDB directory exists
+        if not os.path.exists(chroma_path):
+            logger.warning(f"ChromaDB path {chroma_path} does not exist - creating empty database")
+            os.makedirs(chroma_path, exist_ok=True)
+        
         self.client = chromadb.PersistentClient(
             path=chroma_path, 
             settings=Settings(anonymized_telemetry=False)
@@ -20,10 +25,12 @@ class ChromaVectorStore:
         
         try:
             self.collection = self.client.get_collection('pdf_documents')
-            logger.info(f"Connected to existing ChromaDB collection")
+            logger.info(f"✅ Connected to existing ChromaDB collection with data")
         except Exception as e:
-            logger.error(f"Failed to connect to ChromaDB collection: {e}")
-            raise
+            logger.warning(f"⚠️ ChromaDB collection 'pdf_documents' not found, creating empty one: {e}")
+            # Create empty collection if it doesn't exist
+            self.collection = self.client.create_collection('pdf_documents')
+            logger.info("📝 Created empty ChromaDB collection - no documents available yet")
     
     async def search(self, query: str, n_results: int = 5, book_filter: List[str] = None, type_filter: List[str] = None) -> List[Dict[str, Any]]:
         """Search for similar documents using ChromaDB vector similarity"""

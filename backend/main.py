@@ -20,16 +20,14 @@ import time
 from backend.pdf_processor_full import PDFProcessorFull
 from backend.chat_handler import ChatHandler
 
-# Try ChromaDB first, fall back to PostgreSQL
+# Try ChromaDB first, fall back to PostgreSQL if needed
 try:
-    if os.getenv('USE_CHROMADB', 'false').lower() == 'true':
-        from backend.vector_store_chroma import ChromaVectorStore
-        VectorStoreClass = ChromaVectorStore
-        print("Using ChromaDB vector store")
-    else:
-        raise ImportError("USE_CHROMADB not enabled")
+    from backend.vector_store_chroma import ChromaVectorStore
+    VectorStoreClass = ChromaVectorStore
+    print("✅ Using ChromaDB vector store (semantic search)")
 except ImportError as e:
-    print(f"Using PostgreSQL vector store (ChromaDB not available: {e})")
+    print(f"⚠️ ChromaDB not available, falling back to PostgreSQL text search: {e}")
+    print("📦 To use ChromaDB, ensure 'chromadb' package is installed")
     from backend.vector_store import VectorStore
     VectorStoreClass = VectorStore
 from backend.category_mapper import get_category_mapper
