@@ -4,6 +4,8 @@ import os
 import json
 import logging
 from datetime import datetime
+import tiktoken
+from .config import OPENAI_CONFIG, SEARCH_CONFIG, RESPONSE_CONFIG
 
 # Set up logging for source relevance debugging
 logging.basicConfig(level=logging.INFO)
@@ -18,6 +20,50 @@ class ChatHandler:
             raise ValueError("OPENAI_API_KEY environment variable is required")
         self.client = openai.AsyncOpenAI(api_key=api_key)
         self.conversations = {}
+        # Initialize tiktoken encoder for token counting
+        self.model = OPENAI_CONFIG["model"]
+        self.encoding = tiktoken.encoding_for_model(self.model)
+        self.max_context_tokens = 3000  # Leave room for response
+        
+    def count_tokens(self, text: str) -> int:
+        """Count tokens in text using tiktoken"""
+        return len(self.encoding.encode(text))
+    
+    def truncate_context_by_tokens(self, context: str) -> str:
+        """Truncate context to fit within token limits"""
+        token_count = self.count_tokens(context)
+        
+        if token_count <= self.max_context_tokens:
+            return context
+            
+        logger.info(f"Context too long ({token_count} tokens), truncating to {self.max_context_tokens}")
+        
+        # Simple truncation - take first portion that fits
+        words = context.split()
+        truncated = ""
+        
+        for word in words:
+            test_context = truncated + " " + word if truncated else word
+            if self.count_tokens(test_context) > self.max_context_tokens:
+                break
+            truncated = test_context
+            
+        return truncated
+    
+    def calculate_confidence(self, relevant_docs: List[Dict[str, Any]]) -> float:
+        """Calculate confidence score based on document relevance"""
+        if not relevant_docs:
+            return 0.0
+            
+        # Average similarity score (convert from distance)
+        total_similarity = 0
+        for doc in relevant_docs:
+            distance = doc.get("distance", 2.0)
+            similarity = max(0, (2 - distance) / 2)  # Convert to 0-1 scale
+            total_similarity += similarity
+            
+        avg_confidence = total_similarity / len(relevant_docs)
+        return round(avg_confidence, 3)
         
     async def stream_response(self, message: str, conversation_id: str) -> AsyncGenerator[Dict[str, Any], None]:
         logger.info(f"=== CHAT REQUEST DEBUG ===")
@@ -26,7 +72,7 @@ class ChatHandler:
         
         # Get more results initially to have options for filtering
         logger.info("Step 1: Calling vector store search...")
-        search_results = await self.vector_store.search(message, n_results=10)
+        search_results = await self.vector_store.search(message, n_results=SEARCH_CONFIG["initial_search_results"])
         logger.info(f"Step 1 Result: Found {len(search_results)} initial search results")
         
         # Log raw search results
@@ -41,7 +87,12 @@ class ChatHandler:
         # Build context
         logger.info("Step 3: Building context from relevant documents...")
         context = self._build_context(relevant_docs)
-        logger.info(f"Step 3 Result: Context length = {len(context)} characters")
+        
+        # Apply token-based truncation
+        context = self.truncate_context_by_tokens(context)
+        context_tokens = self.count_tokens(context)
+        
+        logger.info(f"Step 3 Result: Context length = {len(context)} characters, {context_tokens} tokens")
         logger.info(f"Context preview: {context[:200]}..." if context else "Context is EMPTY")
         
         if conversation_id not in self.conversations:
@@ -53,25 +104,38 @@ class ChatHandler:
         messages = [
             {
                 "role": "system",
-                "content": f"""You are a helpful assistant that answers questions based on the provided document context. 
+                "content": f"""You are an expert technical documentation assistant specialized in MC Press technical books and documentation. You provide precise, accurate answers based on the uploaded PDF content.
                 
                 Current date: {current_date}
                 Current year: {current_year}
                 
                 IMPORTANT: You have direct access to the content from uploaded PDF documents through the context provided in each message. Use this context to answer questions accurately and specifically.
                 
-                When answering:
-                - Base your responses on the provided context from the documents
-                - Quote specific passages when relevant
-                - Reference page numbers when available
-                - Format code blocks properly with markdown
+                Core Instructions:
+                - Base your responses STRICTLY on the provided document context
+                - Quote specific passages when relevant, using exact text from the documents
+                - Always cite sources in format: [Book/Document Title, p.XX]
+                - Format code blocks with appropriate syntax highlighting (```language)
+                - Use markdown tables for comparisons or structured data
                 - Be precise and technical in your responses
-                - If the context doesn't contain enough information to answer a question, say so clearly
-                - When calculating time periods or ages, use the current date/year provided above"""
+                
+                Response Guidelines:
+                - If the context doesn't contain enough information, explicitly state: "The provided documents don't contain information about [topic]"
+                - For ambiguous queries, ask for clarification and suggest related topics found in the documents
+                - When multiple interpretations exist, briefly present all relevant options
+                - Include code examples from the documents when applicable
+                - For technical terms, provide the definition as found in the documents
+                
+                Quality Standards:
+                - Prioritize accuracy over completeness - never guess or infer beyond the documents
+                - Maintain technical precision - use exact terminology from the source material
+                - If referencing multiple sources, clearly distinguish between them
+                - When calculating time periods or ages, use the current date/year provided above
+                - For code-related questions, always check for the most recent/updated version in the documents"""
             }
         ]
         
-        messages.extend(self.conversations[conversation_id][-10:])
+        messages.extend(self.conversations[conversation_id][-RESPONSE_CONFIG["max_conversation_history"]:])
         
         if context.strip():
             user_content = f"""Here is the relevant content from the uploaded PDF documents:
@@ -95,11 +159,11 @@ Please answer the following question based on your general knowledge, but clearl
         
         try:
             stream = await self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model=OPENAI_CONFIG["model"],
                 messages=messages,
-                stream=True,
-                temperature=0.7,
-                max_tokens=2000
+                stream=OPENAI_CONFIG["stream"],
+                temperature=OPENAI_CONFIG["temperature"],
+                max_tokens=OPENAI_CONFIG["max_tokens"]
             )
             
             full_response = ""
@@ -115,6 +179,21 @@ Please answer the following question based on your general knowledge, but clearl
             
             self.conversations[conversation_id].append({"role": "user", "content": message})
             self.conversations[conversation_id].append({"role": "assistant", "content": full_response})
+            
+            # Calculate response metadata
+            confidence_score = self.calculate_confidence(relevant_docs)
+            threshold_used = self._get_dynamic_threshold(message)
+            
+            yield {
+                "type": "metadata",
+                "confidence": confidence_score,
+                "source_count": len(relevant_docs),
+                "model_used": OPENAI_CONFIG["model"],
+                "temperature": OPENAI_CONFIG["temperature"],
+                "threshold_used": threshold_used,
+                "context_tokens": self.count_tokens(context) if context else 0,
+                "timestamp": datetime.now().isoformat()
+            }
             
             yield {
                 "type": "done",
@@ -148,12 +227,32 @@ Please answer the following question based on your general knowledge, but clearl
         
         return "\n---\n".join(context_parts)
     
+    def _get_dynamic_threshold(self, query: str) -> float:
+        """Determine relevance threshold based on query characteristics"""
+        query_lower = query.lower()
+        
+        # Exact searches (with quotes) need higher precision
+        if '"' in query:
+            return 0.5
+        
+        # Code/technical queries - more specific matching
+        code_keywords = ['function', 'class', 'method', 'error', 'code', 'syntax', 'api', 'import', 'return']
+        if any(keyword in query_lower for keyword in code_keywords):
+            return 0.6
+            
+        # Specific technical terms - precise matching
+        tech_keywords = ['configure', 'install', 'setup', 'parameter', 'variable', 'property']
+        if any(keyword in query_lower for keyword in tech_keywords):
+            return 0.65
+        
+        # General questions - broader matching allowed
+        return SEARCH_CONFIG["relevance_threshold"]
+
     def _filter_relevant_documents(self, documents: List[Dict[str, Any]], query: str) -> List[Dict[str, Any]]:
         """Filter documents by relevance threshold and log the decision process"""
         # ChromaDB uses cosine distance: 0 = identical, 2 = completely different
-        # We want documents with distance <= 0.7 (roughly 65% similarity or higher)
-        RELEVANCE_THRESHOLD = 0.7
-        MAX_SOURCES = 8
+        RELEVANCE_THRESHOLD = self._get_dynamic_threshold(query)
+        MAX_SOURCES = SEARCH_CONFIG["max_sources"]
         
         logger.info(f"Query: '{query}'")
         logger.info(f"Initial search returned {len(documents)} documents")

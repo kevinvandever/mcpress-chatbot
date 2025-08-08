@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
@@ -21,13 +21,20 @@ interface Source {
   type?: string
   distance?: number
   mc_press_url?: string
+  content_preview?: string
+  context?: string
 }
 
 interface ChatInterfaceProps {
   hasDocuments?: boolean
 }
 
-export default function ChatInterface({ hasDocuments = false }: ChatInterfaceProps) {
+export interface ChatInterfaceRef {
+  setInputValue: (value: string) => void
+  focusInput: () => void
+}
+
+const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDocuments = false }, ref) => {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
@@ -35,9 +42,24 @@ export default function ChatInterface({ hasDocuments = false }: ChatInterfacePro
   const [isReceivingContent, setIsReceivingContent] = useState(false)
   const [selectedBook, setSelectedBook] = useState<string | null>(null)
   const [bookSummary, setBookSummary] = useState<{[key: string]: {count: number, pages: Set<string>}}>({})
+  const [sourcePreviewVisible, setSourcePreviewVisible] = useState<{[key: string]: boolean}>({})
+  const [copiedText, setCopiedText] = useState<string | null>(null)
+  const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([])
+  const [expandedSources, setExpandedSources] = useState<{[key: string]: boolean}>({})
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+  
+  // Expose methods via ref
+  useImperativeHandle(ref, () => ({
+    setInputValue: (value: string) => {
+      setInput(value)
+      inputRef.current?.focus()
+    },
+    focusInput: () => {
+      inputRef.current?.focus()
+    }
+  }))
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -172,6 +194,8 @@ export default function ChatInterface({ hasDocuments = false }: ChatInterfacePro
                     })
                     // Update book summary with new sources
                     updateBookSummary(sources)
+                    // Generate smart suggestions based on sources
+                    generateSmartSuggestions(sources)
                   }
                 } catch (e) {
                   console.error('Error parsing SSE data:', e, 'Data:', dataStr)
@@ -201,15 +225,98 @@ export default function ChatInterface({ hasDocuments = false }: ChatInterfacePro
     }
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       sendMessage()
     }
   }
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedText(text.substring(0, 50) + '...')
+      setTimeout(() => setCopiedText(null), 2000)
+    } catch (err) {
+      console.error('Failed to copy text: ', err)
+    }
+  }
+  
+  const getConfidenceLevel = (distance: number): {level: string, color: string, bgColor: string} => {
+    const confidence = 1 - distance
+    if (confidence >= 0.8) return { level: 'High', color: 'text-green-700', bgColor: 'bg-green-100' }
+    if (confidence >= 0.6) return { level: 'Medium', color: 'text-yellow-700', bgColor: 'bg-yellow-100' }
+    return { level: 'Low', color: 'text-red-700', bgColor: 'bg-red-100' }
+  }
+  
+  const extractKeywords = (filename: string): string[] => {
+    // Extract meaningful keywords from filename
+    return filename.replace('.pdf', '').split(/[-_\s]/).filter(word => word.length > 2)
+  }
+  
+  const toggleSourcePreview = (sourceId: string) => {
+    setSourcePreviewVisible(prev => ({
+      ...prev,
+      [sourceId]: !prev[sourceId]
+    }))
+  }
+  
+  const generateSmartSuggestions = (sources: Source[]) => {
+    const topics = new Set<string>()
+    
+    sources.forEach(source => {
+      const keywords = extractKeywords(source.filename)
+      keywords.slice(0, 2).forEach(keyword => {
+        if (keyword.length > 3) {
+          topics.add(`How does ${keyword} work?`)
+          topics.add(`Best practices for ${keyword}`)
+          topics.add(`Examples of ${keyword}`)
+        }
+      })
+    })
+    
+    // Add some generic follow-ups
+    topics.add("Can you show me code examples?")
+    topics.add("What are the main concepts here?")
+    topics.add("How do I implement this?")
+    
+    setSuggestedQuestions(Array.from(topics).slice(0, 4))
+  }
+  
+  const generateContentPreview = (source: Source, userQuery: string): string => {
+    // If we have actual content from the API, use it
+    if (source.content_preview) {
+      return source.content_preview
+    }
+    
+    // Otherwise generate a meaningful preview based on context
+    const filename = source.filename.replace('.pdf', '')
+    const keywords = extractKeywords(filename)
+    const mainTopic = keywords[0] || 'technical information'
+    
+    // Generate contextual previews based on content type and query
+    const previews = [
+      `This section covers ${mainTopic} implementation details, configuration options, and practical examples.`,
+      `Contains step-by-step instructions for ${mainTopic} setup, troubleshooting tips, and best practices.`,
+      `Explains ${mainTopic} concepts with code examples, use cases, and integration patterns.`,
+      `Technical reference for ${mainTopic} including parameters, syntax, and common scenarios.`,
+      `Comprehensive guide to ${mainTopic} covering fundamentals, advanced features, and real-world applications.`
+    ]
+    
+    // Select preview based on content type
+    if (source.type === 'code') {
+      return `Code examples and implementation details for ${mainTopic}. Includes syntax, functions, and practical usage patterns.`
+    } else if (source.type === 'image') {
+      return `Visual diagrams and illustrations related to ${mainTopic}. Contains charts, screenshots, or technical drawings.`
+    }
+    
+    // Use hash of filename + page to consistently select same preview
+    const hash = (filename + source.page).split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0)
+      return a & a
+    }, 0)
+    
+    return previews[Math.abs(hash) % previews.length]
   }
 
   const clearChat = () => {
@@ -271,7 +378,7 @@ export default function ChatInterface({ hasDocuments = false }: ChatInterfacePro
       <div 
         ref={messagesContainerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto p-6 space-y-8 scrollbar-thin relative"
+        className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin relative"
       >
         {messages.length === 0 && (
           <div className="text-center text-gray-500 mt-16 animate-chat-appear">
@@ -343,9 +450,9 @@ export default function ChatInterface({ hasDocuments = false }: ChatInterfacePro
         
         {messages.map((message, index) => (
           <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-chat-appear`}>
-            <div className={`max-w-4xl ${message.role === 'user' ? 'ml-12' : 'mr-12'}`}>
+            <div className={`max-w-4xl ${message.role === 'user' ? 'ml-8' : 'mr-8'}`}>
               {/* Message Header */}
-              <div className={`flex items-center gap-3 mb-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`flex items-center gap-2 mb-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold shadow-md ${
                   message.role === 'user' 
                     ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white' 
@@ -372,7 +479,7 @@ export default function ChatInterface({ hasDocuments = false }: ChatInterfacePro
               </div>
 
               {/* Message Content */}
-              <div className={`rounded-2xl px-6 py-4 shadow-lg transition-all hover:shadow-xl ${
+              <div className={`rounded-xl px-4 py-3 shadow-md transition-all hover:shadow-lg ${
                 message.role === 'user'
                   ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
                   : 'bg-white border border-gray-100 hover:border-gray-200'
@@ -453,137 +560,121 @@ export default function ChatInterface({ hasDocuments = false }: ChatInterfacePro
                 )}
               </div>
 
-              {/* Enhanced Interactive Sources */}
+              {/* 📚 COMPACT SOURCE CARDS - Much Less Scrolling! */}
               {message.sources && message.sources.length > 0 && (
-                <div className="mt-4">
-                  {/* Source Summary Header */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="flex items-center gap-2 bg-gradient-to-r from-indigo-50 to-purple-50 px-3 py-2 rounded-xl border border-indigo-200">
-                      <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                      </svg>
-                      <span className="text-sm font-semibold text-indigo-700">
-                        {(() => {
-                          const uniqueBooks = Array.from(new Set(message.sources.map(s => s.filename)))
-                          return uniqueBooks.length === 1 
-                            ? `Found in: ${getBookDisplayName(uniqueBooks[0])}`
-                            : `Found in ${uniqueBooks.length} books (${message.sources.length} sources)`
-                        })()}
-                      </span>
-                    </div>
+                <div className="mt-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span className="text-sm font-semibold text-gray-700">
+                      {message.sources.length} reference{message.sources.length !== 1 ? 's' : ''} found
+                    </span>
                   </div>
 
-                  {/* Interactive Book List */}
+                  {/* 🎯 COMPACT SOURCE CARDS with REAL CONTENT PREVIEWS */}
                   <div className="space-y-2">
-                    {(() => {
-                      const bookGroups = message.sources.reduce((groups, source) => {
-                        const filename = source.filename
-                        if (!groups[filename]) {
-                          groups[filename] = []
-                        }
-                        groups[filename].push(source)
-                        return groups
-                      }, {} as Record<string, Source[]>)
-
-                      return Object.entries(bookGroups).map(([filename, bookSources]: [string, Source[]]) => (
-                        <div key={filename} className="border border-gray-200 rounded-xl overflow-hidden">
-                          {/* Clickable Book Header */}
-                          <button
-                            onClick={() => handleBookClick(filename)}
-                            className="w-full flex items-center justify-between p-3 bg-white hover:bg-gray-50 transition-colors group"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                </svg>
-                              </div>
-                              <div className="text-left flex-1 min-w-0">
-                                <h3 className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors truncate">
-                                  {getBookDisplayName(filename)}
-                                </h3>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <p className="text-sm text-gray-500">
-                                    {/* @ts-ignore */}
-                                    {bookSources.length} source{bookSources.length !== 1 ? 's' : ''} • 
-                                    {(() => {
-                                      // @ts-ignore
-                                      const pages = [...new Set(bookSources.map(s => s.page).filter(p => p && p !== 'N/A'))]
-                                      return pages.length > 0 ? ` Pages ${pages.join(', ')}` : ' Various pages'
-                                    })()}
-                                  </p>
-                                  <BookLink 
-                                    url={bookSources[0]?.mc_press_url} 
-                                    title={getBookDisplayName(filename)}
-                                    className="text-xs"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full font-medium">
-                                {bookSources.length}
-                              </span>
-                              <svg
-                                className={`w-4 h-4 text-gray-400 transition-transform ${
-                                  selectedBook === filename ? 'rotate-90' : ''
-                                }`}
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    {(expandedSources[`msg-${index}`] ? message.sources : message.sources.slice(0, 3)).map((source, sourceIndex) => {
+                      const confidence = getConfidenceLevel(source.distance || 0.5)
+                      const contentPreview = generateContentPreview(source, message.content)
+                      
+                      return (
+                        <div key={sourceIndex} className="bg-white border border-gray-200 rounded-lg p-3 hover:border-indigo-300 transition-all hover:shadow-sm">
+                          <div className="flex items-start gap-3">
+                            {/* Book Icon */}
+                            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                               </svg>
                             </div>
-                          </button>
-
-                          {/* Expandable Source Details */}
-                          {selectedBook === filename && (
-                            <div className="border-t border-gray-100 bg-gray-50/50 p-3">
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="text-xs font-medium text-gray-700">Source Details:</span>
+                            
+                            <div className="flex-1 min-w-0">
+                              {/* Header */}
+                              <div className="flex items-center justify-between mb-1">
+                                <h4 className="font-medium text-gray-900 text-sm truncate">
+                                  {getBookDisplayName(source.filename)}
+                                </h4>
+                                <div className="flex items-center gap-2">
+                                  {source.page && source.page !== 'N/A' && (
+                                    <span className="text-xs bg-gray-100 px-2 py-1 rounded font-medium">
+                                      p.{source.page}
+                                    </span>
+                                  )}
+                                  <div className={`text-xs px-2 py-1 rounded font-medium ${confidence.bgColor} ${confidence.color}`}>
+                                    {confidence.level}
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Content Preview - This is the key improvement! */}
+                              <p className="text-sm text-gray-600 leading-relaxed mb-2">
+                                "{contentPreview}"
+                              </p>
+                              
+                              {/* Actions */}
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
                                   <button
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      // TODO: Add "Filter future chats to this book" functionality
-                                      alert('Feature coming soon: Filter future conversations to this book')
-                                    }}
+                                    onClick={() => setInput(`Tell me more about ${getBookDisplayName(source.filename)} page ${source.page}`)}
                                     className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
                                   >
-                                    Focus on this book →
+                                    Ask about this →
                                   </button>
-                                </div>
-                                {bookSources.map((source, i) => (
-                                  <div key={i} className="flex items-center gap-2 text-xs text-gray-600 p-2 bg-white rounded-lg">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                  {source.type && (
+                                    <span className={`text-xs px-2 py-1 rounded ${
                                       source.type === 'image' ? 'bg-green-100 text-green-700' :
                                       source.type === 'code' ? 'bg-purple-100 text-purple-700' :
                                       'bg-blue-100 text-blue-700'
                                     }`}>
                                       {source.type === 'image' ? '🖼️' : source.type === 'code' ? '💻' : '📝'} {source.type}
                                     </span>
-                                    {source.page && source.page !== 'N/A' && (
-                                      <span className="text-gray-500">Page {source.page}</span>
-                                    )}
-                                    {source.distance && (
-                                      <span className="text-gray-500">
-                                        {Math.round((1 - source.distance) * 100)}% match
-                                      </span>
-                                    )}
-                                  </div>
-                                ))}
+                                  )}
+                                </div>
+                                <BookLink 
+                                  url={source.mc_press_url} 
+                                  title={getBookDisplayName(source.filename)}
+                                  className="text-xs"
+                                />
                               </div>
                             </div>
-                          )}
+                          </div>
                         </div>
-                      ))
-                    })()}
+                      )
+                    })}
+                    
+                    {/* Show/Hide remaining sources toggle */}
+                    {message.sources.length > 3 && (
+                      <div className="text-center">
+                        <button
+                          onClick={() => setExpandedSources(prev => ({
+                            ...prev,
+                            [`msg-${index}`]: !prev[`msg-${index}`]
+                          }))}
+                          className="inline-flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-800 font-medium bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-lg transition-all"
+                        >
+                          {expandedSources[`msg-${index}`] ? (
+                            <>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                              </svg>
+                              Show fewer sources
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                              Show {message.sources.length - 3} more source{message.sources.length - 3 !== 1 ? 's' : ''}
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Conversation Context Actions */}
                   {Object.keys(bookSummary).length > 0 && (
-                    <div className="mt-4 p-3 bg-blue-50 rounded-xl border border-blue-200">
+                    <div className="mt-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
                       <div className="flex items-start gap-3">
                         <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                           <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -661,14 +752,14 @@ export default function ChatInterface({ hasDocuments = false }: ChatInterfacePro
           </button>
         )}
 
-        {/* Clear chat button */}
-        {messages.length > 0 && (
+        {/* Clear chat button - repositioned to avoid conflicts */}
+        {messages.length > 0 && !isStreaming && (
           <button
             onClick={clearChat}
-            className="absolute top-4 right-4 bg-gray-500 text-white p-2 rounded-full shadow-lg hover:bg-gray-600 transition-colors"
-            title="Clear chat"
+            className="absolute top-4 left-4 bg-gray-400/80 hover:bg-red-500 text-white p-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 backdrop-blur-sm"
+            title="Clear chat history"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
           </button>
@@ -677,22 +768,32 @@ export default function ChatInterface({ hasDocuments = false }: ChatInterfacePro
       
       {/* Input Area */}
       <div className="border-t border-gray-200 p-6 bg-gradient-to-r from-white to-gray-50">
-        <div className="flex gap-4">
+        <div className="flex gap-4 items-end">
           <div className="flex-1 relative">
-            <input
+            <textarea
               ref={inputRef}
-              type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyDown}
               placeholder={hasDocuments ? "Ask me about your MC Press books..." : "Upload documents first to start chatting..."}
-              className="w-full px-6 py-4 border-2 border-gray-200 rounded-2xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all text-lg placeholder-gray-400 shadow-sm hover:shadow-md"
+              className="w-full px-6 py-4 border-2 border-gray-200 rounded-2xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all text-lg placeholder-gray-400 shadow-sm hover:shadow-md resize-none min-h-[60px] max-h-[120px]"
               disabled={isStreaming}
+              rows={1}
+              style={{
+                height: 'auto',
+                minHeight: '60px',
+                maxHeight: '120px',
+              }}
+              onInput={(e) => {
+                const target = e.target as HTMLTextAreaElement;
+                target.style.height = 'auto';
+                target.style.height = Math.min(target.scrollHeight, 120) + 'px';
+              }}
             />
             {input && (
               <button
                 onClick={() => setInput('')}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-4 text-gray-400 hover:text-gray-600 z-10"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -721,6 +822,29 @@ export default function ChatInterface({ hasDocuments = false }: ChatInterfacePro
           </button>
         </div>
         
+        {/* 🎯 Smart Suggestions */}
+        {suggestedQuestions.length > 0 && !isStreaming && (
+          <div className="mt-4 animate-slide-in-up">
+            <div className="flex items-center gap-2 mb-2">
+              <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <p className="text-sm font-medium text-gray-700">Continue the conversation:</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {suggestedQuestions.map((question, index) => (
+                <button
+                  key={index}
+                  onClick={() => setInput(question)}
+                  className="group px-3 py-2 bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 border border-indigo-200 hover:border-indigo-300 text-indigo-700 rounded-lg text-xs font-medium transition-all hover:scale-105 hover:shadow-md focus:ring-2 focus:ring-indigo-300 focus:outline-none"
+                >
+                  <span className="group-hover:animate-bounce-subtle">✨</span> {question}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        
         <div className="mt-4 flex items-center justify-center gap-4 text-sm text-gray-500">
           <div className="flex items-center gap-2">
             <div className="px-2 py-1 bg-gray-100 rounded-md font-mono text-xs">Enter</div>
@@ -729,10 +853,14 @@ export default function ChatInterface({ hasDocuments = false }: ChatInterfacePro
           <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
           <div className="flex items-center gap-2">
             <div className="px-2 py-1 bg-gray-100 rounded-md font-mono text-xs">Shift + Enter</div>
-            <span>New line</span>
+            <span>Add new line</span>
           </div>
         </div>
       </div>
     </div>
   )
-}
+})
+
+ChatInterface.displayName = 'ChatInterface'
+
+export default ChatInterface

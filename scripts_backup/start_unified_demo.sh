@@ -16,7 +16,7 @@ done
 
 # Start backend
 echo "🔧 Starting backend (port 8000)..."
-PYTHONPATH=/Users/kevinvandever/kev-dev/pdf-chatbot python backend/main.py > backend.log 2>&1 &
+DATA_DIR=/Users/kevinvandever/kev-dev/pdf-chatbot/data PYTHONPATH=/Users/kevinvandever/kev-dev/pdf-chatbot python backend/main.py > backend.log 2>&1 &
 BACKEND_PID=$!
 
 # Wait for backend to start

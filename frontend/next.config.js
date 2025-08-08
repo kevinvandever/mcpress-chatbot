@@ -20,7 +20,7 @@ const nextConfig = {
       ignoreDuringBuilds: true,
     },
   }),
-  // Proxy API calls to local backend for ngrok tunneling
+  // Direct API routing to backend (no proxy needed)
   async rewrites() {
     return [
       {

@@ -13,3 +13,5 @@ PyMuPDF>=1.23.0
 pillow>=10.0.0
 pytesseract>=0.3.10
 langchain-text-splitters>=0.0.1
+requests>=2.31.0
+chromadb>=0.4.18
