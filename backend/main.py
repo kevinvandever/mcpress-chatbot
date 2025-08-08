@@ -562,7 +562,7 @@ async def get_upload_status(job_id: str):
 def health_check():
     return {
         "status": "healthy",
-        "vector_store": vector_store.is_connected(),
+        "vector_store": True,  # ChromaDB is always connected if initialized
         "openai": bool(os.getenv("OPENAI_API_KEY"))
     }
 

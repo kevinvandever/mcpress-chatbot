@@ -1,10 +1,30 @@
 import os
+import re
 import chromadb
 from chromadb.config import Settings
 from typing import List, Dict, Any, Optional
 import logging
 
 logger = logging.getLogger(__name__)
+
+def clean_text(text: str) -> str:
+    """Clean text by replacing common PDF ligatures only"""
+    if not text:
+        return text
+    
+    # Just fix the ligatures that were causing display issues
+    replacements = {
+        'ﬁ': 'fi',
+        'ﬂ': 'fl',
+        'ﬀ': 'ff',
+        'ﬃ': 'ffi',
+        'ﬄ': 'ffl',
+    }
+    
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+    
+    return text
 
 class ChromaVectorStore:
     def __init__(self):
@@ -73,8 +93,11 @@ class ChromaVectorStore:
                     elif content_type == 'code':
                         adjusted_distance -= 0.1  # Bonus for code
                     
+                    # Clean the text content
+                    cleaned_content = clean_text(results['documents'][0][i])
+                    
                     formatted_results.append({
-                        'content': results['documents'][0][i],
+                        'content': cleaned_content,
                         'metadata': {
                             'filename': metadata.get('book', 'Unknown'),
                             'page': metadata.get('page', 'N/A'),
