@@ -1,10 +1,10 @@
+[providers]
+python = "3.11"
+nodejs = "18"
+
 [phases.setup]
 aptPkgs = ["tesseract-ocr"]
 
-[phases.install]
-# Install Node.js for frontend build
-cmds = ["curl -fsSL https://deb.nodesource.com/setup_18.x | bash -", "apt-get install -y nodejs"]
-
 [variables]
-# Force ChromaDB usage (prevent PostgreSQL detection)
 RAILWAY_ENVIRONMENT = "false"
+DATA_DIR = "/tmp/data"
