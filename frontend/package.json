@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "SKIP_TYPE_CHECK=true next build",
     "build:vercel": "SKIP_TYPE_CHECK=true next build",
+    "build:netlify": "SKIP_TYPE_CHECK=true next build",
     "start": "next start",
     "lint": "next lint"
   },
