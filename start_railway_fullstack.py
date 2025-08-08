@@ -82,23 +82,7 @@ def start_frontend():
         "NODE_ENV": "production"
     })
     
-    # Build and start frontend
-    log("Building Next.js frontend...")
-    build_cmd = ["npm", "run", "build-frontend"]
-    log(f"Build command: {' '.join(build_cmd)}")
-    
-    try:
-        result = subprocess.run(build_cmd, env=env, check=True, 
-                              capture_output=True, text=True)
-        log("Frontend build completed successfully")
-        if result.stdout:
-            log(f"Build stdout: {result.stdout}")
-    except subprocess.CalledProcessError as e:
-        log(f"❌ Frontend build failed with code {e.returncode}")
-        log(f"Build stderr: {e.stderr}")
-        log(f"Build stdout: {e.stdout}")
-        raise
-    
+    # Frontend already built during nixpacks install phase
     log(f"Starting Next.js on port {port}...")
     start_cmd = ["npm", "run", "start-frontend"]
     log(f"Start command: {' '.join(start_cmd)}")

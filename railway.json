@@ -1,0 +1,31 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "nixpacksPlan": {
+      "providers": ["python", "node"],
+      "phases": {
+        "setup": {
+          "nixPkgs": ["python311", "python311Packages.pip", "nodejs", "tesseract"],
+          "aptPkgs": ["build-essential"]
+        },
+        "install": {
+          "dependsOn": ["setup"],
+          "cmds": [
+            "python3 -m pip install -r requirements.txt",
+            "npm install",
+            "npm run build-frontend"
+          ]
+        }
+      },
+      "variables": {
+        "RAILWAY_ENVIRONMENT": "false",
+        "DATA_DIR": "/tmp/data",
+        "NODE_ENV": "production"
+      },
+      "start": {
+        "cmd": "python3 start_railway_fullstack.py"
+      }
+    }
+  }
+}
