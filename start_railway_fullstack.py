@@ -23,8 +23,10 @@ def start_backend():
     env.update({
         "PORT": backend_port,
         "HOST": "0.0.0.0",
-        # Force ChromaDB usage (same as local)
+        # Force ChromaDB usage (same as local) - multiple ways to ensure this
         "RAILWAY_ENVIRONMENT": "false",
+        "USE_CHROMADB": "true", 
+        "DATABASE_URL": "",  # Clear any PostgreSQL URL
         "DATA_DIR": "/tmp/data"
     })
     
@@ -79,6 +81,13 @@ def start_frontend():
 def main():
     log("🚀 Starting Railway Full-Stack Deployment")
     
+    # Run debug script first
+    log("Running deployment debug script...")
+    try:
+        subprocess.run([sys.executable, "debug_deployment.py"], check=False)
+    except Exception as e:
+        log(f"Debug script error: {e}")
+    
     # Ensure we're in the correct directory
     script_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(script_dir)
@@ -88,6 +97,13 @@ def main():
     if not os.path.exists("frontend"):
         log("❌ Frontend directory not found!")
         log(f"Contents of current directory: {os.listdir('.')}")
+        
+        # Additional debugging
+        log("🔍 Checking if frontend files exist anywhere...")
+        for root, dirs, files in os.walk("."):
+            if "package.json" in files and "frontend" in root:
+                log(f"Found frontend-like directory: {root}")
+        
         sys.exit(1)
     
     try:
