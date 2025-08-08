@@ -8,5 +8,5 @@ cmds = [
     "cd frontend && npm install && npm run build"
 ]
 
-[start]
-cmd = "python start_railway_fullstack.py"
+[deploy]
+startCommand = "python start_railway_fullstack.py"
