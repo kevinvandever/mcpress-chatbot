@@ -1,0 +1,1 @@
+web: python start_railway_fullstack.py
