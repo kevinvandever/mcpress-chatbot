@@ -69,12 +69,12 @@ def start_frontend():
     
     # Build and start frontend
     log("Building Next.js frontend...")
-    build_cmd = ["npm", "run", "build"]
-    subprocess.run(build_cmd, cwd="frontend", env=env, check=True)
+    build_cmd = ["npm", "run", "build-frontend"]
+    subprocess.run(build_cmd, env=env, check=True)
     
     log(f"Starting Next.js on port {port}...")
-    start_cmd = ["npm", "start"]
-    frontend_process = subprocess.Popen(start_cmd, cwd="frontend", env=env)
+    start_cmd = ["npm", "run", "start-frontend"]
+    frontend_process = subprocess.Popen(start_cmd, env=env)
     
     return frontend_process
 

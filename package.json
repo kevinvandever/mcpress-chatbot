@@ -1,0 +1,14 @@
+{
+  "name": "pdf-chatbot-fullstack",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install-frontend": "cd frontend && npm install",
+    "build-frontend": "cd frontend && npm run build",
+    "start-frontend": "cd frontend && npm start"
+  },
+  "engines": {
+    "node": "18.x",
+    "npm": "9.x"
+  }
+}
