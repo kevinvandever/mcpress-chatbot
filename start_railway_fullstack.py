@@ -79,6 +79,17 @@ def start_frontend():
 def main():
     log("🚀 Starting Railway Full-Stack Deployment")
     
+    # Ensure we're in the correct directory
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(script_dir)
+    log(f"Working directory: {os.getcwd()}")
+    
+    # Verify frontend directory exists
+    if not os.path.exists("frontend"):
+        log("❌ Frontend directory not found!")
+        log(f"Contents of current directory: {os.listdir('.')}")
+        sys.exit(1)
+    
     try:
         # Start backend in background thread
         backend_thread = threading.Thread(target=start_backend, daemon=True)
