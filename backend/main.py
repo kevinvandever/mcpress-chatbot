@@ -20,16 +20,17 @@ import time
 from backend.pdf_processor_full import PDFProcessorFull
 from backend.chat_handler import ChatHandler
 
-# Try ChromaDB first, fall back to PostgreSQL if needed
-try:
-    from backend.vector_store_chroma import ChromaVectorStore
-    VectorStoreClass = ChromaVectorStore
-    print("✅ Using ChromaDB vector store (semantic search)")
-except ImportError as e:
-    print(f"⚠️ ChromaDB not available, falling back to PostgreSQL text search: {e}")
-    print("📦 To use ChromaDB, ensure 'chromadb' package is installed")
+# For local development, FORCE ChromaDB usage
+if os.getenv('RAILWAY_ENVIRONMENT'):
+    # On Railway, use PostgreSQL
     from backend.vector_store import VectorStore
     VectorStoreClass = VectorStore
+    print("⚠️ Railway: Using PostgreSQL vector store")
+else:
+    # Locally, use ChromaDB
+    from backend.vector_store_chroma import ChromaVectorStore
+    VectorStoreClass = ChromaVectorStore
+    print("✅ Local: Using ChromaDB vector store (semantic search)")
 from backend.category_mapper import get_category_mapper
 from backend.async_upload import process_pdf_async, create_upload_job, get_job_status, cleanup_old_jobs
 
@@ -54,7 +55,10 @@ vector_store = VectorStoreClass()
 # Initialize the database on startup
 @app.on_event("startup")
 async def startup_event():
-    await vector_store.init_database()
+    if hasattr(vector_store, 'init_database'):
+        await vector_store.init_database()
+    else:
+        print("✅ ChromaDB initialized successfully")
 chat_handler = ChatHandler(vector_store)
 category_mapper = get_category_mapper()
 
@@ -472,8 +476,7 @@ async def search_documents(q: str, n_results: int = 5, filename: str = None, con
 
 @app.get("/documents")
 async def list_documents():
-    documents = await vector_store.list_documents()
-    return {"documents": documents}
+    return await vector_store.list_documents()
 
 @app.get("/api/books")
 async def get_books():

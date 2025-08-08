@@ -20,4 +20,13 @@ const nextConfig = {
       ignoreDuringBuilds: true,
     },
   }),
+  // Proxy API calls to local backend for ngrok tunneling
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://localhost:8000/:path*',
+      },
+    ]
+  },
 }

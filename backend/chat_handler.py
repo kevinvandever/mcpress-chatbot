@@ -12,7 +12,11 @@ logger = logging.getLogger(__name__)
 class ChatHandler:
     def __init__(self, vector_store):
         self.vector_store = vector_store
-        self.client = openai.AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            logger.error("OPENAI_API_KEY not found in environment variables!")
+            raise ValueError("OPENAI_API_KEY environment variable is required")
+        self.client = openai.AsyncOpenAI(api_key=api_key)
         self.conversations = {}
         
     async def stream_response(self, message: str, conversation_id: str) -> AsyncGenerator[Dict[str, Any], None]:
@@ -91,7 +95,7 @@ Please answer the following question based on your general knowledge, but clearl
         
         try:
             stream = await self.client.chat.completions.create(
-                model="gpt-4-turbo-preview",
+                model="gpt-3.5-turbo",
                 messages=messages,
                 stream=True,
                 temperature=0.7,

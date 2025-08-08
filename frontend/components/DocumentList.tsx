@@ -511,8 +511,12 @@ export default function DocumentList({ onDocumentChange }: DocumentListProps) {
   const fetchDocuments = async () => {
     try {
       setError(null)
-      const response = await axios.get(`${API_URL}/api/books`)
-      const documents = response.data.books || []
+      const response = await axios.get(`${API_URL}/documents`)
+      // Handle nested response format: {documents: {documents: [...]}}
+      let documents = response.data.documents || []
+      if (documents.documents) {
+        documents = documents.documents
+      }
       setDocuments(documents)
       onDocumentChange?.(documents.length)
     } catch (error) {
@@ -555,7 +559,9 @@ export default function DocumentList({ onDocumentChange }: DocumentListProps) {
   }
 
   const groupDocumentsByCategory = (docs: Document[]) => {
-    const grouped = docs.reduce((acc, doc) => {
+    // Emergency fix: handle both array and object formats from backend
+    const docsArray = Array.isArray(docs) ? docs : Object.values(docs || {})
+    const grouped = docsArray.reduce((acc, doc: any) => {
       const category = doc.category || 'Uncategorized'
       if (!acc[category]) {
         acc[category] = []
