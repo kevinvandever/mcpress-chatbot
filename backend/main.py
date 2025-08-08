@@ -565,3 +565,7 @@ def health_check():
         "vector_store": vector_store.is_connected(),
         "openai": bool(os.getenv("OPENAI_API_KEY"))
     }
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

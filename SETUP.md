@@ -41,13 +41,20 @@ This will provide:
 - **URL:** https://mcpress-stable.loca.lt
 - **Password:** Your current public IP
 
-### Tunnel Management Commands
+### Management Commands
+
+**Unified Demo (Recommended):**
 ```bash
-./tunnel_control.sh start    # Start tunnel
-./tunnel_control.sh stop     # Stop tunnel  
-./tunnel_control.sh restart  # Restart tunnel
-./tunnel_control.sh status   # Check status
+./start_unified_demo.sh  # Start everything (backend, frontend, proxy, tunnel)
+./stop_unified_demo.sh   # Stop everything
+./check_status.sh        # Check status of all services
 ```
+
+The unified demo handles:
+- Backend on port 8000
+- Frontend on port 3001  
+- Proxy on port 9000 (routes /api/* to backend, /* to frontend)
+- Single tunnel for remote access
 
 ### Sharing with Partners
 1. Turn off VPN
