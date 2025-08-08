@@ -7,7 +7,7 @@ import os
 import sys
 
 def main():
-    print("[RAILWAY] Starting backend-only deployment")
+    print("[RAILWAY] Starting backend-only deployment v2")
     
     # Set environment variables
     os.environ['RAILWAY_ENVIRONMENT'] = 'false'
