@@ -1,9 +1,8 @@
-[providers]
-python = "3.11"
-nodejs = "18"
-
 [phases.setup]
 aptPkgs = ["tesseract-ocr"]
+
+[phases.install]
+cmds = ["npm install --prefix frontend"]
 
 [variables]
 RAILWAY_ENVIRONMENT = "false"
