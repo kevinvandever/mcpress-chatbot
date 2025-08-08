@@ -187,6 +187,43 @@ class ChromaVectorStore:
             logger.error(f"Error listing ChromaDB documents: {e}")
             return {'documents': []}
     
+    async def add_documents(self, documents: List[Dict], metadata: Dict[str, Any]):
+        """Add documents to ChromaDB collection"""
+        try:
+            # Prepare data for ChromaDB
+            ids = []
+            docs = []
+            metadatas = []
+            
+            for i, doc in enumerate(documents):
+                # Create unique ID for each chunk
+                doc_id = f"{metadata['filename']}_{i}"
+                ids.append(doc_id)
+                
+                # Get the document content
+                content = doc.get('content', '') if isinstance(doc, dict) else str(doc)
+                docs.append(content)
+                
+                # Create metadata for this chunk
+                chunk_metadata = metadata.copy()
+                if isinstance(doc, dict):
+                    chunk_metadata.update(doc.get('metadata', {}))
+                
+                metadatas.append(chunk_metadata)
+            
+            # Add to ChromaDB collection
+            self.collection.add(
+                documents=docs,
+                metadatas=metadatas,
+                ids=ids
+            )
+            
+            logger.info(f"✅ Added {len(documents)} chunks to ChromaDB for {metadata.get('filename', 'unknown')}")
+            
+        except Exception as e:
+            logger.error(f"❌ Error adding documents to ChromaDB: {e}")
+            raise e
+
     async def delete_document(self, filename: str):
         """Delete document by filename"""
         try:
