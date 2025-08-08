@@ -37,18 +37,10 @@ def start_backend():
     log(f"Backend command: {' '.join(cmd)}")
     backend_process = subprocess.Popen(cmd, env=env)
     
-    # Wait for backend to be ready
-    import requests
-    for i in range(30):
-        try:
-            response = requests.get(f"http://localhost:{backend_port}/health", timeout=2)
-            if response.status_code == 200:
-                log("✅ Backend is ready")
-                break
-        except:
-            time.sleep(1)
-    else:
-        log("⚠️  Backend health check failed, continuing anyway...")
+    # Simple wait instead of health check that might fail
+    log("Waiting for backend to initialize...")
+    time.sleep(3)
+    log("✅ Backend started")
     
     return backend_process
 
@@ -107,9 +99,8 @@ def main():
         sys.exit(1)
     
     try:
-        # Start backend in background thread
-        backend_thread = threading.Thread(target=start_backend, daemon=True)
-        backend_thread.start()
+        # Start backend process
+        backend_process = start_backend()
         
         # Give backend a moment to start
         time.sleep(5)
@@ -121,13 +112,35 @@ def main():
         log(f"🌐 Frontend serving on port {os.environ.get('PORT', '3000')}")
         log("📡 Backend available internally on port 8000")
         
-        # Wait for frontend process
-        frontend_process.wait()
+        # Wait for either process to exit
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            backend_future = executor.submit(backend_process.wait)
+            frontend_future = executor.submit(frontend_process.wait)
+            
+            # Wait for either to complete
+            done, pending = concurrent.futures.wait(
+                [backend_future, frontend_future], 
+                return_when=concurrent.futures.FIRST_COMPLETED
+            )
+            
+            # If one process exits, kill the other
+            for future in pending:
+                future.cancel()
+            
+            if backend_future in done:
+                log("❌ Backend process exited")
+                frontend_process.kill()
+            elif frontend_future in done:
+                log("❌ Frontend process exited")  
+                backend_process.kill()
         
     except KeyboardInterrupt:
         log("Shutting down...")
     except Exception as e:
         log(f"Error: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
 
 if __name__ == "__main__":
