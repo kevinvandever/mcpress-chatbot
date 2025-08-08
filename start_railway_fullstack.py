@@ -23,8 +23,9 @@ def start_backend():
     env.update({
         "PORT": backend_port,
         "HOST": "0.0.0.0",
-        # Use Railway PostgreSQL if available, otherwise local ChromaDB
-        "USE_RAILWAY_DB": "true" if os.getenv("DATABASE_URL") else "false"
+        # Force ChromaDB usage (same as local)
+        "RAILWAY_ENVIRONMENT": "false",
+        "DATA_DIR": "/tmp/data"
     })
     
     # Start backend
