@@ -46,12 +46,8 @@ temp_storage = {}
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "*",
-        "https://mc-press-chatbot.netlify.app",
-        "https://mcpress-chatbot-production-569b.up.railway.app"
-    ],
-    allow_credentials=True,
+    allow_origins=["*"],  # Allow all origins
+    allow_credentials=False,  # Set to False when using wildcard
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
