@@ -9,4 +9,4 @@ HF_DATASETS_OFFLINE = "1"
 TRANSFORMERS_OFFLINE = "1"
 
 [deploy]
-startCommand = "python start_railway_fullstack.py"
+startCommand = "python3 start_railway_fullstack.py"

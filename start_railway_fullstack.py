@@ -31,7 +31,7 @@ def start_backend():
     })
     
     # Start backend
-    cmd = ["python", "-m", "uvicorn", "backend.main:app", 
+    cmd = ["python3", "-m", "uvicorn", "backend.main:app", 
            "--host", "0.0.0.0", "--port", backend_port]
     
     log(f"Backend command: {' '.join(cmd)}")
