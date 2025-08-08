@@ -1,1 +1,1 @@
-web: python start_railway_fullstack.py
+web: python start_backend_only.py

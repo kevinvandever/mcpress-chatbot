@@ -21,16 +21,19 @@ from backend.pdf_processor_full import PDFProcessorFull
 from backend.chat_handler import ChatHandler
 
 # For local development, FORCE ChromaDB usage
-if os.getenv('RAILWAY_ENVIRONMENT'):
-    # On Railway, use PostgreSQL
+# Check if we should use PostgreSQL (only if explicitly set to "true")
+use_postgresql = os.getenv('USE_POSTGRESQL', '').lower() == 'true'
+
+if use_postgresql:
+    # Use PostgreSQL only if explicitly requested
     from backend.vector_store import VectorStore
     VectorStoreClass = VectorStore
-    print("⚠️ Railway: Using PostgreSQL vector store")
+    print("⚠️ Using PostgreSQL vector store")
 else:
-    # Locally, use ChromaDB
+    # Default to ChromaDB (for both local and Railway)
     from backend.vector_store_chroma import ChromaVectorStore
     VectorStoreClass = ChromaVectorStore
-    print("✅ Local: Using ChromaDB vector store (semantic search)")
+    print("✅ Using ChromaDB vector store (semantic search)")
 from backend.category_mapper import get_category_mapper
 from backend.async_upload import process_pdf_async, create_upload_job, get_job_status, cleanup_old_jobs
 
