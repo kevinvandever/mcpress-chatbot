@@ -35,12 +35,35 @@ def start_backend():
            "--host", "0.0.0.0", "--port", backend_port]
     
     log(f"Backend command: {' '.join(cmd)}")
-    backend_process = subprocess.Popen(cmd, env=env)
+    log(f"Backend environment overrides: {env}")
+    
+    try:
+        backend_process = subprocess.Popen(cmd, env=env, 
+                                         stdout=subprocess.PIPE, 
+                                         stderr=subprocess.STDOUT,
+                                         universal_newlines=True)
+        log(f"Backend process PID: {backend_process.pid}")
+    except Exception as e:
+        log(f"❌ Failed to start backend: {e}")
+        import traceback
+        log(f"Backend start traceback: {traceback.format_exc()}")
+        raise
     
     # Simple wait instead of health check that might fail
     log("Waiting for backend to initialize...")
     time.sleep(3)
-    log("✅ Backend started")
+    
+    # Check if process is still alive
+    if backend_process.poll() is None:
+        log("✅ Backend process is running")
+    else:
+        log(f"❌ Backend process exited with code: {backend_process.poll()}")
+        # Try to get some output
+        try:
+            output, _ = backend_process.communicate(timeout=1)
+            log(f"Backend output: {output}")
+        except:
+            pass
     
     return backend_process
 
@@ -62,28 +85,67 @@ def start_frontend():
     # Build and start frontend
     log("Building Next.js frontend...")
     build_cmd = ["npm", "run", "build-frontend"]
-    subprocess.run(build_cmd, env=env, check=True)
+    log(f"Build command: {' '.join(build_cmd)}")
+    
+    try:
+        result = subprocess.run(build_cmd, env=env, check=True, 
+                              capture_output=True, text=True)
+        log("Frontend build completed successfully")
+        if result.stdout:
+            log(f"Build stdout: {result.stdout}")
+    except subprocess.CalledProcessError as e:
+        log(f"❌ Frontend build failed with code {e.returncode}")
+        log(f"Build stderr: {e.stderr}")
+        log(f"Build stdout: {e.stdout}")
+        raise
     
     log(f"Starting Next.js on port {port}...")
     start_cmd = ["npm", "run", "start-frontend"]
-    frontend_process = subprocess.Popen(start_cmd, env=env)
+    log(f"Start command: {' '.join(start_cmd)}")
+    
+    try:
+        frontend_process = subprocess.Popen(start_cmd, env=env,
+                                          stdout=subprocess.PIPE,
+                                          stderr=subprocess.STDOUT, 
+                                          universal_newlines=True)
+        log(f"Frontend process PID: {frontend_process.pid}")
+    except Exception as e:
+        log(f"❌ Failed to start frontend: {e}")
+        import traceback
+        log(f"Frontend start traceback: {traceback.format_exc()}")
+        raise
     
     return frontend_process
 
 def main():
     log("🚀 Starting Railway Full-Stack Deployment")
     
+    # Log Python executable and version
+    log(f"Python executable: {sys.executable}")
+    log(f"Python version: {sys.version}")
+    
     # Run debug script first
     log("Running deployment debug script...")
     try:
-        subprocess.run([sys.executable, "debug_deployment.py"], check=False)
+        result = subprocess.run([sys.executable, "debug_deployment.py"], 
+                              capture_output=True, text=True, check=False)
+        log(f"Debug script stdout: {result.stdout}")
+        if result.stderr:
+            log(f"Debug script stderr: {result.stderr}")
     except Exception as e:
         log(f"Debug script error: {e}")
+        import traceback
+        log(f"Debug script traceback: {traceback.format_exc()}")
     
     # Ensure we're in the correct directory
     script_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(script_dir)
     log(f"Working directory: {os.getcwd()}")
+    
+    # Log environment variables
+    log("Key environment variables:")
+    for key in ["PORT", "RAILWAY_ENVIRONMENT", "DATA_DIR", "NODE_ENV"]:
+        log(f"  {key}: {os.environ.get(key, 'NOT SET')}")
     
     # Verify frontend directory exists
     if not os.path.exists("frontend"):
