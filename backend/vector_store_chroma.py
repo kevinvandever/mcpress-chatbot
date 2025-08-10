@@ -29,7 +29,7 @@ def clean_text(text: str) -> str:
 class ChromaVectorStore:
     def __init__(self):
         # Use environment variable for ChromaDB path, fallback to local
-        chroma_path = os.getenv('CHROMA_DB_PATH', './backend/chroma_db')
+        chroma_path = os.getenv('CHROMA_DB_PATH', './chroma_db')
         
         logger.info(f"Initializing ChromaDB at path: {chroma_path}")
         
@@ -137,7 +137,8 @@ class ChromaVectorStore:
             total_chunks = 0
             
             for metadata in all_results['metadatas']:
-                filename = metadata.get('book', 'Unknown')
+                # Try both 'book' and 'filename' for compatibility
+                filename = metadata.get('book') or metadata.get('filename', 'Unknown')
                 if filename not in documents:
                     documents[filename] = {
                         'chunk_count': 0,
@@ -188,41 +189,67 @@ class ChromaVectorStore:
             return {'documents': []}
     
     async def add_documents(self, documents: List[Dict], metadata: Dict[str, Any]):
-        """Add documents to ChromaDB collection"""
+        """Add documents to ChromaDB collection with batch size handling"""
         try:
-            # Prepare data for ChromaDB
-            ids = []
-            docs = []
-            metadatas = []
+            # ChromaDB has a batch size limit, split large documents into smaller batches
+            BATCH_SIZE = 5000  # Safe batch size under the limit
+            total_documents = len(documents)
             
-            for i, doc in enumerate(documents):
-                # Create unique ID for each chunk
-                doc_id = f"{metadata['filename']}_{i}"
-                ids.append(doc_id)
+            if total_documents > BATCH_SIZE:
+                logger.info(f"📦 Large document detected ({total_documents} chunks), processing in batches of {BATCH_SIZE}")
                 
-                # Get the document content
-                content = doc.get('content', '') if isinstance(doc, dict) else str(doc)
-                docs.append(content)
+                # Process in batches
+                for batch_start in range(0, total_documents, BATCH_SIZE):
+                    batch_end = min(batch_start + BATCH_SIZE, total_documents)
+                    batch_docs = documents[batch_start:batch_end]
+                    
+                    logger.info(f"   Processing batch {batch_start//BATCH_SIZE + 1}: chunks {batch_start} to {batch_end-1}")
+                    await self._add_batch(batch_docs, metadata, batch_start)
                 
-                # Create metadata for this chunk
-                chunk_metadata = metadata.copy()
-                if isinstance(doc, dict):
-                    chunk_metadata.update(doc.get('metadata', {}))
-                
-                metadatas.append(chunk_metadata)
-            
-            # Add to ChromaDB collection
-            self.collection.add(
-                documents=docs,
-                metadatas=metadatas,
-                ids=ids
-            )
-            
-            logger.info(f"✅ Added {len(documents)} chunks to ChromaDB for {metadata.get('filename', 'unknown')}")
+                logger.info(f"✅ Added all {total_documents} chunks to ChromaDB for {metadata.get('filename', 'unknown')} in {(total_documents + BATCH_SIZE - 1) // BATCH_SIZE} batches")
+            else:
+                # Small document, add all at once
+                await self._add_batch(documents, metadata, 0)
+                logger.info(f"✅ Added {total_documents} chunks to ChromaDB for {metadata.get('filename', 'unknown')}")
             
         except Exception as e:
             logger.error(f"❌ Error adding documents to ChromaDB: {e}")
             raise e
+    
+    async def _add_batch(self, documents: List[Dict], metadata: Dict[str, Any], batch_offset: int = 0):
+        """Add a batch of documents to ChromaDB"""
+        # Prepare data for ChromaDB
+        ids = []
+        docs = []
+        metadatas = []
+        
+        for i, doc in enumerate(documents):
+            # Create unique ID for each chunk (include batch offset)
+            doc_id = f"{metadata['filename']}_{batch_offset + i}"
+            ids.append(doc_id)
+            
+            # Get the document content
+            content = doc.get('content', '') if isinstance(doc, dict) else str(doc)
+            docs.append(content)
+            
+            # Create metadata for this chunk
+            chunk_metadata = metadata.copy()
+            if isinstance(doc, dict):
+                chunk_metadata.update(doc.get('metadata', {}))
+            
+            # Fix None values in metadata (ChromaDB can't store None)
+            for key, value in chunk_metadata.items():
+                if value is None:
+                    chunk_metadata[key] = 'Unknown' if key == 'author' else ''
+            
+            metadatas.append(chunk_metadata)
+        
+        # Add to ChromaDB collection
+        self.collection.add(
+            documents=docs,
+            metadatas=metadatas,
+            ids=ids
+        )
 
     async def delete_document(self, filename: str):
         """Delete document by filename"""

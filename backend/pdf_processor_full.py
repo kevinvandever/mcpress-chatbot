@@ -280,14 +280,28 @@ class PDFProcessorFull:
         patterns = [
             # Markdown code blocks
             (r'```(\w+)?\n(.*?)```', 'detected'),
-            # Indented code (4+ spaces)
-            (r'^    .+(?:\n    .+)*', 'generic'),
-            # RPG/COBOL patterns
-            (r'^\s*(?:H|F|D|P|C|O)\s+.*', 'rpg'),
+            
+            # RPG Free-Format patterns (check BEFORE generic patterns)
+            (r'^\s*(?:dcl-s|dcl-pi|dcl-pr|dcl-ds|dcl-c|dcl-f)\s+.*', 'rpg-free'),
+            (r'^\s*/free\s*$.*?^\s*/end-free\s*$', 'rpg-free'),
+            (r'^\s*(?:if|elseif|else|endif|for|endfor|dow|enddo|select|when|other|endsl)\s+.*', 'rpg-free'),
+            (r'^\s*(?:begsr|endsr|return|exsr|leavesr)\s+.*', 'rpg-free'),
+            (r'^\s*(?:monitor|on-error|endmon)\s+.*', 'rpg-free'),
+            
+            # Traditional RPG IV Fixed-Format patterns  
+            (r'^\s*(?:H|F|D|P|C|O)\s+.*', 'rpg-fixed'),
+            
             # SQL patterns
             (r'^\s*(?:SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP)\s+.*(?:\n.*)*?(?=;|\n\s*$)', 'sql'),
-            # General programming patterns
+            
+            # DDS (Data Description Specifications) patterns
+            (r'^\s*(?:A|R)\s+.*(?:DSPSIZ|CA\d+|CF\d+|OVERLAY|DSPATR|COLHDG)', 'dds'),
+            
+            # General programming patterns (after RPG patterns)
             (r'^\s*(?:def|class|import|from|if __name__|for|while|try|except|function|var|let|const)\s+.*(?:\n.*)*?(?=\n\s*$|\n[^\s]|\Z)', 'programming'),
+            
+            # Indented code (4+ spaces) - moved to end as fallback
+            (r'^    .+(?:\n    .+)*', 'generic'),
         ]
         
         for pattern, default_lang in patterns:

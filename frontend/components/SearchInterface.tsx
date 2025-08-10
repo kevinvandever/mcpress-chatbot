@@ -243,9 +243,13 @@ export default function SearchInterface({ onResultSelect }: SearchInterfaceProps
           </div>
         )}
 
-        {results.map((result, index) => (
+        {results.map((result, index) => {
+          // Create a unique key from metadata since backend doesn't provide result.id
+          const uniqueKey = `${result.metadata.filename}-${result.metadata.page}-${result.metadata.type}-${result.metadata.chunk_index}-${index}`;
+          
+          return (
           <div
-            key={result.id}
+            key={uniqueKey}
             className="card card-hover cursor-pointer transition-all-fast focus-ring"
             onClick={() => handleResultClick(result)}
             onKeyDown={(e) => {
@@ -305,7 +309,8 @@ export default function SearchInterface({ onResultSelect }: SearchInterfaceProps
               </div>
             </div>
           </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* Context Modal */}
@@ -466,9 +471,15 @@ export default function SearchInterface({ onResultSelect }: SearchInterfaceProps
                       <h3 className="text-sm font-medium text-gray-700 mb-3">Related Context</h3>
                       <div className="space-y-3">
                         {contextResults
-                          .filter(result => result.id !== selectedResult.id)
-                          .map((result) => (
-                            <div key={result.id} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                          .filter((result, index) => {
+                            // Since we don't have result.id, compare by content and metadata
+                            return result.content !== selectedResult.content || 
+                                   result.metadata.page !== selectedResult.metadata.page;
+                          })
+                          .map((result, contextIndex) => {
+                            const contextKey = `context-${result.metadata.filename}-${result.metadata.page}-${result.metadata.type}-${result.metadata.chunk_index}-${contextIndex}`;
+                            return (
+                            <div key={contextKey} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
                               <div className="flex items-center gap-2 mb-2">
                                 <div className={`px-2 py-1 rounded text-xs font-medium ${getContentTypeClass(result.metadata.type)}`}>
                                   <span aria-hidden="true">{getContentTypeIcon(result.metadata.type)}</span> {result.metadata.type}
@@ -542,7 +553,8 @@ export default function SearchInterface({ onResultSelect }: SearchInterfaceProps
                                 )}
                               </div>
                             </div>
-                          ))}
+                            )
+                          })}
                       </div>
                     </div>
                   )}
