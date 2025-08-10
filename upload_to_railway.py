@@ -15,16 +15,30 @@ import json
 # Configuration
 API_URL = "https://mcpress-chatbot-production-569b.up.railway.app"
 PDF_DIRECTORY = "/Users/kevinvandever/kev-dev/pdf-chatbot/backend/uploads"
-BATCH_SIZE = 2  # Number of files per batch (smaller for Railway)
-DELAY_BETWEEN_BATCHES = 60  # Seconds to wait between batches (longer for processing)
+BATCH_SIZE = 1  # One file at a time for Railway
+DELAY_BETWEEN_BATCHES = 30  # Shorter delay between individual files
 
 def get_existing_documents():
     """Get list of already uploaded documents"""
     try:
         response = requests.get(f"{API_URL}/documents", timeout=30)
         if response.status_code == 200:
-            docs = response.json()
-            return [doc.get('filename', '') for doc in docs]
+            data = response.json()
+            # Handle different response formats
+            if isinstance(data, dict):
+                docs = data.get('documents', [])
+            else:
+                docs = data
+            
+            # Extract filenames from documents
+            filenames = []
+            for doc in docs:
+                if isinstance(doc, dict):
+                    filenames.append(doc.get('filename', ''))
+                elif isinstance(doc, str):
+                    filenames.append(doc)
+            
+            return [f for f in filenames if f]  # Remove empty strings
         else:
             print(f"Error getting documents: {response.status_code}")
             return []
@@ -44,10 +58,23 @@ def upload_single_pdf(pdf_path, existing_docs):
     try:
         print(f"  📤 Uploading {filename}...")
         
-        # Step 1: Upload PDF file
-        with open(pdf_path, 'rb') as f:
-            files = {'file': (filename, f, 'application/pdf')}
-            response = requests.post(f"{API_URL}/upload", files=files, timeout=120)
+        # Step 1: Upload PDF file with longer timeout and retry logic
+        max_retries = 2
+        for attempt in range(max_retries):
+            try:
+                with open(pdf_path, 'rb') as f:
+                    files = {'file': (filename, f, 'application/pdf')}
+                    # Much longer timeout for large PDFs
+                    response = requests.post(f"{API_URL}/upload", files=files, timeout=300)
+                break  # Success, exit retry loop
+            except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+                if attempt < max_retries - 1:
+                    print(f"  ⚠️  Connection error on attempt {attempt + 1}, retrying in 10 seconds...")
+                    time.sleep(10)
+                    continue
+                else:
+                    print(f"  ❌ Max retries exceeded for {filename}: {e}")
+                    return False
         
         if response.status_code == 200:
             result = response.json()

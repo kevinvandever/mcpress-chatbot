@@ -34,6 +34,34 @@ export interface ChatInterfaceRef {
   focusInput: () => void
 }
 
+// Clean text function to fix PDF extraction artifacts
+const cleanText = (text: string): string => {
+  if (!text) return text
+  
+  // Comprehensive character mapping for PDF artifacts
+  const charMap: { [key: string]: string } = {
+    // Ligatures (Unicode private area - most common in PDFs)
+    '\uFB00': 'ff', '\uFB01': 'fi', '\uFB02': 'fl', '\uFB03': 'ffi', '\uFB04': 'ffl',
+    // Quotes and dashes  
+    '\u2013': '-', '\u2014': '--', '\u2015': '--',
+    '\u2018': "'", '\u2019': "'", '\u201A': "'", '\u201B': "'",
+    '\u201C': '"', '\u201D': '"', '\u201E': '"', '\u201F': '"',
+    // Other common artifacts
+    '\u2026': '...', '\u00A0': ' ', '\u00AD': '', '\u200B': '',
+    // Mathematical symbols that appear as artifacts
+    '\u2212': '-', '\u00D7': 'x', '\u00F7': '/', '\u00B1': '+/-',
+    // Currency and special symbols  
+    '\u00A9': '(c)', '\u00AE': '(r)', '\u2122': '(tm)'
+  }
+  
+  let cleaned = text
+  for (const [old, replacement] of Object.entries(charMap)) {
+    cleaned = cleaned.replace(new RegExp(old, 'g'), replacement)
+  }
+  
+  return cleaned
+}
+
 const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDocuments = false }, ref) => {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -212,9 +240,18 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
       }
     } catch (error) {
       console.error('Error sending message:', error)
+      let errorMessage = 'Sorry, I encountered an error. Please try again.'
+      
+      // Provide more specific error messages based on the error type
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        errorMessage = 'Unable to connect to the AI backend. Please check that the backend server is running.'
+      } else if (error instanceof Error && error.message.includes('Failed to send message')) {
+        errorMessage = 'The message could not be sent. Please check your connection and try again.'
+      }
+      
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: 'Sorry, I encountered an error. Please try again.',
+        content: errorMessage,
         timestamp: new Date()
       }])
     } finally {
@@ -373,7 +410,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="flex-1 flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Messages Area */}
       <div 
         ref={messagesContainerRef}
@@ -381,7 +418,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
         className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin relative"
       >
         {messages.length === 0 && (
-          <div className="text-center text-gray-500 mt-16 animate-chat-appear">
+          <div className="text-center text-gray-500 mt-8 animate-chat-appear">
             {hasDocuments ? (
               <>
                 <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl flex items-center justify-center shadow-lg animate-float-subtle">
@@ -492,12 +529,27 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
                         code({ node, className, children, ...props }: any) {
                           const inline = !className
                           const match = /language-(\w+)/.exec(className || '')
-                          const language = match ? match[1] : 'text'
+                          let language = match ? match[1] : 'text'
+                          
+                          // Don't show generic or text as language labels
+                          let displayLanguage = ''
+                          if (language && language !== 'generic' && language !== 'text') {
+                            // Special formatting for IBM i languages
+                            if (language === 'rpg') {
+                              displayLanguage = 'RPG IV'
+                            } else if (language === 'dds') {
+                              displayLanguage = 'DDS'
+                            } else if (language === 'cl') {
+                              displayLanguage = 'CL'
+                            } else {
+                              displayLanguage = language.toUpperCase()
+                            }
+                          }
                           
                           return !inline && match ? (
                             <div className="code-block-wrapper my-4">
                               <div className="code-block-header">
-                                <span className="font-semibold">{language.toUpperCase()}</span>
+                                {displayLanguage && <span className="font-semibold">{displayLanguage}</span>}
                                 <button
                                   onClick={() => copyToClipboard(String(children))}
                                   className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-gray-700"
@@ -552,11 +604,11 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
                         },
                       }}
                     >
-                      {message.content}
+                      {cleanText(message.content)}
                     </ReactMarkdown>
                   </div>
                 ) : (
-                  <p className="whitespace-pre-wrap">{message.content}</p>
+                  <p className="whitespace-pre-wrap">{cleanText(message.content)}</p>
                 )}
               </div>
 
@@ -767,8 +819,8 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
       </div>
       
       {/* Input Area */}
-      <div className="border-t border-gray-200 p-6 bg-gradient-to-r from-white to-gray-50">
-        <div className="flex gap-4 items-end">
+      <div className="border-t border-gray-200 p-6 bg-gradient-to-r from-white to-gray-50 relative">
+        <div className="flex gap-4 items-stretch">
           <div className="flex-1 relative">
             <textarea
               ref={inputRef}
@@ -793,7 +845,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
             {input && (
               <button
                 onClick={() => setInput('')}
-                className="absolute right-3 top-4 text-gray-400 hover:text-gray-600 z-10"
+                className="absolute right-3 top-4 text-gray-400 hover:text-gray-600 z-10 hover:bg-gray-100 rounded-full p-1"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -804,7 +856,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
           <button
             onClick={sendMessage}
             disabled={!input.trim() || isStreaming}
-            className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-4 px-8 rounded-2xl transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 text-lg"
+            className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-2xl transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 text-base flex-shrink-0 self-end"
           >
             {isStreaming ? (
               <>
@@ -845,16 +897,18 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
           </div>
         )}
         
-        <div className="mt-4 flex items-center justify-center gap-4 text-sm text-gray-500">
-          <div className="flex items-center gap-2">
-            <div className="px-2 py-1 bg-gray-100 rounded-md font-mono text-xs">Enter</div>
-            <span>Send message</span>
-          </div>
-          <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
-          <div className="flex items-center gap-2">
-            <div className="px-2 py-1 bg-gray-100 rounded-md font-mono text-xs">Shift + Enter</div>
-            <span>Add new line</span>
-          </div>
+      </div>
+      
+      {/* Keyboard Shortcuts Footer */}
+      <div className="px-6 py-3 flex items-center justify-center gap-4 text-sm text-gray-500">
+        <div className="flex items-center gap-2">
+          <div className="px-2 py-1 bg-gray-100 rounded-md font-mono text-xs">Enter</div>
+          <span>Send message</span>
+        </div>
+        <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
+        <div className="flex items-center gap-2">
+          <div className="px-2 py-1 bg-gray-100 rounded-md font-mono text-xs">Shift + Enter</div>
+          <span>Add new line</span>
         </div>
       </div>
     </div>

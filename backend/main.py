@@ -484,7 +484,8 @@ async def list_documents():
 @app.get("/api/books")
 async def get_books():
     """Frontend compatibility endpoint"""
-    documents = await vector_store.list_documents()
+    result = await vector_store.list_documents()
+    documents = result.get('documents', [])
     return {
         "total": len(documents),
         "books": documents

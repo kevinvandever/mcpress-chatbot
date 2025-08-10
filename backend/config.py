@@ -1,13 +1,15 @@
 import os
 from pathlib import Path
 
-# Base data directory - single volume mount point
-DATA_DIR = Path(os.getenv("DATA_DIR", "/app/data"))
-DATA_DIR.mkdir(exist_ok=True)
+# Base data directory - use existing structure for local development
+# In production, this uses /app/data, but for local dev we use existing paths
+DATA_DIR = Path(os.getenv("DATA_DIR", "./"))
+if not DATA_DIR.exists():
+    DATA_DIR.mkdir(exist_ok=True)
 
-# Create subdirectories
-CHROMA_PERSIST_DIR = DATA_DIR / "chroma_db"
-UPLOAD_DIR = DATA_DIR / "uploads"
+# Create subdirectories - use existing paths for local development
+CHROMA_PERSIST_DIR = Path(os.getenv("CHROMA_DB_PATH", "./backend/chroma_db"))
+UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR", "./backend/uploads"))
 
 # Ensure subdirectories exist
 CHROMA_PERSIST_DIR.mkdir(exist_ok=True)

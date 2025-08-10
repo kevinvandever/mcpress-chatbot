@@ -138,25 +138,59 @@ class PDFProcessor:
                     }
                 })
         
+        # Get total pages before closing
+        total_pages = len(doc) if not doc.is_closed else 0
+        
         return {
             "chunks": chunks,
-            "total_pages": len(doc),
+            "total_pages": total_pages,
             "images": images,
             "code_blocks": code_blocks
         }
     
     def _extract_code_blocks(self, text: str, page_num: int) -> List[Dict[str, Any]]:
         code_blocks = []
+        processed_ranges = []  # Track what text ranges have already been processed
         
+        # Define patterns in order of specificity (most specific first)
         patterns = [
-            (r'```(\w+)?\n(.*?)```', 'detected'),
-            (r'    .*(?:\n    .*)*', 'python'),  # Indented code
-            (r'^\s*(?:def|class|import|from|if|for|while)\s+.*$', 'python'),
+            # Markdown code blocks (highest priority)
+            (r'```(\w+)?\n(.*?)```', 'detected', self._validate_markdown),
+            
+            # DDS (Display File Source) patterns - very specific
+            (r'(?:^A\s+.*(?:\n|$)){3,}', 'dds', self._validate_dds),  # 3+ A-spec lines
+            
+            # Free-format RPG patterns (before fixed-format)
+            # Look for lines with RPG keywords or semicolons (free-format typically ends with ;)
+            (r'(?:(?:DCL-[A-Z]+|END-[A-Z]+|BEGSR|ENDSR|EXSR|EVAL-?[A-Z]*|IF|ELSE|ELSEIF|ENDIF|DOW|DOU|ENDDO|FOR|ENDFOR|ITER|LEAVE|SELECT|WHEN|OTHER|ENDSL|MONITOR|ON-[A-Z]+|ENDMON|READ[A-Z]*|WRITE|UPDATE|DELETE|CHAIN|SETLL|SETGT|EXFMT|CALLP|RETURN|CLEAR|RESET|SORTA|XML-[A-Z]+|DATA-[A-Z]+|%[A-Z]+)[\s\(].*(?:\n|$))+', 'rpg', self._validate_free_format_rpg),
+            # Also catch code with multiple semicolons (typical of free-format RPG)
+            (r'(?:.*;\s*(?:\n|$)){3,}', 'rpg', self._validate_free_format_rpg),
+            
+            # RPG IV patterns - check for RPG-specific structures (fixed format)
+            (r'(?:^[HDFRPC]\s+.*(?:\n|$)){2,}', 'rpg', self._validate_rpg),  # 2+ spec lines
+            
+            # SQL patterns 
+            (r'(?:SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP)\s+.*(?:\n\s*.*)*?(?:;|$)', 'sql', self._validate_sql),
+            
+            # CL (Control Language) patterns
+            (r'(?:CRTPF|ADDPFM|CHGPF|DLTPF|DSPFD|WRKACTJOB|STRPDM)(?:\s+|\n).*(?:\n.*)*', 'cl', self._validate_cl),
+            
+            # General programming patterns (lower priority)
+            (r'^\s*(?:def|class|import|from|if|for|while|function|var|const|let)\s+.*(?:\n.*)*', 'code', self._validate_general_code),
+            
+            # Indented code blocks (lowest priority)
+            (r'(?:^    .*(?:\n|$)){3,}', 'code', self._validate_indented_code),
         ]
         
-        for pattern, default_lang in patterns:
+        for pattern, default_lang, validator in patterns:
             matches = re.finditer(pattern, text, re.MULTILINE | re.DOTALL)
             for match in matches:
+                start, end = match.span()
+                
+                # Skip if this range overlaps with already processed content
+                if any(start < p_end and end > p_start for p_start, p_end in processed_ranges):
+                    continue
+                
                 if len(match.groups()) > 1:
                     language = match.group(1) or default_lang
                     content = match.group(2)
@@ -164,14 +198,138 @@ class PDFProcessor:
                     language = default_lang
                     content = match.group(0)
                 
-                if len(content.strip()) > 20:  # Minimum code length
+                content = content.strip()
+                
+                # Apply minimum length and validation
+                # Lower threshold for RPG/DDS since they can have short but valid code blocks
+                min_length = 20 if language in ['rpg', 'dds', 'cl'] else 30
+                if len(content) > min_length and validator(content, match.groups()):
                     code_blocks.append({
                         "page": page_num,
                         "language": language,
-                        "content": content.strip()
+                        "content": content
                     })
+                    processed_ranges.append((start, end))
         
         return code_blocks
+    
+    def _looks_like_code(self, content: str, language: str) -> bool:
+        """Additional validation to ensure content looks like code"""
+        lines = content.split('\n')
+        
+        # DDS validation - more comprehensive
+        if language == 'dds':
+            # Check for DDS keywords (case insensitive)
+            dds_keywords = ['CF', 'SFLSIZ', 'SFLPAG', 'OVERLAY', 'ROLLUP', 'SFLDSP', 'SFLCTL', 'SFLCLR', 'DSPATR', 'SFLEND']
+            content_upper = content.upper()
+            has_keywords = any(keyword in content_upper for keyword in dds_keywords)
+            
+            # Check for A-spec lines (lines starting with 'A' followed by space or field position)
+            a_spec_lines = len([line for line in lines if re.match(r'^A\s+', line.strip()) or re.match(r'^A\s*\w', line.strip())])
+            
+            return has_keywords or a_spec_lines >= 2
+        
+        # RPG validation - more comprehensive
+        if language == 'rpg':
+            rpg_keywords = ['DCL-', 'MONITOR', 'EVAL', 'CALLP', 'BEGSR', 'ENDSR', 'DSPATR', 'ENDMON']
+            content_upper = content.upper()
+            has_keywords = any(keyword in content_upper for keyword in rpg_keywords)
+            
+            # Check for RPG spec lines (H, D, F, P, C specs)
+            spec_lines = len([line for line in lines if re.match(r'^[HDFRPC]\s+', line.strip())])
+            
+            return has_keywords or spec_lines >= 2
+        
+        # General code validation - check for code-like characteristics
+        code_indicators = [
+            len([line for line in lines if line.strip().startswith(('A ', 'H ', 'D ', 'F '))]) > 1,  # Spec lines
+            content.count(';') > 2,  # Multiple statements
+            content.count('(') > 2 and content.count(')') > 2,  # Function calls
+            len([line for line in lines if re.match(r'^\s{2,}\w+', line)]) > 2,  # Consistent indentation
+        ]
+        
+        return any(code_indicators)
+    
+    def _validate_markdown(self, content: str, match_groups) -> bool:
+        """Validate markdown code blocks"""
+        return len(content.strip()) > 10
+    
+    def _validate_dds(self, content: str, match_groups) -> bool:
+        """Validate DDS code blocks"""
+        dds_keywords = ['CF', 'SFLSIZ', 'SFLPAG', 'OVERLAY', 'ROLLUP', 'SFLDSP', 'SFLCTL', 'SFLCLR', 'DSPATR', 'SFLEND']
+        content_upper = content.upper()
+        has_keywords = any(keyword in content_upper for keyword in dds_keywords)
+        
+        # Check for A-spec lines
+        lines = content.split('\n')
+        a_spec_lines = len([line for line in lines if re.match(r'^A\s+', line.strip()) or re.match(r'^A\s*\w', line.strip())])
+        
+        return has_keywords or a_spec_lines >= 2
+    
+    def _validate_rpg(self, content: str, match_groups) -> bool:
+        """Validate RPG code blocks (fixed format)"""
+        rpg_keywords = ['DCL-', 'MONITOR', 'EVAL', 'CALLP', 'BEGSR', 'ENDSR', 'DSPATR', 'ENDMON']
+        content_upper = content.upper()
+        has_keywords = any(keyword in content_upper for keyword in rpg_keywords)
+        
+        # Check for RPG spec lines
+        lines = content.split('\n')
+        spec_lines = len([line for line in lines if re.match(r'^[HDFRPC]\s+', line.strip())])
+        
+        return has_keywords or spec_lines >= 1
+    
+    def _validate_free_format_rpg(self, content: str, match_groups) -> bool:
+        """Validate free-format RPG code blocks"""
+        # Free-format RPG keywords
+        free_format_keywords = [
+            'DCL-S', 'DCL-DS', 'DCL-PI', 'DCL-PR', 'DCL-C', 'DCL-PROC', 'END-DS', 'END-PI', 'END-PR', 'END-PROC',
+            'BEGSR', 'ENDSR', 'EXSR',
+            'IF', 'ELSE', 'ELSEIF', 'ENDIF',
+            'DOW', 'DOU', 'ENDDO', 'FOR', 'ENDFOR', 'ITER', 'LEAVE',
+            'SELECT', 'WHEN', 'OTHER', 'ENDSL',
+            'MONITOR', 'ON-ERROR', 'ON-EXIT', 'ENDMON',
+            'EVAL', 'EVAL-CORR', 'EVALR',
+            'READ', 'READE', 'READPE', 'READP', 'READC', 'CHAIN', 'SETLL', 'SETGT',
+            'WRITE', 'UPDATE', 'DELETE', 'EXFMT',
+            'CALLP', 'RETURN',
+            'CLEAR', 'RESET', 'SORTA',
+            'XML-INTO', 'XML-SAX', 'DATA-INTO', 'DATA-GEN'
+        ]
+        
+        # Also check for built-in functions (BIFs) starting with %
+        bif_pattern = r'%[A-Z]+\('
+        
+        content_upper = content.upper()
+        
+        # Count keyword occurrences
+        keyword_count = sum(1 for keyword in free_format_keywords if keyword in content_upper)
+        
+        # Check for BIFs
+        has_bifs = re.search(bif_pattern, content_upper) is not None
+        
+        # Free-format RPG typically has semicolons at end of statements
+        has_semicolons = content.count(';') >= 2
+        
+        # Must have at least 2 keywords or 1 keyword + BIFs or semicolons
+        return keyword_count >= 2 or (keyword_count >= 1 and (has_bifs or has_semicolons))
+    
+    def _validate_sql(self, content: str, match_groups) -> bool:
+        """Validate SQL code blocks"""
+        return len(content.strip()) > 15 and any(keyword in content.upper() for keyword in ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'ALTER', 'DROP'])
+    
+    def _validate_cl(self, content: str, match_groups) -> bool:
+        """Validate CL (Control Language) code blocks"""
+        cl_commands = ['CRTPF', 'ADDPFM', 'CHGPF', 'DLTPF', 'DSPFD', 'WRKACTJOB', 'STRPDM']
+        return any(cmd in content.upper() for cmd in cl_commands)
+    
+    def _validate_general_code(self, content: str, match_groups) -> bool:
+        """Validate general programming code blocks"""
+        return len(content.strip()) > 20
+    
+    def _validate_indented_code(self, content: str, match_groups) -> bool:
+        """Validate indented code blocks"""
+        lines = content.split('\n')
+        return len(lines) >= 3 and all(line.startswith('    ') or line.strip() == '' for line in lines)
     
     def _extract_text_from_image(self, pixmap) -> str:
         try:

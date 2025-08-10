@@ -20,13 +20,14 @@ const nextConfig = {
       ignoreDuringBuilds: true,
     },
   }),
-  // Direct API routing to backend (no proxy needed)
+  // Proxy API requests to local backend in development only
   async rewrites() {
-    return [
+    // Only proxy in development, not in production (Netlify/Railway)
+    return process.env.NODE_ENV === 'development' ? [
       {
         source: '/api/:path*',
         destination: 'http://localhost:8000/:path*',
       },
-    ]
+    ] : []
   },
 }

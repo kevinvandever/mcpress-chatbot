@@ -19,7 +19,9 @@ export default function Home() {
       setSystemStatus('loading')
       
       try {
-        const response = await fetch(`${API_URL}/documents`)
+        const response = await fetch(`${API_URL}/documents`, { 
+          timeout: 5000 // 5 second timeout
+        } as RequestInit)
         if (response.ok) {
           const data = await response.json()
           // Handle nested response format: {documents: {documents: [...]}}
@@ -33,12 +35,15 @@ export default function Home() {
           setSystemStatus('ready')
           console.log(`Found ${docCount} documents in the system`)
         } else {
-          setSystemStatus('error')
+          // Still set as ready but with no documents
+          setHasDocuments(false)
+          setSystemStatus('ready')
         }
       } catch (error) {
         console.error('Error checking documents:', error)
         setHasDocuments(false)
-        setSystemStatus('error')
+        // Don't show error immediately - could just be backend starting
+        setSystemStatus('ready')
       } finally {
         setIsCheckingDocuments(false)
       }

@@ -519,9 +519,16 @@ export default function DocumentList({ onDocumentChange }: DocumentListProps) {
       }
       setDocuments(documents)
       onDocumentChange?.(documents.length)
-    } catch (error) {
+      // Clear any previous errors on success
+      setError(null)
+    } catch (error: any) {
       console.error('Error fetching documents:', error)
-      setError('Failed to load documents')
+      // Only show error if it's a real network/server error
+      if (error.response?.status >= 500 || !error.response) {
+        setError('Failed to connect to server')
+      }
+      // For other cases (like 404, empty results), just set empty documents
+      setDocuments([])
       onDocumentChange?.(0)
     } finally {
       setLoading(false)
