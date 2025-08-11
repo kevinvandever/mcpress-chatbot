@@ -1,0 +1,6 @@
+An Introduction to IBM Rational Application Developer.pdf
+IBM System i APIs at Work.pdf
+IBM i5-iSeries Primer.pdf
+Programming Portlets.pdf
+SQL for eServer i5 and iSeries.pdf
+The Modern RPG IV Language.pdf

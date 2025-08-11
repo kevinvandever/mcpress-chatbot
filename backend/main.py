@@ -6,6 +6,11 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 warnings.filterwarnings("ignore", category=UserWarning, module="transformers")
 warnings.filterwarnings("ignore", message=".*tokenizers.*")
 
+# Run startup check if on Railway
+if os.getenv("RAILWAY_ENVIRONMENT"):
+    from backend.startup_check import check_storage
+    check_storage()
+
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse

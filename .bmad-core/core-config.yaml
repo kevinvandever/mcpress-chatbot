@@ -1,0 +1,40 @@
+version: 1.0
+project: pdf-chatbot
+methodology: bmad
+
+devLoadAlwaysFiles:
+  - .bmad-core/core-config.yaml
+  - frontend/next.config.js
+  - frontend/config/api.ts
+  - backend/main.py
+
+development:
+  localBackendPort: 8000
+  localFrontendPort: 3000
+  productionBackend: https://mcpress-chatbot-production-569b.up.railway.app
+  productionFrontend: https://mc-press-chatbot.netlify.app
+
+standards:
+  typescript:
+    strict: false
+    eslint: true
+  python:
+    formatter: black
+    linter: ruff
+  git:
+    commitPrefix: "[STORY-#]"
+    branchNaming: "story/{number}-{brief-description}"
+
+testing:
+  frontend:
+    command: "cd frontend && npm test"
+  backend:
+    command: "cd backend && python -m pytest"
+  
+deployment:
+  backend:
+    platform: Railway
+    trigger: git-push
+  frontend:
+    platform: Netlify
+    trigger: git-push

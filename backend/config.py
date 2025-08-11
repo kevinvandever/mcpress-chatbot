@@ -1,15 +1,30 @@
 import os
 from pathlib import Path
 
-# Base data directory - use existing structure for local development
-# In production, this uses /app/data, but for local dev we use existing paths
-DATA_DIR = Path(os.getenv("DATA_DIR", "./"))
-if not DATA_DIR.exists():
-    DATA_DIR.mkdir(exist_ok=True)
+# Base data directory
+# In production on Railway: uses /data volume mount
+# In local development: uses current directory
+IS_RAILWAY = os.getenv("RAILWAY_ENVIRONMENT") is not None
 
-# Create subdirectories - use existing paths for local development
-CHROMA_PERSIST_DIR = Path(os.getenv("CHROMA_DB_PATH", "./backend/chroma_db"))
-UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR", "./backend/uploads"))
+if IS_RAILWAY:
+    # Use Railway volume mount point
+    DATA_DIR = Path("/data")
+else:
+    # Local development
+    DATA_DIR = Path("./")
+
+if not DATA_DIR.exists():
+    DATA_DIR.mkdir(exist_ok=True, parents=True)
+
+# Create subdirectories
+if IS_RAILWAY:
+    # Use volume mount subdirectories
+    CHROMA_PERSIST_DIR = DATA_DIR / "chroma_db"
+    UPLOAD_DIR = DATA_DIR / "uploads"
+else:
+    # Local development paths
+    CHROMA_PERSIST_DIR = Path("./backend/chroma_db")
+    UPLOAD_DIR = Path("./backend/uploads")
 
 # Ensure subdirectories exist
 CHROMA_PERSIST_DIR.mkdir(exist_ok=True)
