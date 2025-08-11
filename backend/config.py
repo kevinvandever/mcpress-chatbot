@@ -2,13 +2,21 @@ import os
 from pathlib import Path
 
 # Base data directory
-# Railway automatically persists /app/data directory
+# Railway volume mounting for true persistence
 IS_RAILWAY = os.getenv("RAILWAY_ENVIRONMENT") is not None
 
 if IS_RAILWAY:
-    # Use Railway's persistent directory
-    # /app/data is automatically persisted in Railway
-    DATA_DIR = Path("/app/data")
+    # Use Railway volume mount for guaranteed persistence
+    # This requires a Railway volume to be mounted at /mnt/data
+    volume_path = Path("/mnt/data")
+    if volume_path.exists():
+        DATA_DIR = volume_path
+        print(f"✅ Using Railway volume at {DATA_DIR}")
+    else:
+        # Fallback to /app/data with warning
+        DATA_DIR = Path("/app/data")
+        print(f"⚠️  WARNING: No Railway volume found, using ephemeral storage at {DATA_DIR}")
+        print("   Data may be lost on redeploy! Please mount a Railway volume at /mnt/data")
 else:
     # Local development
     DATA_DIR = Path("./")

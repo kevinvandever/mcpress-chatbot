@@ -21,9 +21,12 @@ import json
 from dotenv import load_dotenv
 from concurrent.futures import ThreadPoolExecutor
 import time
+from datetime import datetime
+from pathlib import Path
 
 from backend.pdf_processor_full import PDFProcessorFull
 from backend.chat_handler import ChatHandler
+from backend.backup_manager import backup_manager
 
 # For local development, FORCE ChromaDB usage
 # Check if we should use PostgreSQL (only if explicitly set to "true")
@@ -63,6 +66,9 @@ vector_store = VectorStoreClass()
 # Initialize the database on startup
 @app.on_event("startup")
 async def startup_event():
+    # Create automatic backup of existing data
+    backup_manager.auto_backup_on_startup()
+    
     if hasattr(vector_store, 'init_database'):
         await vector_store.init_database()
     else:
@@ -566,6 +572,59 @@ async def get_upload_status(job_id: str):
     """Check status of async upload"""
     cleanup_old_jobs()  # Clean up old jobs periodically
     return get_job_status(job_id)
+
+@app.post("/backup/create")
+async def create_backup():
+    """Create a backup of all data"""
+    try:
+        backup_path = backup_manager.create_backup()
+        return {
+            "status": "success",
+            "backup_path": backup_path,
+            "message": "Backup created successfully"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Backup creation failed: {str(e)}")
+
+@app.get("/backup/list")
+async def list_backups():
+    """List all available backups"""
+    try:
+        backups = backup_manager.list_backups()
+        backup_info = []
+        for backup in backups:
+            path = Path(backup)
+            stat = path.stat()
+            backup_info.append({
+                "path": backup,
+                "name": path.name,
+                "size_mb": round(stat.st_size / (1024 * 1024), 2),
+                "created": datetime.fromtimestamp(stat.st_mtime).isoformat()
+            })
+        return {"backups": backup_info}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to list backups: {str(e)}")
+
+@app.post("/backup/restore")
+async def restore_backup(backup_name: str):
+    """Restore from a backup"""
+    try:
+        backup_path = Path(backup_manager.backup_dir) / backup_name
+        if not backup_path.exists():
+            raise HTTPException(status_code=404, detail="Backup not found")
+            
+        success = backup_manager.restore_backup(str(backup_path))
+        if success:
+            # Reinitialize vector store after restore
+            if hasattr(vector_store, 'reload'):
+                await vector_store.reload()
+            return {"status": "success", "message": "Backup restored successfully"}
+        else:
+            raise HTTPException(status_code=500, detail="Restore failed")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Restore failed: {str(e)}")
 
 @app.get("/health")
 def health_check():
