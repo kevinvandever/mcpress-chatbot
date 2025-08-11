@@ -8,7 +8,10 @@ warnings.filterwarnings("ignore", message=".*tokenizers.*")
 
 # Run startup check if on Railway
 if os.getenv("RAILWAY_ENVIRONMENT"):
-    from backend.startup_check import check_storage
+    try:
+        from startup_check import check_storage
+    except ImportError:
+        from backend.startup_check import check_storage
     check_storage()
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
@@ -24,9 +27,16 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from backend.pdf_processor_full import PDFProcessorFull
-from backend.chat_handler import ChatHandler
-from backend.backup_manager import backup_manager
+try:
+    # Try Railway-style imports first (when running from /app)
+    from pdf_processor_full import PDFProcessorFull
+    from chat_handler import ChatHandler
+    from backup_manager import backup_manager
+except ImportError:
+    # Fall back to local development imports
+    from backend.pdf_processor_full import PDFProcessorFull
+    from backend.chat_handler import ChatHandler
+    from backend.backup_manager import backup_manager
 
 # For local development, FORCE ChromaDB usage
 # Check if we should use PostgreSQL (only if explicitly set to "true")
@@ -34,16 +44,27 @@ use_postgresql = os.getenv('USE_POSTGRESQL', '').lower() == 'true'
 
 if use_postgresql:
     # Use PostgreSQL only if explicitly requested
-    from backend.vector_store import VectorStore
+    try:
+        from vector_store import VectorStore
+    except ImportError:
+        from backend.vector_store import VectorStore
     VectorStoreClass = VectorStore
     print("⚠️ Using PostgreSQL vector store")
 else:
     # Default to ChromaDB (for both local and Railway)
-    from backend.vector_store_chroma import ChromaVectorStore
+    try:
+        from vector_store_chroma import ChromaVectorStore
+    except ImportError:
+        from backend.vector_store_chroma import ChromaVectorStore
     VectorStoreClass = ChromaVectorStore
     print("✅ Using ChromaDB vector store (semantic search)")
-from backend.category_mapper import get_category_mapper
-from backend.async_upload import process_pdf_async, create_upload_job, get_job_status, cleanup_old_jobs
+
+try:
+    from category_mapper import get_category_mapper
+    from async_upload import process_pdf_async, create_upload_job, get_job_status, cleanup_old_jobs
+except ImportError:
+    from backend.category_mapper import get_category_mapper
+    from backend.async_upload import process_pdf_async, create_upload_job, get_job_status, cleanup_old_jobs
 
 load_dotenv()
 
