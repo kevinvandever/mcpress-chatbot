@@ -2,13 +2,13 @@ import os
 from pathlib import Path
 
 # Base data directory
-# In production on Railway: uses /data volume mount
-# In local development: uses current directory
+# Railway automatically persists /app/data directory
 IS_RAILWAY = os.getenv("RAILWAY_ENVIRONMENT") is not None
 
 if IS_RAILWAY:
-    # Use Railway volume mount point
-    DATA_DIR = Path("/data")
+    # Use Railway's persistent directory
+    # /app/data is automatically persisted in Railway
+    DATA_DIR = Path("/app/data")
 else:
     # Local development
     DATA_DIR = Path("./")
@@ -18,7 +18,7 @@ if not DATA_DIR.exists():
 
 # Create subdirectories
 if IS_RAILWAY:
-    # Use volume mount subdirectories
+    # Use persistent directory subdirectories
     CHROMA_PERSIST_DIR = DATA_DIR / "chroma_db"
     UPLOAD_DIR = DATA_DIR / "uploads"
 else:

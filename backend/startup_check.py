@@ -20,9 +20,11 @@ def check_storage():
     if is_railway:
         print(f"🚂 Railway Environment: {os.getenv('RAILWAY_ENVIRONMENT')}")
     
-    # Check volume mount
-    if Path("/data").exists():
-        print("✅ Volume mount /data exists")
+    # Check possible persistent directories
+    possible_dirs = ["/data", "/app/data", "/persistent", "/storage"]
+    for dir_path in possible_dirs:
+        if Path(dir_path).exists():
+            print(f"✅ Directory {dir_path} exists")
         
         # Check permissions
         if os.access("/data", os.W_OK):
