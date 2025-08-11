@@ -4,7 +4,12 @@ import json
 import zipfile
 from pathlib import Path
 from datetime import datetime
-from config import DATA_DIR, CHROMA_PERSIST_DIR, UPLOAD_DIR, IS_RAILWAY
+try:
+    # Railway-style import
+    from config import DATA_DIR, CHROMA_PERSIST_DIR, UPLOAD_DIR, IS_RAILWAY
+except ImportError:
+    # Local development import
+    from backend.config import DATA_DIR, CHROMA_PERSIST_DIR, UPLOAD_DIR, IS_RAILWAY
 
 class BackupManager:
     def __init__(self):

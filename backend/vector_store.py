@@ -211,7 +211,10 @@ class VectorStore:
                         metadata = {}
                 
                 # Get proper category from category mapper
-                from backend.category_mapper import get_category_mapper
+                try:
+                    from category_mapper import get_category_mapper
+                except ImportError:
+                    from backend.category_mapper import get_category_mapper
                 category_mapper = get_category_mapper()
                 category = category_mapper.get_category(row['filename'])
                 

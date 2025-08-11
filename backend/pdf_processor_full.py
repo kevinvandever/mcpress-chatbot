@@ -8,7 +8,10 @@ import pytesseract
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import asyncio
 import os
-from backend.author_extractor import get_author_extractor
+try:
+    from author_extractor import get_author_extractor
+except ImportError:
+    from backend.author_extractor import get_author_extractor
 
 class PDFProcessorFull:
     def __init__(self):
