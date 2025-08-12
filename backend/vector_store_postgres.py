@@ -85,6 +85,16 @@ class PostgresVectorStore:
                     )
                 """)
                 
+                # Migration: Add embedding column if it doesn't exist (pgvector version)
+                try:
+                    await conn.execute(f"""
+                        ALTER TABLE documents 
+                        ADD COLUMN IF NOT EXISTS embedding vector({self.embedding_dim})
+                    """)
+                    logger.info("🔄 Migration: Added vector embedding column to existing table")
+                except Exception as e:
+                    logger.info(f"📋 Migration: vector embedding column already exists or migration not needed: {e}")
+                
                 # Create vector index for fast similarity search
                 await conn.execute("""
                     CREATE INDEX IF NOT EXISTS documents_embedding_idx 
@@ -105,6 +115,16 @@ class PostgresVectorStore:
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 """)
+                
+                # Migration: Add embedding column if it doesn't exist
+                try:
+                    await conn.execute("""
+                        ALTER TABLE documents 
+                        ADD COLUMN IF NOT EXISTS embedding JSONB
+                    """)
+                    logger.info("🔄 Migration: Added embedding column to existing table")
+                except Exception as e:
+                    logger.info(f"📋 Migration: embedding column already exists or migration not needed: {e}")
                 
                 # Create index on embedding for better performance
                 await conn.execute("""
