@@ -6,11 +6,17 @@ from pathlib import Path
 IS_RAILWAY = os.getenv("RAILWAY_ENVIRONMENT") is not None
 
 if IS_RAILWAY:
-    # Use Railway's app directory for persistence
-    # Note: Data may be lost on redeploy without proper volume mounting
-    DATA_DIR = Path("/app/data")
-    print(f"📁 Using Railway storage at {DATA_DIR}")
-    print("⚠️  Note: Re-upload documents after major redeploys")
+    # Check for Railway volume first (persistent), fallback to ephemeral
+    if Path("/data").exists():
+        DATA_DIR = Path("/data")
+        print(f"✅ Using Railway VOLUME (persistent) at {DATA_DIR}")
+    elif Path("/mnt/data").exists():
+        DATA_DIR = Path("/mnt/data") 
+        print(f"✅ Using Railway VOLUME (persistent) at {DATA_DIR}")
+    else:
+        DATA_DIR = Path("/app/data")
+        print(f"⚠️  Using Railway ephemeral storage at {DATA_DIR}")
+        print("❌ WARNING: Data will be LOST on redeploys! Set up a Railway Volume!")
 else:
     # Local development
     DATA_DIR = Path("./")
@@ -61,3 +67,9 @@ RESPONSE_CONFIG = {
 # Convert paths to strings for compatibility
 CHROMA_PERSIST_DIR = str(CHROMA_PERSIST_DIR)
 UPLOAD_DIR = str(UPLOAD_DIR)
+
+# Set CHROMA_DB_PATH environment variable for the vector store
+# This ensures ChromaVectorStore uses the same persistent path
+os.environ["CHROMA_DB_PATH"] = CHROMA_PERSIST_DIR
+os.environ["DATA_DIR"] = str(DATA_DIR)
+os.environ["UPLOAD_DIR"] = UPLOAD_DIR

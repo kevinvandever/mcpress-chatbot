@@ -20,44 +20,68 @@ def check_storage():
     if is_railway:
         print(f"🚂 Railway Environment: {os.getenv('RAILWAY_ENVIRONMENT')}")
     
-    # Check possible persistent directories
-    possible_dirs = ["/data", "/app/data", "/persistent", "/storage"]
-    for dir_path in possible_dirs:
+    # Check for Railway volume mounts
+    volume_paths = ["/data", "/mnt/data"]
+    volume_found = None
+    
+    for dir_path in volume_paths:
         if Path(dir_path).exists():
-            print(f"✅ Directory {dir_path} exists")
-        
-        # Check permissions
-        if os.access("/data", os.W_OK):
-            print("✅ Volume mount is writable")
-        else:
-            print("❌ Volume mount is NOT writable")
-        
-        # List contents
-        try:
-            contents = list(Path("/data").iterdir())
-            if contents:
-                print(f"📁 Volume contains {len(contents)} items:")
-                for item in contents[:5]:
-                    print(f"   - {item.name}")
-                if len(contents) > 5:
-                    print(f"   ... and {len(contents) - 5} more")
+            print(f"✅ Railway VOLUME found at {dir_path}")
+            volume_found = dir_path
+            
+            # Check permissions
+            if os.access(dir_path, os.W_OK):
+                print(f"✅ Volume {dir_path} is writable")
             else:
-                print("📁 Volume is empty (fresh mount)")
-        except Exception as e:
-            print(f"❌ Error listing volume contents: {e}")
-    else:
-        print("⚠️  Volume mount /data does not exist")
+                print(f"❌ Volume {dir_path} is NOT writable")
+            
+            # List contents
+            try:
+                contents = list(Path(dir_path).iterdir())
+                if contents:
+                    print(f"📁 Volume contains {len(contents)} items:")
+                    for item in contents[:5]:
+                        print(f"   - {item.name}")
+                    if len(contents) > 5:
+                        print(f"   ... and {len(contents) - 5} more")
+                else:
+                    print("📁 Volume is empty (fresh mount)")
+            except Exception as e:
+                print(f"❌ Error listing volume contents: {e}")
+            break
+    
+    if not volume_found:
+        print("❌ NO RAILWAY VOLUME FOUND!")
         if is_railway:
-            print("   This is a problem - volume should be mounted!")
+            print("   This is the problem - your data is stored in ephemeral /app/data")
+            print("   SET UP A RAILWAY VOLUME to fix data persistence!")
+            print("   Go to Railway Dashboard → Your Service → Settings → Volumes")
+            print("   Create volume with mount path: /data")
+        
+        # Check ephemeral directory anyway
+        ephemeral_path = "/app/data"
+        if Path(ephemeral_path).exists():
+            print(f"📁 Using ephemeral storage at {ephemeral_path} (will be lost on redeploy)")
+        else:
+            print(f"📁 Ephemeral directory will be created at: {ephemeral_path}")
     
     # Check ChromaDB directory
-    chroma_dir = Path("/data/chroma_db") if is_railway else Path("./backend/chroma_db")
+    if is_railway:
+        if volume_found:
+            chroma_dir = Path(volume_found) / "chroma_db"
+        else:
+            chroma_dir = Path("/app/data/chroma_db")
+    else:
+        chroma_dir = Path("./backend/chroma_db")
+        
     if chroma_dir.exists():
         print(f"✅ ChromaDB directory exists: {chroma_dir}")
         # Check if it has data
         chroma_files = list(chroma_dir.glob("**/*"))
         if chroma_files:
-            print(f"   Contains {len(chroma_files)} files")
+            print(f"   Contains {len(chroma_files)} files - YOUR DATA IS PRESERVED!")
+        else:
+            print("   Directory is empty")
     else:
         print(f"📁 ChromaDB directory will be created at: {chroma_dir}")
     
