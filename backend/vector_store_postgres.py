@@ -176,7 +176,11 @@ class PostgresVectorStore:
         async with self.pool.acquire() as conn:
             # Insert documents with embeddings
             for i, doc in enumerate(documents):
-                embedding_data = embeddings[i].tolist() if self.has_pgvector else embeddings[i].tolist()
+                # For JSONB column, we need to JSON-encode the embedding
+                if self.has_pgvector:
+                    embedding_data = embeddings[i].tolist()
+                else:
+                    embedding_data = json.dumps(embeddings[i].tolist())
                 
                 # Combine document metadata with passed metadata
                 doc_metadata = doc.get('metadata', {})
