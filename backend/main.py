@@ -39,12 +39,16 @@ except ImportError:
     from backend.chat_handler import ChatHandler
     from backend.backup_manager import backup_manager
 
-# Check vector store preference
+# Check vector store preference - try multiple variable names due to Railway caching issues
 use_postgresql_env = os.getenv('USE_POSTGRESQL', '')
+enable_postgresql_env = os.getenv('ENABLE_POSTGRESQL', '')
 database_url = os.getenv('DATABASE_URL', '')
-use_postgresql = use_postgresql_env.lower() == 'true'
+
+# Check both variable names to work around Railway caching
+use_postgresql = (use_postgresql_env.lower() == 'true' or enable_postgresql_env.lower() == 'true')
 
 print(f"🔍 DEBUG: USE_POSTGRESQL env = '{use_postgresql_env}'")
+print(f"🔍 DEBUG: ENABLE_POSTGRESQL env = '{enable_postgresql_env}'")
 print(f"🔍 DEBUG: DATABASE_URL present = {bool(database_url)}")
 print(f"🔍 DEBUG: use_postgresql = {use_postgresql}")
 
