@@ -308,7 +308,7 @@ class PostgresVectorStore:
                 })
         
         result = {'documents': documents}
-        logger.info(f"📋 list_documents returning: {type(result)} with {len(documents)} documents")
+        logger.info(f"📋 list_documents returning: {type(result)} with {len(documents)} unique documents")
         return result
     
     async def delete_by_filename(self, filename: str):
