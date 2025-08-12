@@ -26,6 +26,7 @@ from concurrent.futures import ThreadPoolExecutor
 import time
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 try:
     # Try Railway-style imports first (when running from /app)
@@ -84,6 +85,30 @@ app.add_middleware(
 pdf_processor = PDFProcessorFull()
 vector_store = VectorStoreClass()
 
+# Global cache for documents
+_documents_cache = None
+_cache_timestamp = 0
+CACHE_TTL = 300  # 5 minutes
+
+async def get_cached_documents(force_refresh: bool = False):
+    """Get documents with intelligent caching"""
+    global _documents_cache, _cache_timestamp
+    
+    current_time = time.time()
+    cache_expired = (current_time - _cache_timestamp) > CACHE_TTL
+    
+    if _documents_cache is None or cache_expired or force_refresh:
+        print(f"📊 Refreshing documents cache...")
+        start_time = time.time()
+        _documents_cache = await vector_store.list_documents()
+        _cache_timestamp = current_time
+        elapsed = time.time() - start_time
+        print(f"✅ Cache refreshed in {elapsed:.1f}s - {len(_documents_cache.get('documents', []))} documents")
+    else:
+        print(f"⚡ Serving cached documents ({len(_documents_cache.get('documents', []))} documents)")
+    
+    return _documents_cache
+
 # Initialize the database on startup
 @app.on_event("startup")
 async def startup_event():
@@ -94,6 +119,14 @@ async def startup_event():
         await vector_store.init_database()
     else:
         print("✅ ChromaDB initialized successfully")
+    
+    # Pre-load documents cache for fast responses
+    print("🚀 Pre-loading documents cache...")
+    try:
+        await get_cached_documents(force_refresh=True)
+        print("✅ Documents cache ready - fast responses enabled!")
+    except Exception as e:
+        print(f"⚠️  Cache preload failed: {e} (will load on first request)")
 chat_handler = ChatHandler(vector_store)
 category_mapper = get_category_mapper()
 
@@ -153,53 +186,40 @@ async def upload_pdf(file: UploadFile = File(...)):
         author = extracted_content.get("author")
         needs_author = author is None or author == ""
         
-        print(f"📝 Upload status for {file.filename}: Author = '{author}', Needs author = {needs_author}")
-        
+        # DEFAULT TO "Unknown" FOR MISSING AUTHORS - Temporary fix for remaining 5 books
         if needs_author:
-            # Store the document temporarily without adding to vector store
-            temp_storage[file.filename] = {
-                "extracted_content": extracted_content,
-                "category": category,
-                "file_path": file_path
-            }
-            
-            print(f"💾 Stored {file.filename} in temporary storage awaiting author metadata")
-            print(f"📊 File stats: {len(extracted_content['chunks'])} chunks, {extracted_content['total_pages']} pages")
-            
-            return {
-                "status": "needs_metadata",
-                "message": f"Author information could not be automatically extracted from {file.filename}. Please provide the author name to complete the upload.",
+            author = "Unknown"
+            print(f"⚠️  No author found for {file.filename}, defaulting to 'Unknown'")
+        
+        print(f"📝 Upload status for {file.filename}: Author = '{author}'")
+        
+        # Always proceed with upload now (no more temp storage for missing authors)
+        await vector_store.add_documents(
+            documents=extracted_content["chunks"],
+            metadata={
                 "filename": file.filename,
-                "needs_author": True,
-                "chunks_created": len(extracted_content["chunks"]),
-                "images_processed": len(extracted_content["images"]),
-                "code_blocks_found": len(extracted_content["code_blocks"]),
                 "total_pages": extracted_content["total_pages"],
-                "extraction_details": "Author extraction attempted using PDF metadata and text analysis patterns"
+                "has_images": len(extracted_content["images"]) > 0,
+                "has_code": len(extracted_content["code_blocks"]) > 0,
+                "category": category,
+                "title": file.filename.replace('.pdf', ''),
+                "author": author
             }
-        else:
-            # Author exists, proceed normally
-            await vector_store.add_documents(
-                documents=extracted_content["chunks"],
-                metadata={
-                    "filename": file.filename,
-                    "total_pages": extracted_content["total_pages"],
-                    "has_images": len(extracted_content["images"]) > 0,
-                    "has_code": len(extracted_content["code_blocks"]) > 0,
-                    "category": category,
-                    "title": file.filename.replace('.pdf', ''),
-                    "author": author
-                }
-            )
-            
-            return {
-                "status": "success",
-                "message": f"Successfully processed {file.filename}",
-                "chunks_created": len(extracted_content["chunks"]),
-                "images_processed": len(extracted_content["images"]),
-                "code_blocks_found": len(extracted_content["code_blocks"]),
-                "total_pages": extracted_content["total_pages"]
-            }
+        )
+        
+        # Invalidate cache after successful upload
+        global _cache_timestamp
+        _cache_timestamp = 0
+        print(f"📚 Uploaded {file.filename} - cache invalidated")
+        
+        return {
+            "status": "success",
+            "message": f"Successfully processed {file.filename}",
+            "chunks_created": len(extracted_content["chunks"]),
+            "images_processed": len(extracted_content["images"]),
+            "code_blocks_found": len(extracted_content["code_blocks"]),
+            "total_pages": extracted_content["total_pages"]
+        }
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -511,12 +531,18 @@ async def search_documents(q: str, n_results: int = 5, filename: str = None, con
 
 @app.get("/documents")
 async def list_documents():
-    return await vector_store.list_documents()
+    """List all documents with intelligent caching"""
+    return await get_cached_documents()
+
+@app.get("/documents/refresh")
+async def refresh_documents_cache():
+    """Manually refresh the documents cache (useful after uploads)"""
+    return await get_cached_documents(force_refresh=True)
 
 @app.get("/api/books")
 async def get_books():
-    """Frontend compatibility endpoint"""
-    result = await vector_store.list_documents()
+    """Frontend compatibility endpoint with caching"""
+    result = await get_cached_documents()
     documents = result.get('documents', [])
     return {
         "total": len(documents),
@@ -527,6 +553,10 @@ async def get_books():
 async def delete_document(filename: str):
     try:
         await vector_store.delete_document(filename)
+        # Invalidate cache after deletion
+        global _cache_timestamp
+        _cache_timestamp = 0
+        print(f"🗑️  Deleted {filename} - cache invalidated")
         return {"status": "success", "message": f"Deleted {filename}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
