@@ -58,7 +58,9 @@ if use_postgresql:
         from vector_store_postgres import PostgresVectorStore
         VectorStoreClass = PostgresVectorStore
         print("✅ Using PostgreSQL with semantic embeddings (persistent, reliable)")
-    except ImportError:
+    except ImportError as e:
+        print(f"❌ CRITICAL: PostgresVectorStore import failed: {e}")
+        print("🔍 This is why you're getting text search instead of vector search!")
         # Fallback to old PostgreSQL implementation
         try:
             from vector_store import VectorStore
