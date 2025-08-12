@@ -55,7 +55,11 @@ print(f"🔍 DEBUG: use_postgresql = {use_postgresql}")
 if use_postgresql:
     # Use modern PostgreSQL with pgvector for semantic search
     try:
-        from vector_store_postgres import PostgresVectorStore
+        # Try both local and Railway import paths
+        try:
+            from vector_store_postgres import PostgresVectorStore
+        except ImportError:
+            from backend.vector_store_postgres import PostgresVectorStore
         VectorStoreClass = PostgresVectorStore
         print("✅ Using PostgreSQL with semantic embeddings (persistent, reliable)")
     except ImportError as e:
