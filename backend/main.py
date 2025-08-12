@@ -531,8 +531,23 @@ async def search_documents(q: str, n_results: int = 5, filename: str = None, con
 
 @app.get("/documents")
 async def list_documents():
-    """List all documents with intelligent caching"""
-    return await get_cached_documents()
+    """List all documents with intelligent caching - fast response for frontend"""
+    try:
+        # Try to serve from cache first for instant response
+        if _documents_cache is not None:
+            print(f"⚡ Serving cached documents immediately")
+            # Trigger background refresh if cache is stale
+            current_time = time.time()
+            if (current_time - _cache_timestamp) > CACHE_TTL:
+                asyncio.create_task(get_cached_documents(force_refresh=True))
+            return _documents_cache
+        else:
+            # First load - do it sync
+            return await get_cached_documents()
+    except Exception as e:
+        print(f"❌ Error getting documents: {e}")
+        # Return empty list so frontend doesn't break
+        return {"documents": []}
 
 @app.get("/documents/refresh")
 async def refresh_documents_cache():

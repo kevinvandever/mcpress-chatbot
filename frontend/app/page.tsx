@@ -19,9 +19,8 @@ export default function Home() {
       setSystemStatus('loading')
       
       try {
-        const response = await fetch(`${API_URL}/documents`, { 
-          timeout: 5000 // 5 second timeout
-        } as RequestInit)
+        // Remove timeout - let it take as long as it needs
+        const response = await fetch(`${API_URL}/documents`)
         if (response.ok) {
           const data = await response.json()
           // Handle nested response format: {documents: {documents: [...]}}

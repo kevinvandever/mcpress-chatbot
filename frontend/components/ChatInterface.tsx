@@ -6,6 +6,7 @@ import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import BookLink from './BookLink'
+import CompactSources from './CompactSources'
 import { API_URL } from '../config/api'
 
 interface Message {
@@ -614,150 +615,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
 
               {/* 📚 COMPACT SOURCE CARDS - Much Less Scrolling! */}
               {message.sources && message.sources.length > 0 && (
-                <div className="mt-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span className="text-sm font-semibold text-gray-700">
-                      {message.sources.length} reference{message.sources.length !== 1 ? 's' : ''} found
-                    </span>
-                  </div>
-
-                  {/* 🎯 COMPACT SOURCE CARDS with REAL CONTENT PREVIEWS */}
-                  <div className="space-y-2">
-                    {(expandedSources[`msg-${index}`] ? message.sources : message.sources.slice(0, 3)).map((source, sourceIndex) => {
-                      const confidence = getConfidenceLevel(source.distance || 0.5)
-                      const contentPreview = generateContentPreview(source, message.content)
-                      
-                      return (
-                        <div key={sourceIndex} className="bg-white border border-gray-200 rounded-lg p-3 hover:border-indigo-300 transition-all hover:shadow-sm">
-                          <div className="flex items-start gap-3">
-                            {/* Book Icon */}
-                            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                              </svg>
-                            </div>
-                            
-                            <div className="flex-1 min-w-0">
-                              {/* Header */}
-                              <div className="flex items-center justify-between mb-1">
-                                <h4 className="font-medium text-gray-900 text-sm truncate">
-                                  {getBookDisplayName(source.filename)}
-                                </h4>
-                                <div className="flex items-center gap-2">
-                                  {source.page && source.page !== 'N/A' && (
-                                    <span className="text-xs bg-gray-100 px-2 py-1 rounded font-medium">
-                                      p.{source.page}
-                                    </span>
-                                  )}
-                                  <div className={`text-xs px-2 py-1 rounded font-medium ${confidence.bgColor} ${confidence.color}`}>
-                                    {confidence.level}
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              {/* Content Preview - This is the key improvement! */}
-                              <p className="text-sm text-gray-600 leading-relaxed mb-2">
-                                "{contentPreview}"
-                              </p>
-                              
-                              {/* Actions */}
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    onClick={() => setInput(`Tell me more about ${getBookDisplayName(source.filename)} page ${source.page}`)}
-                                    className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
-                                  >
-                                    Ask about this →
-                                  </button>
-                                  {source.type && (
-                                    <span className={`text-xs px-2 py-1 rounded ${
-                                      source.type === 'image' ? 'bg-green-100 text-green-700' :
-                                      source.type === 'code' ? 'bg-purple-100 text-purple-700' :
-                                      'bg-blue-100 text-blue-700'
-                                    }`}>
-                                      {source.type === 'image' ? '🖼️' : source.type === 'code' ? '💻' : '📝'} {source.type}
-                                    </span>
-                                  )}
-                                </div>
-                                <BookLink 
-                                  url={source.mc_press_url} 
-                                  title={getBookDisplayName(source.filename)}
-                                  className="text-xs"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                    
-                    {/* Show/Hide remaining sources toggle */}
-                    {message.sources.length > 3 && (
-                      <div className="text-center">
-                        <button
-                          onClick={() => setExpandedSources(prev => ({
-                            ...prev,
-                            [`msg-${index}`]: !prev[`msg-${index}`]
-                          }))}
-                          className="inline-flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-800 font-medium bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-lg transition-all"
-                        >
-                          {expandedSources[`msg-${index}`] ? (
-                            <>
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                              </svg>
-                              Show fewer sources
-                            </>
-                          ) : (
-                            <>
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                              </svg>
-                              Show {message.sources.length - 3} more source{message.sources.length - 3 !== 1 ? 's' : ''}
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Conversation Context Actions */}
-                  {Object.keys(bookSummary).length > 0 && (
-                    <div className="mt-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
-                      <div className="flex items-start gap-3">
-                        <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm text-blue-900 font-medium mb-1">
-                            💡 Discovered {Object.keys(bookSummary).length} relevant book{Object.keys(bookSummary).length !== 1 ? 's' : ''}
-                          </p>
-                          <p className="text-xs text-blue-700 mb-2">
-                            These books contain information related to your questions. Click above to explore sources or ask more specific questions about these topics.
-                          </p>
-                          <div className="flex flex-wrap gap-1">
-                            {Object.keys(bookSummary).slice(0, 3).map(filename => (
-                              <button
-                                key={filename}
-                                onClick={() => {
-                                  setInput(`Tell me more about ${getBookDisplayName(filename)}`)
-                                }}
-                                className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded-md transition-colors"
-                              >
-                                Explore {getBookDisplayName(filename).split(' ').slice(0, 2).join(' ')}...
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <CompactSources sources={message.sources} />
               )}
             </div>
           </div>

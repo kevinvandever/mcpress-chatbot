@@ -314,7 +314,8 @@ Please answer the following question based on your general knowledge, but clearl
                     "page": page,
                     "type": content_type,
                     "distance": doc.get("distance", 0),
-                    "mc_press_url": metadata.get("mc_press_url")
+                    "author": metadata.get("author", "Unknown"),
+                    "mc_press_url": metadata.get("mc_press_url", "")
                 })
         
         return sources
