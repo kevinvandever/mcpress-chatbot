@@ -52,39 +52,65 @@ class PostgresVectorStore:
         return self._embedding_model
     
     async def init_database(self):
-        """Initialize database with pgvector extension and tables"""
+        """Initialize database with or without pgvector extension"""
         if not self.pool:
             self.pool = await asyncpg.create_pool(self.database_url)
         
+        self.has_pgvector = False
+        
         async with self.pool.acquire() as conn:
-            # Enable pgvector extension
+            # Try to enable pgvector extension
             try:
                 await conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
-                logger.info("✅ pgvector extension enabled")
+                self.has_pgvector = True
+                logger.info("✅ pgvector extension enabled - using vector similarity")
             except Exception as e:
-                logger.error(f"❌ Failed to enable pgvector: {e}")
-                raise
+                logger.warning(f"⚠️ pgvector not available: {e}")
+                logger.info("🔄 Using pure PostgreSQL with embedding similarity calculation")
+                self.has_pgvector = False
             
-            # Create documents table with vector column
-            await conn.execute(f"""
-                CREATE TABLE IF NOT EXISTS documents (
-                    id SERIAL PRIMARY KEY,
-                    filename VARCHAR(500) NOT NULL,
-                    content TEXT NOT NULL,
-                    page_number INTEGER,
-                    chunk_index INTEGER,
-                    embedding vector({self.embedding_dim}),
-                    metadata JSONB,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            
-            # Create vector index for fast similarity search
-            await conn.execute("""
-                CREATE INDEX IF NOT EXISTS documents_embedding_idx 
-                ON documents USING ivfflat (embedding vector_cosine_ops)
-                WITH (lists = 100)
-            """)
+            # Create documents table (with or without vector column)
+            if self.has_pgvector:
+                # Use vector column with pgvector
+                await conn.execute(f"""
+                    CREATE TABLE IF NOT EXISTS documents (
+                        id SERIAL PRIMARY KEY,
+                        filename VARCHAR(500) NOT NULL,
+                        content TEXT NOT NULL,
+                        page_number INTEGER,
+                        chunk_index INTEGER,
+                        embedding vector({self.embedding_dim}),
+                        metadata JSONB,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                
+                # Create vector index for fast similarity search
+                await conn.execute("""
+                    CREATE INDEX IF NOT EXISTS documents_embedding_idx 
+                    ON documents USING ivfflat (embedding vector_cosine_ops)
+                    WITH (lists = 100)
+                """)
+            else:
+                # Use JSON column for embeddings without pgvector
+                await conn.execute("""
+                    CREATE TABLE IF NOT EXISTS documents (
+                        id SERIAL PRIMARY KEY,
+                        filename VARCHAR(500) NOT NULL,
+                        content TEXT NOT NULL,
+                        page_number INTEGER,
+                        chunk_index INTEGER,
+                        embedding JSONB,
+                        metadata JSONB,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                
+                # Create index on embedding for better performance
+                await conn.execute("""
+                    CREATE INDEX IF NOT EXISTS documents_embedding_idx 
+                    ON documents USING gin (embedding)
+                """)
             
             # Create metadata indexes for filtering
             await conn.execute("""
@@ -130,7 +156,7 @@ class PostgresVectorStore:
         async with self.pool.acquire() as conn:
             # Insert documents with embeddings
             for i, doc in enumerate(documents):
-                embedding_vector = embeddings[i].tolist()
+                embedding_data = embeddings[i].tolist() if self.has_pgvector else embeddings[i].tolist()
                 
                 # Combine document metadata with passed metadata
                 doc_metadata = doc.get('metadata', {})
@@ -145,7 +171,7 @@ class PostgresVectorStore:
                 doc['content'],
                 doc.get('page_number', 0),
                 doc.get('chunk_index', 0),
-                embedding_vector,
+                embedding_data,
                 json.dumps(doc_metadata)
                 )
         
@@ -156,39 +182,78 @@ class PostgresVectorStore:
         await self.init_database()
         
         # Generate query embedding
-        query_embedding = self._generate_embeddings([query])[0].tolist()
+        query_embedding = self._generate_embeddings([query])[0]
         
         async with self.pool.acquire() as conn:
-            # Perform vector similarity search using cosine distance
-            rows = await conn.fetch("""
-                SELECT 
-                    filename, content, page_number, chunk_index, metadata,
-                    1 - (embedding <=> $1::vector) as similarity,
-                    (embedding <=> $1::vector) as distance
-                FROM documents
-                ORDER BY embedding <=> $1::vector
-                LIMIT $2
-            """, query_embedding, n_results)
+            if self.has_pgvector:
+                # Use pgvector for efficient similarity search
+                query_vector = query_embedding.tolist()
+                rows = await conn.fetch("""
+                    SELECT 
+                        filename, content, page_number, chunk_index, metadata,
+                        1 - (embedding <=> $1::vector) as similarity,
+                        (embedding <=> $1::vector) as distance
+                    FROM documents
+                    ORDER BY embedding <=> $1::vector
+                    LIMIT $2
+                """, query_vector, n_results)
+            else:
+                # Calculate similarity in Python without pgvector
+                rows = await conn.fetch("""
+                    SELECT filename, content, page_number, chunk_index, metadata, embedding
+                    FROM documents
+                """)
+                
+                # Calculate cosine similarity for each document
+                similarities = []
+                for row in rows:
+                    if row['embedding']:
+                        doc_embedding = numpy.array(row['embedding'])
+                        similarity = numpy.dot(query_embedding, doc_embedding) / (
+                            numpy.linalg.norm(query_embedding) * numpy.linalg.norm(doc_embedding)
+                        )
+                        similarities.append((row, similarity, 1.0 - similarity))
+                
+                # Sort by similarity and take top results
+                similarities.sort(key=lambda x: x[1], reverse=True)
+                rows = [(row[0], row[1], row[2]) for row in similarities[:n_results]]
             
             results = []
-            for row in rows:
-                # Parse metadata
-                metadata = json.loads(row['metadata']) if row['metadata'] else {}
-                
-                # Add document info to metadata
-                metadata.update({
-                    'filename': row['filename'],
-                    'page': row['page_number'] or 'N/A',
-                    'page_number': row['page_number'],
-                    'chunk_index': row['chunk_index']
-                })
-                
-                results.append({
-                    'content': row['content'],
-                    'metadata': metadata,
-                    'distance': float(row['distance']),
-                    'similarity': float(row['similarity'])
-                })
+            for item in rows:
+                if self.has_pgvector:
+                    # pgvector results have similarity/distance already calculated
+                    row = item
+                    metadata = json.loads(row['metadata']) if row['metadata'] else {}
+                    metadata.update({
+                        'filename': row['filename'],
+                        'page': row['page_number'] or 'N/A',
+                        'page_number': row['page_number'],
+                        'chunk_index': row['chunk_index']
+                    })
+                    
+                    results.append({
+                        'content': row['content'],
+                        'metadata': metadata,
+                        'distance': float(row['distance']),
+                        'similarity': float(row['similarity'])
+                    })
+                else:
+                    # Manual similarity calculation results
+                    row, similarity, distance = item
+                    metadata = json.loads(row['metadata']) if row['metadata'] else {}
+                    metadata.update({
+                        'filename': row['filename'],
+                        'page': row['page_number'] or 'N/A',
+                        'page_number': row['page_number'],
+                        'chunk_index': row['chunk_index']
+                    })
+                    
+                    results.append({
+                        'content': row['content'],
+                        'metadata': metadata,
+                        'distance': float(distance),
+                        'similarity': float(similarity)
+                    })
         
         logger.info(f"Found {len(results)} similar documents for query")
         return results

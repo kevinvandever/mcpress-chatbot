@@ -57,7 +57,7 @@ if use_postgresql:
     try:
         from vector_store_postgres import PostgresVectorStore
         VectorStoreClass = PostgresVectorStore
-        print("✅ Using PostgreSQL + pgvector (semantic search, persistent)")
+        print("✅ Using PostgreSQL with semantic embeddings (persistent, reliable)")
     except ImportError:
         # Fallback to old PostgreSQL implementation
         try:
