@@ -40,7 +40,13 @@ except ImportError:
     from backend.backup_manager import backup_manager
 
 # Check vector store preference
-use_postgresql = os.getenv('USE_POSTGRESQL', '').lower() == 'true'
+use_postgresql_env = os.getenv('USE_POSTGRESQL', '')
+database_url = os.getenv('DATABASE_URL', '')
+use_postgresql = use_postgresql_env.lower() == 'true'
+
+print(f"🔍 DEBUG: USE_POSTGRESQL env = '{use_postgresql_env}'")
+print(f"🔍 DEBUG: DATABASE_URL present = {bool(database_url)}")
+print(f"🔍 DEBUG: use_postgresql = {use_postgresql}")
 
 if use_postgresql:
     # Use modern PostgreSQL with pgvector for semantic search
