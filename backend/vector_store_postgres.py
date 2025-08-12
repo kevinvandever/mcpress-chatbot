@@ -287,7 +287,9 @@ class PostgresVectorStore:
                     'title': metadata.get('title', row['filename'].replace('.pdf', ''))
                 })
         
-        return {'documents': documents}
+        result = {'documents': documents}
+        logger.info(f"📋 list_documents returning: {type(result)} with {len(documents)} documents")
+        return result
     
     async def delete_by_filename(self, filename: str):
         """Delete all chunks for a specific filename"""
