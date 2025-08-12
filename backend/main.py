@@ -118,6 +118,15 @@ async def get_cached_documents(force_refresh: bool = False):
         _documents_cache = await vector_store.list_documents()
         _cache_timestamp = current_time
         elapsed = time.time() - start_time
+        
+        # Defensive: ensure cache is always a dict with 'documents' key
+        if not isinstance(_documents_cache, dict):
+            print(f"⚠️ Vector store returned unexpected format: {type(_documents_cache)}")
+            _documents_cache = {'documents': [] if _documents_cache is None else _documents_cache}
+        elif 'documents' not in _documents_cache:
+            print(f"⚠️ Vector store missing 'documents' key, fixing...")
+            _documents_cache = {'documents': []}
+        
         print(f"✅ Cache refreshed in {elapsed:.1f}s - {len(_documents_cache.get('documents', []))} documents")
     else:
         print(f"⚡ Serving cached documents ({len(_documents_cache.get('documents', []))} documents)")
@@ -138,10 +147,13 @@ async def startup_event():
     # Pre-load documents cache for fast responses
     print("🚀 Pre-loading documents cache...")
     try:
-        await get_cached_documents(force_refresh=True)
-        print("✅ Documents cache ready - fast responses enabled!")
+        cache_result = await get_cached_documents(force_refresh=True)
+        doc_count = len(cache_result.get('documents', []) if isinstance(cache_result, dict) else [])
+        print(f"✅ Documents cache ready - {doc_count} documents loaded!")
     except Exception as e:
         print(f"⚠️  Cache preload failed: {e} (will load on first request)")
+        import traceback
+        print(f"🔍 Debug traceback: {traceback.format_exc()}")
 chat_handler = ChatHandler(vector_store)
 category_mapper = get_category_mapper()
 
