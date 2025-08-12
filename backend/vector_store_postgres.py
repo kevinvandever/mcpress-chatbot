@@ -125,7 +125,7 @@ class PostgresVectorStore:
             
             logger.info("✅ PostgreSQL vector database initialized")
     
-    def _generate_embeddings(self, texts: List[str]) -> numpy.ndarray:
+    def _generate_embeddings(self, texts: List[str]):
         """Generate embeddings for a list of texts"""
         if not texts:
             return numpy.array([])
