@@ -287,9 +287,9 @@ class PostgresVectorStore:
                 SELECT filename, COUNT(*) as chunk_count, 
                        MAX(page_number) as total_pages,
                        MIN(created_at) as uploaded_at,
-                       metadata
+                       MIN(metadata::text)::jsonb as metadata
                 FROM documents 
-                GROUP BY filename, metadata
+                GROUP BY filename
                 ORDER BY MIN(created_at) DESC
             """)
             
