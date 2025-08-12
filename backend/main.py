@@ -39,18 +39,23 @@ except ImportError:
     from backend.chat_handler import ChatHandler
     from backend.backup_manager import backup_manager
 
-# For local development, FORCE ChromaDB usage
-# Check if we should use PostgreSQL (only if explicitly set to "true")
+# Check vector store preference
 use_postgresql = os.getenv('USE_POSTGRESQL', '').lower() == 'true'
 
 if use_postgresql:
-    # Use PostgreSQL only if explicitly requested
+    # Use modern PostgreSQL with pgvector for semantic search
     try:
-        from vector_store import VectorStore
+        from vector_store_postgres import PostgresVectorStore
+        VectorStoreClass = PostgresVectorStore
+        print("✅ Using PostgreSQL + pgvector (semantic search, persistent)")
     except ImportError:
-        from backend.vector_store import VectorStore
-    VectorStoreClass = VectorStore
-    print("⚠️ Using PostgreSQL vector store")
+        # Fallback to old PostgreSQL implementation
+        try:
+            from vector_store import VectorStore
+        except ImportError:
+            from backend.vector_store import VectorStore
+        VectorStoreClass = VectorStore
+        print("⚠️ Using PostgreSQL text search (fallback)")
 else:
     # Default to ChromaDB (for both local and Railway)
     try:

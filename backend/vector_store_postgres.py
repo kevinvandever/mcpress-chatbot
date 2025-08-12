@@ -1,0 +1,252 @@
+"""
+Modern PostgreSQL Vector Store with pgvector extension
+Provides semantic similarity search equivalent to ChromaDB
+"""
+
+import os
+import asyncio
+from typing import List, Dict, Any, Optional
+import asyncpg
+import json
+import logging
+
+logger = logging.getLogger(__name__)
+
+# Lazy imports for embeddings
+sentence_transformers = None
+numpy = None
+
+def ensure_embedding_dependencies():
+    """Import embedding dependencies on demand"""
+    global sentence_transformers, numpy
+    
+    if sentence_transformers is None:
+        try:
+            import sentence_transformers
+            import numpy as np
+            numpy = np
+        except ImportError:
+            raise ImportError(
+                "sentence-transformers and numpy are required for vector search. "
+                "Install with: pip install sentence-transformers numpy"
+            )
+
+class PostgresVectorStore:
+    def __init__(self):
+        self.database_url = os.getenv('DATABASE_URL')
+        if not self.database_url:
+            raise ValueError("DATABASE_URL environment variable not set")
+        
+        self._embedding_model = None
+        self.pool = None
+        self.embedding_dim = 384  # all-MiniLM-L6-v2 dimension
+    
+    @property
+    def embedding_model(self):
+        """Lazy load the embedding model"""
+        if self._embedding_model is None:
+            ensure_embedding_dependencies()
+            logger.info("Loading embedding model (all-MiniLM-L6-v2)...")
+            self._embedding_model = sentence_transformers.SentenceTransformer('all-MiniLM-L6-v2')
+            logger.info("✅ Embedding model loaded successfully!")
+        return self._embedding_model
+    
+    async def init_database(self):
+        """Initialize database with pgvector extension and tables"""
+        if not self.pool:
+            self.pool = await asyncpg.create_pool(self.database_url)
+        
+        async with self.pool.acquire() as conn:
+            # Enable pgvector extension
+            try:
+                await conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
+                logger.info("✅ pgvector extension enabled")
+            except Exception as e:
+                logger.error(f"❌ Failed to enable pgvector: {e}")
+                raise
+            
+            # Create documents table with vector column
+            await conn.execute(f"""
+                CREATE TABLE IF NOT EXISTS documents (
+                    id SERIAL PRIMARY KEY,
+                    filename VARCHAR(500) NOT NULL,
+                    content TEXT NOT NULL,
+                    page_number INTEGER,
+                    chunk_index INTEGER,
+                    embedding vector({self.embedding_dim}),
+                    metadata JSONB,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
+            # Create vector index for fast similarity search
+            await conn.execute("""
+                CREATE INDEX IF NOT EXISTS documents_embedding_idx 
+                ON documents USING ivfflat (embedding vector_cosine_ops)
+                WITH (lists = 100)
+            """)
+            
+            # Create metadata indexes for filtering
+            await conn.execute("""
+                CREATE INDEX IF NOT EXISTS documents_filename_idx 
+                ON documents (filename)
+            """)
+            
+            await conn.execute("""
+                CREATE INDEX IF NOT EXISTS documents_metadata_idx 
+                ON documents USING gin (metadata)
+            """)
+            
+            logger.info("✅ PostgreSQL vector database initialized")
+    
+    def _generate_embeddings(self, texts: List[str]) -> numpy.ndarray:
+        """Generate embeddings for a list of texts"""
+        if not texts:
+            return numpy.array([])
+        
+        # Generate embeddings using the model
+        embeddings = self.embedding_model.encode(texts, show_progress_bar=False)
+        return embeddings
+    
+    async def add_documents(self, documents: List[Dict[str, Any]], metadata: Dict[str, Any] = None):
+        """Add documents with embeddings to the database"""
+        if not documents:
+            return
+        
+        await self.init_database()
+        
+        # Extract texts for embedding
+        texts = [doc['content'] for doc in documents]
+        logger.info(f"Generating embeddings for {len(texts)} documents...")
+        
+        # Generate embeddings
+        embeddings = self._generate_embeddings(texts)
+        
+        # Get filename from metadata or first document
+        filename = (metadata or {}).get('filename', 'unknown.pdf')
+        if not filename and documents:
+            filename = documents[0].get('filename', 'unknown.pdf')
+        
+        async with self.pool.acquire() as conn:
+            # Insert documents with embeddings
+            for i, doc in enumerate(documents):
+                embedding_vector = embeddings[i].tolist()
+                
+                # Combine document metadata with passed metadata
+                doc_metadata = doc.get('metadata', {})
+                if metadata:
+                    doc_metadata.update(metadata)
+                
+                await conn.execute("""
+                    INSERT INTO documents (filename, content, page_number, chunk_index, embedding, metadata)
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                """, 
+                filename,
+                doc['content'],
+                doc.get('page_number', 0),
+                doc.get('chunk_index', 0),
+                embedding_vector,
+                json.dumps(doc_metadata)
+                )
+        
+        logger.info(f"✅ Added {len(documents)} documents with embeddings to PostgreSQL")
+    
+    async def search(self, query: str, n_results: int = 5, **kwargs) -> List[Dict[str, Any]]:
+        """Search for similar documents using vector similarity"""
+        await self.init_database()
+        
+        # Generate query embedding
+        query_embedding = self._generate_embeddings([query])[0].tolist()
+        
+        async with self.pool.acquire() as conn:
+            # Perform vector similarity search using cosine distance
+            rows = await conn.fetch("""
+                SELECT 
+                    filename, content, page_number, chunk_index, metadata,
+                    1 - (embedding <=> $1::vector) as similarity,
+                    (embedding <=> $1::vector) as distance
+                FROM documents
+                ORDER BY embedding <=> $1::vector
+                LIMIT $2
+            """, query_embedding, n_results)
+            
+            results = []
+            for row in rows:
+                # Parse metadata
+                metadata = json.loads(row['metadata']) if row['metadata'] else {}
+                
+                # Add document info to metadata
+                metadata.update({
+                    'filename': row['filename'],
+                    'page': row['page_number'] or 'N/A',
+                    'page_number': row['page_number'],
+                    'chunk_index': row['chunk_index']
+                })
+                
+                results.append({
+                    'content': row['content'],
+                    'metadata': metadata,
+                    'distance': float(row['distance']),
+                    'similarity': float(row['similarity'])
+                })
+        
+        logger.info(f"Found {len(results)} similar documents for query")
+        return results
+    
+    async def list_documents(self) -> Dict[str, Any]:
+        """List all unique documents in the database"""
+        await self.init_database()
+        
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch("""
+                SELECT filename, COUNT(*) as chunk_count, 
+                       MAX(page_number) as total_pages,
+                       MIN(created_at) as uploaded_at,
+                       metadata
+                FROM documents 
+                GROUP BY filename, metadata
+                ORDER BY MIN(created_at) DESC
+            """)
+            
+            documents = []
+            for row in rows:
+                metadata = json.loads(row['metadata']) if row['metadata'] else {}
+                
+                documents.append({
+                    'filename': row['filename'],
+                    'chunk_count': row['chunk_count'],
+                    'total_pages': row['total_pages'] or 'N/A',
+                    'uploaded_at': row['uploaded_at'].isoformat() if row['uploaded_at'] else None,
+                    'author': metadata.get('author', 'Unknown'),
+                    'category': metadata.get('category', 'Uncategorized'),
+                    'title': metadata.get('title', row['filename'].replace('.pdf', ''))
+                })
+        
+        return {'documents': documents}
+    
+    async def delete_by_filename(self, filename: str):
+        """Delete all chunks for a specific filename"""
+        await self.init_database()
+        
+        async with self.pool.acquire() as conn:
+            result = await conn.execute("DELETE FROM documents WHERE filename = $1", filename)
+            deleted_count = int(result.split()[-1])
+            logger.info(f"Deleted {deleted_count} chunks for {filename}")
+    
+    async def get_document_count(self) -> int:
+        """Get total number of document chunks"""
+        await self.init_database()
+        
+        async with self.pool.acquire() as conn:
+            count = await conn.fetchval("SELECT COUNT(*) FROM documents")
+            return count or 0
+    
+    def is_connected(self) -> bool:
+        """Check if database pool is available"""
+        return self.pool is not None
+    
+    async def close(self):
+        """Close database connections"""
+        if self.pool:
+            await self.pool.close()
+            self.pool = None
