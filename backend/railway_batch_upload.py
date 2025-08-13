@@ -23,7 +23,28 @@ from book_manager import BookManager
 
 # Database URL from environment
 DATABASE_URL = os.getenv('DATABASE_URL')
-UPLOAD_DIR = os.getenv('UPLOAD_DIR', '/app/backend/uploads')
+
+# Auto-detect upload directory on Railway
+def find_upload_directory():
+    """Find the correct upload directory with PDFs"""
+    possible_paths = [
+        '/app/backend/uploads',  # Default expected path
+        '/app/data/uploads',     # Alternative path
+        '/app/uploads',          # Root uploads
+        os.getenv('UPLOAD_DIR')  # Environment override
+    ]
+    
+    for path in possible_paths:
+        if path and os.path.exists(path):
+            pdf_count = len(list(Path(path).glob("*.pdf")))
+            logger.info(f"Found {pdf_count} PDFs in {path}")
+            if pdf_count > 0:
+                return path
+    
+    # If no PDFs found, return default and let it error gracefully
+    return '/app/backend/uploads'
+
+UPLOAD_DIR = find_upload_directory()
 
 async def get_uploaded_files(conn) -> List[str]:
     """Get list of already uploaded files"""

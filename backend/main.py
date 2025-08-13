@@ -681,6 +681,45 @@ async def upload_dashboard():
     """
     return HTMLResponse(html)
 
+@app.get("/upload/debug")
+async def upload_debug():
+    """Debug endpoint to check upload directories and files"""
+    debug_info = {}
+    
+    # Check possible upload directories
+    possible_paths = [
+        '/app/backend/uploads',
+        '/app/data/uploads', 
+        '/app/uploads',
+        '/app/backend',
+        '/app'
+    ]
+    
+    for path in possible_paths:
+        if os.path.exists(path):
+            try:
+                files = os.listdir(path)
+                pdf_files = [f for f in files if f.endswith('.pdf')]
+                debug_info[path] = {
+                    "exists": True,
+                    "total_files": len(files),
+                    "pdf_files": len(pdf_files),
+                    "sample_files": files[:5]  # First 5 files
+                }
+            except Exception as e:
+                debug_info[path] = {"exists": True, "error": str(e)}
+        else:
+            debug_info[path] = {"exists": False}
+    
+    # Also check environment variables
+    debug_info["environment"] = {
+        "UPLOAD_DIR": os.getenv('UPLOAD_DIR', 'Not set'),
+        "RAILWAY_ENVIRONMENT": os.getenv('RAILWAY_ENVIRONMENT', 'Not set'),
+        "current_working_directory": os.getcwd()
+    }
+    
+    return debug_info
+
 @app.get("/documents")
 async def list_documents():
     """List all documents with intelligent caching - fast response for frontend"""
