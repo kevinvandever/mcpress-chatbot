@@ -725,6 +725,41 @@ async def restore_backup(backup_name: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Restore failed: {str(e)}")
 
+@app.post("/bulk-upload")
+async def trigger_bulk_upload():
+    """Trigger bulk upload of all remaining PDFs"""
+    try:
+        import subprocess
+        import asyncio
+        
+        # Start the bulk upload script in background
+        process = subprocess.Popen([
+            "python", "/app/backend/railway_bulk_upload.py"
+        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        
+        return {
+            "status": "started",
+            "message": "Bulk upload started in background",
+            "process_id": process.pid
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to start bulk upload: {str(e)}")
+
+@app.get("/bulk-upload/status")
+async def bulk_upload_status():
+    """Check bulk upload status by counting documents"""
+    try:
+        docs = await get_all_documents()
+        return {
+            "status": "running" if len(docs) < 100 else "complete",
+            "current_documents": len(docs),
+            "target_documents": 115,
+            "progress_percent": (len(docs) / 115) * 100
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get status: {str(e)}")
+
 @app.get("/health")
 def health_check():
     return {
