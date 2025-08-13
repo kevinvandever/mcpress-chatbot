@@ -764,8 +764,9 @@ async def bulk_upload_status():
 def health_check():
     return {
         "status": "healthy",
-        "vector_store": True,  # ChromaDB is always connected if initialized
-        "openai": bool(os.getenv("OPENAI_API_KEY"))
+        "vector_store": True,
+        "openai": bool(os.getenv("OPENAI_API_KEY")),
+        "restart_trigger": "2025-08-13-restart"  # Force restart
     }
 
 if __name__ == "__main__":
