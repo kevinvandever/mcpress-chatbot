@@ -223,16 +223,25 @@ class PostgresVectorStore:
                 """, query_vector, n_results)
             else:
                 # Calculate similarity in Python without pgvector
+                # CRITICAL: Limit rows to prevent memory/performance issues
+                # For now, sample a subset until we implement proper indexing
                 rows = await conn.fetch("""
                     SELECT filename, content, page_number, chunk_index, metadata, embedding
                     FROM documents
+                    WHERE embedding IS NOT NULL
+                    LIMIT 5000
                 """)
                 
                 # Calculate cosine similarity for each document
                 similarities = []
                 for row in rows:
                     if row['embedding']:
-                        doc_embedding = numpy.array(row['embedding'])
+                        # JSONB returns the embedding as already parsed JSON (list)
+                        # But we need to handle both cases for safety
+                        if isinstance(row['embedding'], str):
+                            doc_embedding = numpy.array(json.loads(row['embedding']))
+                        else:
+                            doc_embedding = numpy.array(row['embedding'])
                         similarity = numpy.dot(query_embedding, doc_embedding) / (
                             numpy.linalg.norm(query_embedding) * numpy.linalg.norm(doc_embedding)
                         )
