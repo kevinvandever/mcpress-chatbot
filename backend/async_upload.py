@@ -36,8 +36,8 @@ async def process_pdf_async(job_id: str, file_path: str, pdf_processor, vector_s
                 "author": author,
                 "category": category,
                 "page_count": extracted_content["total_pages"],
-                "has_images": extracted_content["has_images"],
-                "has_code": extracted_content["has_code"]
+                "has_images": len(extracted_content.get("images", [])) > 0,
+                "has_code": len(extracted_content.get("code_blocks", [])) > 0
             }
         )
         

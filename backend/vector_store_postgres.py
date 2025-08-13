@@ -54,7 +54,10 @@ class PostgresVectorStore:
     async def init_database(self):
         """Initialize database with or without pgvector extension"""
         if not self.pool:
-            self.pool = await asyncpg.create_pool(self.database_url)
+            self.pool = await asyncpg.create_pool(
+                self.database_url,
+                statement_cache_size=0  # Fix for pgbouncer compatibility
+            )
         
         self.has_pgvector = False
         
