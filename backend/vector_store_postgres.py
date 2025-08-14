@@ -179,10 +179,14 @@ class PostgresVectorStore:
         async with self.pool.acquire() as conn:
             # Insert documents with embeddings
             for i, doc in enumerate(documents):
-                # For JSONB column, we need to JSON-encode the embedding
+                # For pgvector, we need to format the embedding as a string representation
+                # of an array that PostgreSQL can cast to vector type
                 if self.has_pgvector:
-                    embedding_data = embeddings[i].tolist()
+                    # Format as PostgreSQL array string: '[0.1, 0.2, ...]'
+                    embedding_list = embeddings[i].tolist()
+                    embedding_data = '[' + ','.join(map(str, embedding_list)) + ']'
                 else:
+                    # For JSONB column, JSON-encode the embedding
                     embedding_data = json.dumps(embeddings[i].tolist())
                 
                 # Combine document metadata with passed metadata
@@ -190,17 +194,31 @@ class PostgresVectorStore:
                 if metadata:
                     doc_metadata.update(metadata)
                 
-                await conn.execute("""
-                    INSERT INTO documents (filename, content, page_number, chunk_index, embedding, metadata)
-                    VALUES ($1, $2, $3, $4, $5, $6)
-                """, 
-                filename,
-                doc['content'],
-                doc.get('page_number', 0),
-                doc.get('chunk_index', 0),
-                embedding_data,
-                json.dumps(doc_metadata)
-                )
+                # Use proper type casting for pgvector
+                if self.has_pgvector:
+                    await conn.execute("""
+                        INSERT INTO documents (filename, content, page_number, chunk_index, embedding, metadata)
+                        VALUES ($1, $2, $3, $4, $5::vector, $6)
+                    """, 
+                    filename,
+                    doc['content'],
+                    doc.get('page_number', 0),
+                    doc.get('chunk_index', 0),
+                    embedding_data,
+                    json.dumps(doc_metadata)
+                    )
+                else:
+                    await conn.execute("""
+                        INSERT INTO documents (filename, content, page_number, chunk_index, embedding, metadata)
+                        VALUES ($1, $2, $3, $4, $5, $6)
+                    """, 
+                    filename,
+                    doc['content'],
+                    doc.get('page_number', 0),
+                    doc.get('chunk_index', 0),
+                    embedding_data,
+                    json.dumps(doc_metadata)
+                    )
         
         logger.info(f"✅ Added {len(documents)} documents with embeddings to PostgreSQL")
     
@@ -214,7 +232,8 @@ class PostgresVectorStore:
         async with self.pool.acquire() as conn:
             if self.has_pgvector:
                 # Use pgvector for efficient similarity search
-                query_vector = query_embedding.tolist()
+                # Format query embedding as PostgreSQL array string
+                query_vector = '[' + ','.join(map(str, query_embedding.tolist())) + ']'
                 rows = await conn.fetch("""
                     SELECT 
                         filename, content, page_number, chunk_index, metadata,
