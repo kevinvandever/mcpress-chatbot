@@ -26,6 +26,7 @@ export const useAuth = () => {
 
   // Check if token is expired
   const isTokenExpired = useCallback(() => {
+    if (typeof window === 'undefined') return true;
     const expiryTime = localStorage.getItem('tokenExpiry');
     if (!expiryTime) return true;
     return Date.now() > parseInt(expiryTime, 10);
@@ -55,6 +56,16 @@ export const useAuth = () => {
   // Initialize auth state on mount
   useEffect(() => {
     const initAuth = async () => {
+      if (typeof window === 'undefined') {
+        setAuthState({
+          user: null,
+          isLoading: false,
+          isAuthenticated: false,
+          token: null,
+        });
+        return;
+      }
+      
       const token = localStorage.getItem('adminToken');
       
       if (!token || isTokenExpired()) {
@@ -107,8 +118,10 @@ export const useAuth = () => {
       const data = await response.json();
 
       if (response.ok) {
-        localStorage.setItem('adminToken', data.access_token);
-        localStorage.setItem('tokenExpiry', String(Date.now() + data.expires_in * 1000));
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('adminToken', data.access_token);
+          localStorage.setItem('tokenExpiry', String(Date.now() + data.expires_in * 1000));
+        }
         
         const user = await verifyToken(data.access_token);
         if (user) {
@@ -131,6 +144,8 @@ export const useAuth = () => {
 
   // Logout function
   const logout = useCallback(async () => {
+    if (typeof window === 'undefined') return;
+    
     const token = localStorage.getItem('adminToken');
     
     if (token) {
@@ -162,6 +177,8 @@ export const useAuth = () => {
 
   // Refresh token function
   const refreshToken = useCallback(async () => {
+    if (typeof window === 'undefined') return false;
+    
     const token = localStorage.getItem('adminToken');
     
     if (!token) {
@@ -180,8 +197,10 @@ export const useAuth = () => {
       const data = await response.json();
 
       if (response.ok) {
-        localStorage.setItem('adminToken', data.access_token);
-        localStorage.setItem('tokenExpiry', String(Date.now() + data.expires_in * 1000));
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('adminToken', data.access_token);
+          localStorage.setItem('tokenExpiry', String(Date.now() + data.expires_in * 1000));
+        }
         
         setAuthState(prev => ({
           ...prev,
