@@ -60,29 +60,7 @@ export default function UploadPage() {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
-  // Redirect if not authenticated (after loading)
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push('/admin/login');
-    }
-  }, [isAuthenticated, isLoading, router]);
-
-  // Show loading while checking auth
-  if (isLoading) {
-    return (
-      <AdminLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-gray-500">Loading...</div>
-        </div>
-      </AdminLayout>
-    );
-  }
-
-  // Don't render content if not authenticated
-  if (!isAuthenticated) {
-    return null;
-  }
-
+  // Define all callbacks before any returns
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const newFiles = acceptedFiles
       .filter(file => file.type === 'application/pdf')
@@ -222,6 +200,29 @@ export default function UploadPage() {
   };
 
   const selectedFile = selectedFileIndex !== null ? uploadFiles[selectedFileIndex] : null;
+
+  // Redirect if not authenticated (after loading) - this must be after all hooks
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push('/admin/login');
+    }
+  }, [isAuthenticated, isLoading, router]);
+
+  // Show loading while checking auth
+  if (isLoading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-gray-500">Loading...</div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  // Don't render content if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <AdminLayout>
