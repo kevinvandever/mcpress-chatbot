@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react'
 import ChatInterface, { ChatInterfaceRef } from '@/components/ChatInterface'
-import SearchInterface from '@/components/SearchInterface'
 import { API_URL } from '@/config/api'
 
 export default function Home() {
@@ -77,22 +76,8 @@ export default function Home() {
       {/* Main Content - Simplified to single page */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
-            {/* Search Section - 30% */}
-            <div className="lg:col-span-3">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                  <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  Quick Search
-                </h2>
-                <SearchInterface />
-              </div>
-            </div>
-            
-            {/* Chat Section - 70% */}
-            <div className="lg:col-span-7">
+          {/* Chat Section - Full Width */}
+          <div>
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 h-full">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                   <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -189,7 +174,6 @@ export default function Home() {
                 <ChatInterface ref={chatInterfaceRef} hasDocuments={hasDocuments} />
               </div>
             </div>
-          </div>
         </div>
       </main>
 

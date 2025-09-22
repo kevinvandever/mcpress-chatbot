@@ -603,15 +603,7 @@ async def chat(message: ChatMessage):
     
     return StreamingResponse(generate(), media_type="text/event-stream")
 
-@app.get("/search")
-async def search_documents(q: str, n_results: int = 5, filename: str = None, content_types: str = None):
-    try:
-        book_filter = [filename] if filename else None
-        type_filter = content_types.split(',') if content_types else None
-        results = await vector_store.search(q, n_results=n_results, book_filter=book_filter, type_filter=type_filter)
-        return {"query": q, "results": results}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# Search endpoint removed - will be replaced with conversation history search in future stories
 
 # Upload Batch Management Endpoints
 @app.get("/upload/trigger/{batch_size}")

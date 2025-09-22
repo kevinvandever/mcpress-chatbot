@@ -5,7 +5,7 @@ import FileUpload from '@/components/FileUpload'
 import BatchUpload from '@/components/BatchUpload'
 import ChatInterface from '@/components/ChatInterface'
 import DocumentList from '@/components/DocumentList'
-import SearchInterface from '@/components/SearchInterface'
+// SearchInterface removed - will be replaced with conversation history search
 import axios from 'axios'
 import { API_URL } from '../config/api'
 
@@ -326,7 +326,10 @@ export default function Home() {
                 aria-labelledby="search-tab"
                 tabIndex={0}
               >
-                <SearchInterface onResultSelect={handleSearchResultSelect} />
+                <div className="text-center py-8 text-gray-500">
+                  <p>Search functionality temporarily disabled</p>
+                  <p className="text-sm mt-2">Will be replaced with conversation history search</p>
+                </div>
               </div>
             )}
           </div>
