@@ -34,18 +34,14 @@ try:
     from chat_handler import ChatHandler
     from backup_manager import backup_manager
     from auth_routes import router as auth_router
-    # Temporarily disable admin_documents until fixed
-    # from admin_documents import router as admin_docs_router
-    admin_docs_router = None
+    from admin_documents import router as admin_docs_router, set_vector_store
 except ImportError:
     # Fall back to local development imports
     from backend.pdf_processor_full import PDFProcessorFull
     from backend.chat_handler import ChatHandler
     from backend.backup_manager import backup_manager
     from backend.auth_routes import router as auth_router
-    # Temporarily disable admin_documents until fixed
-    # from backend.admin_documents import router as admin_docs_router
-    admin_docs_router = None
+    from backend.admin_documents import router as admin_docs_router, set_vector_store
 
 # Check vector store preference - try multiple variable names due to Railway caching issues
 use_postgresql_env = os.getenv('USE_POSTGRESQL', '')
@@ -182,11 +178,15 @@ app.add_middleware(
 
 # Include auth router
 app.include_router(auth_router)
-# Temporarily disable admin_documents until fixed
-# app.include_router(admin_docs_router)
 
 pdf_processor = PDFProcessorFull()
 vector_store = VectorStoreClass()
+
+# Set vector store for admin_documents
+set_vector_store(vector_store)
+
+# Now include admin router after vector store is initialized
+app.include_router(admin_docs_router)
 
 # Global cache for documents
 _documents_cache = None

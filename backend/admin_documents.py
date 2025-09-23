@@ -11,50 +11,33 @@ import os
 
 try:
     from auth import get_current_admin
-    from book_manager import BookManager
 except ImportError:
     from backend.auth import get_current_admin
-    from backend.book_manager import BookManager
-
-# Import appropriate vector store based on environment
-use_postgresql = os.getenv('USE_POSTGRESQL', '').lower() == 'true' or os.getenv('ENABLE_POSTGRESQL', '').lower() == 'true'
-
-if use_postgresql:
-    try:
-        from vector_store_postgres import VectorStorePostgres
-        VectorStoreClass = VectorStorePostgres
-    except ImportError:
-        from backend.vector_store_postgres import VectorStorePostgres
-        VectorStoreClass = VectorStorePostgres
-else:
-    try:
-        from vector_store import VectorStore
-        VectorStoreClass = VectorStore
-    except ImportError:
-        from backend.vector_store import VectorStore
-        VectorStoreClass = VectorStore
 
 router = APIRouter(prefix="/admin/documents", tags=["admin-documents"])
 
-# Lazy initialization of services
+# Vector store will be set by main.py after initialization
 _vector_store = None
-_book_manager = None
+
+def set_vector_store(store):
+    global _vector_store
+    _vector_store = store
 
 def get_vector_store():
-    global _vector_store
     if _vector_store is None:
-        _vector_store = VectorStoreClass()
+        raise RuntimeError("Vector store not initialized. Call set_vector_store first.")
     return _vector_store
 
 def get_book_manager():
-    global _book_manager
-    if _book_manager is None:
-        _book_manager = BookManager()
-    return _book_manager
-
-# For backwards compatibility
-vector_store = property(lambda self: get_vector_store())
-book_manager = property(lambda self: get_book_manager())
+    try:
+        from book_manager import BookManager
+        return BookManager()
+    except ImportError:
+        try:
+            from backend.book_manager import BookManager
+            return BookManager()
+        except:
+            return None
 
 class DocumentUpdate(BaseModel):
     title: Optional[str] = None
