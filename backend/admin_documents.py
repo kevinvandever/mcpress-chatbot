@@ -7,19 +7,37 @@ import csv
 import io
 import json
 
+import os
+
 try:
     from auth import get_current_admin
-    from vector_store_postgres import VectorStorePostgres
     from book_manager import BookManager
 except ImportError:
     from backend.auth import get_current_admin
-    from backend.vector_store_postgres import VectorStorePostgres
     from backend.book_manager import BookManager
+
+# Import appropriate vector store based on environment
+use_postgresql = os.getenv('USE_POSTGRESQL', '').lower() == 'true' or os.getenv('ENABLE_POSTGRESQL', '').lower() == 'true'
+
+if use_postgresql:
+    try:
+        from vector_store_postgres import VectorStorePostgres
+        VectorStoreClass = VectorStorePostgres
+    except ImportError:
+        from backend.vector_store_postgres import VectorStorePostgres
+        VectorStoreClass = VectorStorePostgres
+else:
+    try:
+        from vector_store import VectorStore
+        VectorStoreClass = VectorStore
+    except ImportError:
+        from backend.vector_store import VectorStore
+        VectorStoreClass = VectorStore
 
 router = APIRouter(prefix="/admin/documents", tags=["admin-documents"])
 
 # Initialize services
-vector_store = VectorStorePostgres()
+vector_store = VectorStoreClass()
 book_manager = BookManager()
 
 class DocumentUpdate(BaseModel):
