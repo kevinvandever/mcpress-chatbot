@@ -672,13 +672,17 @@ export default function DocumentsManagement() {
                         ) : (
                           <div className="space-x-2">
                             <button
-                              onClick={() => startEditing(doc)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                startEditing(doc);
+                              }}
                               className="text-blue-600 hover:text-blue-900"
                             >
                               Edit
                             </button>
                             <button
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setDeleteTarget(doc.id);
                                 setShowDeleteDialog(true);
                               }}

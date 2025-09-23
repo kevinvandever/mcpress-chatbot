@@ -69,17 +69,49 @@ async def list_documents(
 ):
     """List all documents with pagination, filtering, and sorting"""
     try:
-        # Get all documents from vector store
-        all_docs = await get_vector_store().list_documents()
-        documents = all_docs.get('documents', [])
+        # Get connection to books table
+        conn = await get_vector_store()._get_connection()
+        try:
+            # Fetch from books table with proper ID
+            query = """
+                SELECT id, filename, title, author, category, subcategory,
+                       total_pages, file_hash, processed_at, mc_press_url,
+                       description, tags, year
+                FROM books
+                ORDER BY id DESC
+            """
+
+            async with conn.cursor() as cursor:
+                await cursor.execute(query)
+                rows = await cursor.fetchall()
+
+                documents = []
+                for row in rows:
+                    documents.append({
+                        'id': row[0],
+                        'filename': row[1],
+                        'title': row[2] or row[1].replace('.pdf', ''),
+                        'author': row[3],
+                        'category': row[4],
+                        'subcategory': row[5],
+                        'total_pages': row[6] or 0,
+                        'file_hash': row[7],
+                        'processed_at': row[8].isoformat() if row[8] else None,
+                        'mc_press_url': row[9],
+                        'description': row[10],
+                        'tags': row[11] or [],
+                        'year': row[12]
+                    })
+        finally:
+            await conn.close()
 
         # Apply search filter
         if search:
             search_lower = search.lower()
             documents = [
                 doc for doc in documents
-                if (doc.get('title', '').lower().find(search_lower) >= 0 or
-                    doc.get('author', '').lower().find(search_lower) >= 0)
+                if ((doc.get('title') or '').lower().find(search_lower) >= 0 or
+                    (doc.get('author') or '').lower().find(search_lower) >= 0)
             ]
 
         # Apply category filter
@@ -257,9 +289,38 @@ async def export_documents_csv(
 ):
     """Export all documents to CSV"""
     try:
-        # Get all documents
-        all_docs = await get_vector_store().list_documents()
-        documents = all_docs.get('documents', [])
+        # Get all documents from books table
+        conn = await get_vector_store()._get_connection()
+        try:
+            query = """
+                SELECT id, filename, title, author, category, subcategory,
+                       year, tags, description, mc_press_url, total_pages, processed_at
+                FROM books
+                ORDER BY id DESC
+            """
+
+            async with conn.cursor() as cursor:
+                await cursor.execute(query)
+                rows = await cursor.fetchall()
+
+                documents = []
+                for row in rows:
+                    documents.append({
+                        'id': row[0],
+                        'filename': row[1],
+                        'title': row[2] or row[1].replace('.pdf', ''),
+                        'author': row[3],
+                        'category': row[4],
+                        'subcategory': row[5],
+                        'year': row[6],
+                        'tags': row[7] or [],
+                        'description': row[8],
+                        'mc_press_url': row[9],
+                        'total_pages': row[10] or 0,
+                        'processed_at': row[11].isoformat() if row[11] else None
+                    })
+        finally:
+            await conn.close()
 
         # Create CSV in memory
         output = io.StringIO()
@@ -281,10 +342,10 @@ async def export_documents_csv(
                 doc.get('category', ''),
                 doc.get('subcategory', ''),
                 doc.get('year', ''),
-                ','.join(doc.get('tags', [])) if doc.get('tags') else '',
+                ','.join(doc.get('tags', [])) if isinstance(doc.get('tags'), list) else '',
                 doc.get('description', ''),
                 doc.get('mc_press_url', ''),
-                doc.get('total_pages', ''),
+                doc.get('total_pages', 0),
                 doc.get('processed_at', '')
             ])
 
@@ -363,6 +424,44 @@ async def import_documents_csv(
     except Exception as e:
         print(f"Error importing CSV: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/stats")
+async def get_admin_stats(
+    current_admin = Depends(get_current_admin)
+):
+    """Get admin dashboard statistics"""
+    try:
+        conn = await get_vector_store()._get_connection()
+        try:
+            async with conn.cursor() as cursor:
+                # Get document count
+                await cursor.execute("SELECT COUNT(*) FROM books")
+                doc_count = (await cursor.fetchone())[0]
+
+                # Get total chunks from embeddings table
+                await cursor.execute("SELECT COUNT(*) FROM embeddings")
+                chunk_count = (await cursor.fetchone())[0]
+
+                # Get last upload date
+                await cursor.execute("SELECT MAX(processed_at) FROM books")
+                last_upload = await cursor.fetchone()
+                last_upload_date = last_upload[0].isoformat() if last_upload and last_upload[0] else None
+
+                return {
+                    "total_documents": doc_count,
+                    "total_chunks": chunk_count,
+                    "last_upload": last_upload_date
+                }
+        finally:
+            await conn.close()
+    except Exception as e:
+        print(f"Error getting stats: {str(e)}")
+        # Return defaults if error
+        return {
+            "total_documents": 0,
+            "total_chunks": 0,
+            "last_upload": None
+        }
 
 @router.get("/history/{document_id}")
 async def get_document_history(
