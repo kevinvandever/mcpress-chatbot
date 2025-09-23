@@ -148,10 +148,28 @@ def run_upload_batch(batch_size: int = 15):
     finally:
         upload_status["running"] = False
 
+# Configure CORS with proper origins for authentication
+allowed_origins = [
+    "http://localhost:3000",  # Local development
+    "https://mc-press-chatbot.netlify.app",  # Production frontend
+    "https://mcpress-chatbot.netlify.app",  # Alternative production URL
+]
+
+# Add any additional origins from environment variable
+cors_env = os.getenv("CORS_ORIGINS")
+if cors_env:
+    try:
+        import json
+        additional_origins = json.loads(cors_env)
+        if isinstance(additional_origins, list):
+            allowed_origins.extend(additional_origins)
+    except:
+        pass
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins
-    allow_credentials=False,  # Set to False when using wildcard
+    allow_origins=allowed_origins,
+    allow_credentials=True,  # Required for authentication
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
