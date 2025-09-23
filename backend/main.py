@@ -34,14 +34,26 @@ try:
     from chat_handler import ChatHandler
     from backup_manager import backup_manager
     from auth_routes import router as auth_router
-    from admin_documents import router as admin_docs_router, set_vector_store
 except ImportError:
     # Fall back to local development imports
     from backend.pdf_processor_full import PDFProcessorFull
     from backend.chat_handler import ChatHandler
     from backend.backup_manager import backup_manager
     from backend.auth_routes import router as auth_router
-    from backend.admin_documents import router as admin_docs_router, set_vector_store
+
+# Try to import admin_documents but don't fail if it doesn't work
+try:
+    try:
+        from admin_documents import router as admin_docs_router, set_vector_store
+        admin_docs_available = True
+    except ImportError:
+        from backend.admin_documents import router as admin_docs_router, set_vector_store
+        admin_docs_available = True
+except Exception as e:
+    print(f"⚠️ Admin documents not available: {e}")
+    admin_docs_router = None
+    set_vector_store = None
+    admin_docs_available = False
 
 # Check vector store preference - try multiple variable names due to Railway caching issues
 use_postgresql_env = os.getenv('USE_POSTGRESQL', '')
@@ -182,11 +194,14 @@ app.include_router(auth_router)
 pdf_processor = PDFProcessorFull()
 vector_store = VectorStoreClass()
 
-# Set vector store for admin_documents
-set_vector_store(vector_store)
-
-# Now include admin router after vector store is initialized
-app.include_router(admin_docs_router)
+# Set vector store for admin_documents if available
+if admin_docs_available and set_vector_store:
+    try:
+        set_vector_store(vector_store)
+        app.include_router(admin_docs_router)
+        print("✅ Admin documents endpoints enabled")
+    except Exception as e:
+        print(f"⚠️ Could not enable admin documents: {e}")
 
 # Global cache for documents
 _documents_cache = None
