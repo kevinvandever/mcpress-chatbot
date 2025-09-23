@@ -65,13 +65,13 @@ if use_postgresql:
     try:
         # Try both local and Railway import paths
         try:
-            from vector_store_postgres import PostgresVectorStore
+            from vector_store_postgres import VectorStorePostgres
         except ImportError:
-            from backend.vector_store_postgres import PostgresVectorStore
-        VectorStoreClass = PostgresVectorStore
+            from backend.vector_store_postgres import VectorStorePostgres
+        VectorStoreClass = VectorStorePostgres
         print("✅ Using PostgreSQL with semantic embeddings (persistent, reliable)")
     except ImportError as e:
-        print(f"❌ CRITICAL: PostgresVectorStore import failed: {e}")
+        print(f"❌ CRITICAL: VectorStorePostgres import failed: {e}")
         print("🔍 This is why you're getting text search instead of vector search!")
         # Fallback to old PostgreSQL implementation
         try:
