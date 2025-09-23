@@ -383,3 +383,72 @@ async def get_document_history(
         print(f"Error getting document history: {str(e)}")
         # Return empty history if table doesn't exist yet
         return {"document_id": document_id, "history": []}
+
+@router.post("/run-migration")
+async def run_migration(
+    current_admin = Depends(get_current_admin)
+):
+    """Run database migration for metadata management"""
+    try:
+        conn = await vector_store._get_connection()
+        try:
+            async with conn.cursor() as cursor:
+                # Create metadata history table
+                await cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS metadata_history (
+                        id SERIAL PRIMARY KEY,
+                        book_id INTEGER REFERENCES books(id) ON DELETE CASCADE,
+                        field_name TEXT NOT NULL,
+                        old_value TEXT,
+                        new_value TEXT,
+                        changed_by TEXT NOT NULL,
+                        changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+
+                # Create indexes
+                await cursor.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_metadata_history_book_id
+                    ON metadata_history(book_id)
+                """)
+
+                await cursor.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_metadata_history_changed_at
+                    ON metadata_history(changed_at)
+                """)
+
+                # Add missing columns to books table
+                columns_to_add = [
+                    ('subcategory', 'TEXT'),
+                    ('description', 'TEXT'),
+                    ('tags', 'TEXT[]'),
+                    ('mc_press_url', 'TEXT'),
+                    ('year', 'INTEGER')
+                ]
+
+                results = []
+                for column_name, column_type in columns_to_add:
+                    try:
+                        await cursor.execute(f"""
+                            ALTER TABLE books
+                            ADD COLUMN IF NOT EXISTS {column_name} {column_type}
+                        """)
+                        results.append(f"✅ Added column {column_name}")
+                    except Exception as col_error:
+                        if "already exists" in str(col_error).lower():
+                            results.append(f"ℹ️ Column {column_name} already exists")
+                        else:
+                            results.append(f"⚠️ Could not add column {column_name}: {str(col_error)}")
+
+                await conn.commit()
+
+                return {
+                    "status": "success",
+                    "message": "Migration completed successfully",
+                    "details": results
+                }
+        finally:
+            await conn.close()
+    except Exception as e:
+        print(f"Error running migration: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Migration failed: {str(e)}")
