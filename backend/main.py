@@ -196,8 +196,8 @@ try:
     from migration_endpoint import migration_router
     app.include_router(migration_router)
     print("✅ Migration endpoints enabled at /migration/")
-except ImportError:
-    print("⚠️ Migration endpoints not available")
+except Exception as e:
+    print(f"⚠️ Migration endpoints not available: {e}")
 
 pdf_processor = PDFProcessorFull()
 vector_store = VectorStoreClass()
@@ -972,6 +972,116 @@ def health_check():
         "openai": bool(os.getenv("OPENAI_API_KEY")),
         "restart_trigger": "2025-08-13-restart"  # Force restart
     }
+
+@app.get("/run-story4-migration")
+async def run_story4_migration():
+    """Run Story 4 migration - accessible via GET for easy browser access"""
+    import asyncpg
+
+    try:
+        database_url = os.getenv('DATABASE_URL')
+        if not database_url:
+            return {"error": "DATABASE_URL not configured"}
+
+        conn = await asyncpg.connect(database_url)
+        results = []
+
+        # Create books table if needed
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS books (
+                id SERIAL PRIMARY KEY,
+                filename TEXT UNIQUE NOT NULL,
+                title TEXT,
+                author TEXT,
+                category TEXT,
+                subcategory TEXT,
+                description TEXT,
+                tags TEXT[],
+                mc_press_url TEXT,
+                year INTEGER,
+                total_pages INTEGER,
+                file_hash TEXT,
+                processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        results.append("Books table ready")
+
+        # Check if migration needed
+        book_count = await conn.fetchval("SELECT COUNT(*) FROM books")
+
+        if book_count == 0:
+            # Migrate from documents
+            unique_docs = await conn.fetch("""
+                SELECT DISTINCT ON (filename)
+                    filename,
+                    metadata,
+                    created_at
+                FROM documents
+                ORDER BY filename, created_at ASC
+                LIMIT 200
+            """)
+
+            migrated = 0
+            for doc in unique_docs:
+                try:
+                    metadata = doc['metadata'] or {}
+                    if isinstance(metadata, str):
+                        import json
+                        metadata = json.loads(metadata) if metadata else {}
+
+                    await conn.execute("""
+                        INSERT INTO books (filename, title, author, category, processed_at)
+                        VALUES ($1, $2, $3, $4, $5)
+                        ON CONFLICT (filename) DO NOTHING
+                    """,
+                        doc['filename'],
+                        metadata.get('title', doc['filename'].replace('.pdf', '')),
+                        metadata.get('author', 'Unknown'),
+                        metadata.get('category', 'General'),
+                        doc['created_at']
+                    )
+                    migrated += 1
+                except:
+                    pass
+
+            results.append(f"Migrated {migrated} documents")
+
+        # Update page counts
+        chunk_stats = await conn.fetch("""
+            SELECT filename, COUNT(*) as chunks, MAX(page_number) as max_page
+            FROM documents
+            GROUP BY filename
+            LIMIT 200
+        """)
+
+        updated = 0
+        for stat in chunk_stats:
+            pages = stat['max_page'] if stat['max_page'] else max(1, stat['chunks'] // 3)
+            result = await conn.execute("""
+                UPDATE books SET total_pages = $1 WHERE filename = $2
+            """, pages, stat['filename'])
+            if '1' in result:
+                updated += 1
+
+        results.append(f"Updated {updated} page counts")
+
+        # Get final stats
+        final = await conn.fetchrow("""
+            SELECT COUNT(*) as books, AVG(total_pages) as avg_pages
+            FROM books WHERE total_pages > 0
+        """)
+
+        await conn.close()
+
+        return {
+            "success": True,
+            "results": results,
+            "total_books": final['books'],
+            "avg_pages": int(final['avg_pages'] or 0)
+        }
+
+    except Exception as e:
+        return {"error": str(e)}
 
 @app.post("/run-migration-simple-disabled")
 async def run_migration_simple():
