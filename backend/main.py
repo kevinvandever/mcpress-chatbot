@@ -965,6 +965,62 @@ def health_check():
         "restart_trigger": "2025-08-13-restart"  # Force restart
     }
 
+@app.post("/run-migration-simple")
+async def run_migration_simple():
+    """Simple migration endpoint that works without admin_documents"""
+    try:
+        # Check if PostgreSQL vector store is being used
+        if not hasattr(vector_store, '_get_connection'):
+            return {"status": "error", "message": "PostgreSQL not configured"}
+
+        conn = await vector_store._get_connection()
+        try:
+            async with conn.cursor() as cursor:
+                results = []
+
+                # Create metadata_history table
+                await cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS metadata_history (
+                        id SERIAL PRIMARY KEY,
+                        book_id INTEGER REFERENCES books(id) ON DELETE CASCADE,
+                        field_name TEXT NOT NULL,
+                        old_value TEXT,
+                        new_value TEXT,
+                        changed_by TEXT NOT NULL,
+                        changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                results.append("Created metadata_history table")
+
+                # Add missing columns
+                columns = [
+                    ('subcategory', 'TEXT'),
+                    ('description', 'TEXT'),
+                    ('tags', 'TEXT[]'),
+                    ('mc_press_url', 'TEXT'),
+                    ('year', 'INTEGER')
+                ]
+
+                for col_name, col_type in columns:
+                    try:
+                        await cursor.execute(f"""
+                            ALTER TABLE books
+                            ADD COLUMN IF NOT EXISTS {col_name} {col_type}
+                        """)
+                        results.append(f"Added column {col_name}")
+                    except Exception as e:
+                        if "already exists" in str(e).lower():
+                            results.append(f"Column {col_name} already exists")
+                        else:
+                            results.append(f"Error with {col_name}: {str(e)}")
+
+                await conn.commit()
+                return {"status": "success", "results": results}
+        finally:
+            await conn.close()
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
