@@ -34,12 +34,14 @@ try:
     from chat_handler import ChatHandler
     from backup_manager import backup_manager
     from auth_routes import router as auth_router
+    from admin_documents import router as admin_docs_router
 except ImportError:
     # Fall back to local development imports
     from backend.pdf_processor_full import PDFProcessorFull
     from backend.chat_handler import ChatHandler
     from backend.backup_manager import backup_manager
     from backend.auth_routes import router as auth_router
+    from backend.admin_documents import router as admin_docs_router
 
 # Check vector store preference - try multiple variable names due to Railway caching issues
 use_postgresql_env = os.getenv('USE_POSTGRESQL', '')
@@ -176,6 +178,7 @@ app.add_middleware(
 
 # Include auth router
 app.include_router(auth_router)
+app.include_router(admin_docs_router)
 
 pdf_processor = PDFProcessorFull()
 vector_store = VectorStoreClass()
