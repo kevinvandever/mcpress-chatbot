@@ -36,9 +36,25 @@ else:
 
 router = APIRouter(prefix="/admin/documents", tags=["admin-documents"])
 
-# Initialize services
-vector_store = VectorStoreClass()
-book_manager = BookManager()
+# Lazy initialization of services
+_vector_store = None
+_book_manager = None
+
+def get_vector_store():
+    global _vector_store
+    if _vector_store is None:
+        _vector_store = VectorStoreClass()
+    return _vector_store
+
+def get_book_manager():
+    global _book_manager
+    if _book_manager is None:
+        _book_manager = BookManager()
+    return _book_manager
+
+# For backwards compatibility
+vector_store = property(lambda self: get_vector_store())
+book_manager = property(lambda self: get_book_manager())
 
 class DocumentUpdate(BaseModel):
     title: Optional[str] = None
@@ -71,7 +87,7 @@ async def list_documents(
     """List all documents with pagination, filtering, and sorting"""
     try:
         # Get all documents from vector store
-        all_docs = await vector_store.list_documents()
+        all_docs = await get_vector_store().list_documents()
         documents = all_docs.get('documents', [])
 
         # Apply search filter
@@ -126,7 +142,7 @@ async def update_document(
     """Update a single document's metadata"""
     try:
         # Get document by ID
-        all_docs = await vector_store.list_documents()
+        all_docs = await get_vector_store().list_documents()
         documents = all_docs.get('documents', [])
 
         doc = None
@@ -139,7 +155,7 @@ async def update_document(
             raise HTTPException(status_code=404, detail="Document not found")
 
         # Update metadata in database
-        conn = await vector_store._get_connection()
+        conn = await get_vector_store()._get_connection()
         try:
             update_fields = []
             values = []
@@ -188,7 +204,7 @@ async def bulk_update_documents(
 ):
     """Bulk update multiple documents"""
     try:
-        conn = await vector_store._get_connection()
+        conn = await get_vector_store()._get_connection()
         try:
             if bulk_data.action == "category":
                 query = "UPDATE books SET category = %s WHERE id = ANY(%s)"
@@ -228,7 +244,7 @@ async def bulk_delete_documents(
 ):
     """Bulk delete multiple documents"""
     try:
-        conn = await vector_store._get_connection()
+        conn = await get_vector_store()._get_connection()
         try:
             # Delete from embeddings first (cascade)
             async with conn.cursor() as cursor:
@@ -259,7 +275,7 @@ async def export_documents_csv(
     """Export all documents to CSV"""
     try:
         # Get all documents
-        all_docs = await vector_store.list_documents()
+        all_docs = await get_vector_store().list_documents()
         documents = all_docs.get('documents', [])
 
         # Create CSV in memory
@@ -314,7 +330,7 @@ async def import_documents_csv(
         csv_file = io.StringIO(content.decode('utf-8'))
         reader = csv.DictReader(csv_file)
 
-        conn = await vector_store._get_connection()
+        conn = await get_vector_store()._get_connection()
         try:
             updated = 0
             errors = []
@@ -372,7 +388,7 @@ async def get_document_history(
 ):
     """Get change history for a document"""
     try:
-        conn = await vector_store._get_connection()
+        conn = await get_vector_store()._get_connection()
         try:
             async with conn.cursor() as cursor:
                 await cursor.execute(
@@ -408,7 +424,7 @@ async def run_migration(
 ):
     """Run database migration for metadata management"""
     try:
-        conn = await vector_store._get_connection()
+        conn = await get_vector_store()._get_connection()
         try:
             async with conn.cursor() as cursor:
                 # Create metadata history table
