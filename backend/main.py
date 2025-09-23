@@ -191,6 +191,14 @@ app.add_middleware(
 # Include auth router
 app.include_router(auth_router)
 
+# Temporary migration router for Story 004
+try:
+    from migration_endpoint import migration_router
+    app.include_router(migration_router)
+    print("✅ Migration endpoints enabled at /migration/")
+except ImportError:
+    print("⚠️ Migration endpoints not available")
+
 pdf_processor = PDFProcessorFull()
 vector_store = VectorStoreClass()
 
