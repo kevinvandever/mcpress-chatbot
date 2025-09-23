@@ -965,7 +965,7 @@ def health_check():
         "restart_trigger": "2025-08-13-restart"  # Force restart
     }
 
-@app.post("/run-migration-simple")
+@app.post("/run-migration-simple-disabled")
 async def run_migration_simple():
     """Simple migration endpoint that works without admin_documents"""
     try:
@@ -975,73 +975,69 @@ async def run_migration_simple():
         elif hasattr(vector_store, 'get_connection'):
             conn = await vector_store.get_connection()
         else:
-            # Try direct psycopg2 connection
-            import psycopg2
-            from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+            # Try direct connection using asyncpg which is installed
+            import asyncpg
 
             database_url = os.getenv('DATABASE_URL')
             if not database_url:
                 return {"status": "error", "message": "DATABASE_URL not configured"}
 
-            # Use synchronous psycopg2 for migration
-            sync_conn = psycopg2.connect(database_url)
-            sync_conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-            cur = sync_conn.cursor()
+            # Use asyncpg for migration
+            conn = await asyncpg.connect(database_url)
 
             results = []
 
-            # Create metadata_history table
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS metadata_history (
-                    id SERIAL PRIMARY KEY,
-                    book_id INTEGER REFERENCES books(id) ON DELETE CASCADE,
-                    field_name TEXT NOT NULL,
-                    old_value TEXT,
-                    new_value TEXT,
-                    changed_by TEXT NOT NULL,
-                    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            results.append("Created metadata_history table")
+            try:
+                # Create metadata_history table
+                await conn.execute("""
+                    CREATE TABLE IF NOT EXISTS metadata_history (
+                        id SERIAL PRIMARY KEY,
+                        book_id INTEGER REFERENCES books(id) ON DELETE CASCADE,
+                        field_name TEXT NOT NULL,
+                        old_value TEXT,
+                        new_value TEXT,
+                        changed_by TEXT NOT NULL,
+                        changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                results.append("Created metadata_history table")
 
-            # Add indexes
-            cur.execute("""
-                CREATE INDEX IF NOT EXISTS idx_metadata_history_book_id
-                ON metadata_history(book_id)
-            """)
-            cur.execute("""
-                CREATE INDEX IF NOT EXISTS idx_metadata_history_changed_at
-                ON metadata_history(changed_at)
-            """)
-            results.append("Created indexes")
+                # Add indexes
+                await conn.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_metadata_history_book_id
+                    ON metadata_history(book_id)
+                """)
+                await conn.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_metadata_history_changed_at
+                    ON metadata_history(changed_at)
+                """)
+                results.append("Created indexes")
 
-            # Add missing columns
-            columns = [
-                ('subcategory', 'TEXT'),
-                ('description', 'TEXT'),
-                ('tags', 'TEXT[]'),
-                ('mc_press_url', 'TEXT'),
-                ('year', 'INTEGER')
-            ]
+                # Add missing columns
+                columns = [
+                    ('subcategory', 'TEXT'),
+                    ('description', 'TEXT'),
+                    ('tags', 'TEXT[]'),
+                    ('mc_press_url', 'TEXT'),
+                    ('year', 'INTEGER')
+                ]
 
-            for col_name, col_type in columns:
-                try:
-                    cur.execute(f"""
-                        ALTER TABLE books
-                        ADD COLUMN {col_name} {col_type}
-                    """)
-                    results.append(f"Added column {col_name}")
-                except Exception as e:
-                    if "already exists" in str(e).lower():
-                        results.append(f"Column {col_name} already exists")
-                    else:
-                        results.append(f"Error with {col_name}: {str(e)}")
+                for col_name, col_type in columns:
+                    try:
+                        await conn.execute(f"""
+                            ALTER TABLE books
+                            ADD COLUMN {col_name} {col_type}
+                        """)
+                        results.append(f"Added column {col_name}")
+                    except Exception as e:
+                        if "already exists" in str(e).lower():
+                            results.append(f"Column {col_name} already exists")
+                        else:
+                            results.append(f"Error with {col_name}: {str(e)}")
 
-            sync_conn.commit()
-            cur.close()
-            sync_conn.close()
-
-            return {"status": "success", "results": results}
+                return {"status": "success", "results": results}
+            finally:
+                await conn.close()
 
         # Original async code path
         conn = await vector_store._get_connection()
