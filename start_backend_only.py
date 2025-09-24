@@ -19,8 +19,10 @@ def main():
         print(f"[RAILWAY] Available env vars: {list(os.environ.keys())}")
     
     # Set environment variables
-    os.environ['RAILWAY_ENVIRONMENT'] = 'false'
-    os.environ['USE_POSTGRESQL'] = 'false'
+    os.environ['RAILWAY_ENVIRONMENT'] = 'true'
+    # Don't override USE_POSTGRESQL if it's already set
+    if 'USE_POSTGRESQL' not in os.environ:
+        os.environ['USE_POSTGRESQL'] = 'true'  # Default to PostgreSQL
     os.environ['DATA_DIR'] = '/tmp/data'
     
     # Workaround: If OPENAI_API_KEY is not found, try to get it from Railway's service variables
