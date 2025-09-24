@@ -19,6 +19,9 @@ def set_vector_store(vector_store):
     _vector_store = vector_store
     logger.info("✅ Migration router initialized with vector store")
 
+# Alias for import compatibility
+set_migration_store = set_vector_store
+
 @router.get("/run-story4-migration-safe")
 async def run_migration_safe():
     """Run Story 4 migration using existing connection pool"""

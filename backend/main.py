@@ -200,9 +200,10 @@ app.include_router(auth_router)
 try:
     # Try Railway-style import first
     try:
-        from migration_story_004_endpoint import router as story4_migration_router, set_vector_store as set_migration_store
+        from migration_story_004_endpoint import router as story4_migration_router, set_migration_store
         migration_available = True
     except ImportError:
+        # Fallback to local development import
         from backend.migration_story_004_endpoint import router as story4_migration_router, set_migration_store
         migration_available = True
     print("✅ Story 004 migration endpoint enabled")
