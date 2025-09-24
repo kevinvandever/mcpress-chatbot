@@ -196,26 +196,9 @@ app.add_middleware(
 # Include auth router
 app.include_router(auth_router)
 
-# Minimal test endpoints with NO database
-try:
-    from minimal_test import router as minimal_router
-    app.include_router(minimal_router)
-    print("✅ Minimal test endpoints enabled at /minimal/")
-except ImportError:
-    try:
-        from backend.minimal_test import router as minimal_router
-        app.include_router(minimal_router)
-        print("✅ Minimal test endpoints enabled at /minimal/")
-    except Exception as e:
-        print(f"⚠️ Minimal test endpoints not available: {e}")
-
-# DISABLED - Simple metadata endpoints causing issues
-# try:
-#     from simple_metadata_fix import router as simple_router
-#     app.include_router(simple_router)
-#     print("✅ Simple metadata endpoints enabled at /simple/")
-# except Exception as e:
-#     print(f"⚠️ Simple metadata endpoints not available: {e}")
+# REMOVING ALL CUSTOM ENDPOINTS TO DEBUG
+# The app stops responding when we add ANY new code
+print("⚠️ All custom endpoints disabled for debugging")
 
 # Story 004 migration endpoint
 try:
@@ -342,10 +325,14 @@ class BatchUploadProgress(BaseModel):
 def read_root():
     return {
         "message": "MC Press Chatbot API is running",
-        "version": "2024-09-24-v3",  # Update this to verify deployment
-        "commit": "2b549bb",
-        "diagnostics_available": True
+        "version": "2024-09-24-v4-debug",  # Changed to verify deployment
+        "timestamp": str(datetime.now())
     }
+
+@app.get("/ping")
+def simple_ping():
+    """Ultra simple endpoint for debugging"""
+    return {"pong": True}
 
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):
