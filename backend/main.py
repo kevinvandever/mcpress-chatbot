@@ -14,7 +14,8 @@ if os.getenv("RAILWAY_ENVIRONMENT"):
         from backend.startup_check import check_storage
     check_storage()
 
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Query
+from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -981,6 +982,155 @@ def health_check():
         "openai": bool(os.getenv("OPENAI_API_KEY")),
         "restart_trigger": "2025-08-13-restart"  # Force restart
     }
+
+# ADMIN DOCUMENTS ENDPOINTS - EMBEDDED DIRECTLY TO ENSURE THEY LOAD
+@app.get("/admin/documents")
+async def admin_list_documents(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+    search: str = Query(""),
+    category: str = Query(""),
+    sort_by: str = Query("title"),
+    sort_direction: str = Query("asc")
+):
+    """Admin endpoint to list all documents from books table with proper IDs"""
+    import asyncpg
+
+    try:
+        conn = await asyncpg.connect(os.getenv('DATABASE_URL'))
+
+        # Get all books
+        rows = await conn.fetch("""
+            SELECT id, filename, title, author, category, subcategory,
+                   total_pages, file_hash, processed_at
+            FROM books
+            ORDER BY id DESC
+        """)
+
+        documents = []
+        for row in rows:
+            documents.append({
+                'id': row['id'],
+                'filename': row['filename'],
+                'title': row['title'] or row['filename'].replace('.pdf', ''),
+                'author': row['author'],
+                'category': row['category'],
+                'subcategory': row['subcategory'],
+                'total_pages': row['total_pages'] or 0,
+                'file_hash': row['file_hash'],
+                'processed_at': row['processed_at'].isoformat() if row['processed_at'] else None
+            })
+
+        await conn.close()
+
+        # Apply filters
+        if search:
+            search_lower = search.lower()
+            documents = [d for d in documents
+                        if search_lower in (d.get('title') or '').lower()
+                        or search_lower in (d.get('author') or '').lower()]
+
+        if category:
+            documents = [d for d in documents if d.get('category') == category]
+
+        # Sort
+        reverse = sort_direction == 'desc'
+        documents.sort(key=lambda x: x.get(sort_by, ''), reverse=reverse)
+
+        # Paginate
+        total = len(documents)
+        start = (page - 1) * per_page
+        end = start + per_page
+
+        return {
+            "documents": documents[start:end],
+            "total": total,
+            "total_pages": (total + per_page - 1) // per_page
+        }
+
+    except Exception as e:
+        print(f"Admin documents error: {e}")
+        return {"documents": [], "error": str(e)}
+
+@app.get("/admin/documents/export")
+async def admin_export_csv():
+    """Export all documents as CSV"""
+    import asyncpg
+    from fastapi.responses import StreamingResponse
+    import csv
+    import io
+
+    try:
+        conn = await asyncpg.connect(os.getenv('DATABASE_URL'))
+
+        rows = await conn.fetch("""
+            SELECT id, filename, title, author, category, subcategory,
+                   year, tags, description, mc_press_url, total_pages, processed_at
+            FROM books
+            ORDER BY id DESC
+        """)
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+
+        # Header
+        writer.writerow(['id', 'filename', 'title', 'author', 'category',
+                        'subcategory', 'year', 'tags', 'description',
+                        'mc_press_url', 'total_pages', 'processed_at'])
+
+        # Data
+        for row in rows:
+            writer.writerow([
+                row['id'],
+                row['filename'],
+                row['title'] or '',
+                row['author'] or '',
+                row['category'] or '',
+                row['subcategory'] or '',
+                row['year'] or '',
+                ','.join(row['tags']) if row['tags'] else '',
+                row['description'] or '',
+                row['mc_press_url'] or '',
+                row['total_pages'] or 0,
+                row['processed_at'].isoformat() if row['processed_at'] else ''
+            ])
+
+        await conn.close()
+
+        output.seek(0)
+        return StreamingResponse(
+            io.BytesIO(output.getvalue().encode()),
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": f"attachment; filename=documents_{datetime.now().strftime('%Y%m%d')}.csv"
+            }
+        )
+
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/admin/stats")
+async def admin_stats():
+    """Get admin dashboard statistics"""
+    import asyncpg
+
+    try:
+        conn = await asyncpg.connect(os.getenv('DATABASE_URL'))
+
+        doc_count = await conn.fetchval("SELECT COUNT(*) FROM books")
+        chunk_count = await conn.fetchval("SELECT COUNT(*) FROM documents")
+        last_upload = await conn.fetchval("SELECT MAX(processed_at) FROM books")
+
+        await conn.close()
+
+        return {
+            "total_documents": doc_count or 0,
+            "total_chunks": chunk_count or 0,
+            "last_upload": last_upload.isoformat() if last_upload else None
+        }
+
+    except Exception as e:
+        return {"total_documents": 0, "total_chunks": 0, "error": str(e)}
 
 @app.get("/run-story4-migration")
 async def run_story4_migration():
