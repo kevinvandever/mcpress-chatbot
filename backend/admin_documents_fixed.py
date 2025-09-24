@@ -109,12 +109,12 @@ async def list_documents(
 
             if search:
                 param_count += 1
-                query += f" AND (LOWER(title) LIKE LOWER($${param_count}) OR LOWER(author) LIKE LOWER($${param_count}))"
+                query += f" AND (LOWER(title) LIKE LOWER(${param_count}) OR LOWER(author) LIKE LOWER(${param_count}))"
                 params.append(f"%{search}%")
 
             if category:
                 param_count += 1
-                query += f" AND category = $${param_count}"
+                query += f" AND category = ${param_count}"
                 params.append(category)
 
             # Add sorting
@@ -138,11 +138,11 @@ async def list_documents(
 
             # Add pagination
             param_count += 1
-            query += f" LIMIT $${param_count}"
+            query += f" LIMIT ${param_count}"
             params.append(per_page)
 
             param_count += 1
-            query += f" OFFSET $${param_count}"
+            query += f" OFFSET ${param_count}"
             params.append((page - 1) * per_page)
 
             # Execute query
