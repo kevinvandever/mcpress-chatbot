@@ -43,12 +43,20 @@ except ImportError:
 
 # Try to import admin_documents but don't fail if it doesn't work
 try:
+    # Try the simple version first (works in production)
     try:
-        from admin_documents import router as admin_docs_router, set_vector_store
+        from admin_documents_simple import router as admin_docs_router
         admin_docs_available = True
+        set_vector_store = None
+        print("✅ Using simple admin documents endpoints")
     except ImportError:
-        from backend.admin_documents import router as admin_docs_router, set_vector_store
-        admin_docs_available = True
+        # Fallback to complex version
+        try:
+            from admin_documents import router as admin_docs_router, set_vector_store
+            admin_docs_available = True
+        except ImportError:
+            from backend.admin_documents import router as admin_docs_router, set_vector_store
+            admin_docs_available = True
 except Exception as e:
     print(f"⚠️ Admin documents not available: {e}")
     admin_docs_router = None
@@ -203,11 +211,12 @@ pdf_processor = PDFProcessorFull()
 vector_store = VectorStoreClass()
 
 # Set vector store for admin_documents if available
-if admin_docs_available and set_vector_store:
+if admin_docs_available:
     try:
-        set_vector_store(vector_store)
+        if set_vector_store:
+            set_vector_store(vector_store)
         app.include_router(admin_docs_router)
-        print("✅ Admin documents endpoints enabled")
+        print("✅ Admin documents endpoints enabled at /admin/documents")
     except Exception as e:
         print(f"⚠️ Could not enable admin documents: {e}")
 
