@@ -997,20 +997,59 @@ def health_check():
         "restart_trigger": "2025-08-13-restart"  # Force restart
     }
 
+@app.get("/test-books-table")
+async def test_books_table():
+    """Simple test to check if books table exists and has data"""
+    try:
+        if not vector_store or not vector_store.pool:
+            return {"error": "Database not initialized"}
+
+        async with vector_store.pool.acquire() as conn:
+            # Check if books table exists
+            exists = await conn.fetchval("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables
+                    WHERE table_name = 'books'
+                )
+            """)
+
+            if exists:
+                count = await conn.fetchval("SELECT COUNT(*) FROM books")
+                return {
+                    "books_table_exists": True,
+                    "book_count": count,
+                    "message": f"Books table has {count} records"
+                }
+            else:
+                return {
+                    "books_table_exists": False,
+                    "message": "Books table does not exist yet - migration needed"
+                }
+    except Exception as e:
+        return {"error": str(e)}
+
 # Note: Admin endpoints removed - they were causing network errors
 # The admin functionality needs to be in a separate module that handles
 # database connections properly without breaking the main app
 
 @app.get("/run-story4-migration")
 async def run_story4_migration():
-    """Run Story 4 migration - accessible via GET for easy browser access"""
-    import asyncpg
+    """Redirect to the safe migration endpoint"""
+    return {
+        "message": "Please use the safe migration endpoint instead",
+        "url": "/run-story4-migration-safe",
+        "reason": "The old endpoint causes connection timeouts"
+    }
 
+# The old implementation is commented out to prevent timeouts
+# It was creating new connections instead of using the pool
+async def OLD_run_story4_migration_DO_NOT_USE():
+    """OLD IMPLEMENTATION - DO NOT USE - causes timeouts"""
+    import asyncpg
     try:
         database_url = os.getenv('DATABASE_URL')
         if not database_url:
             return {"error": "DATABASE_URL not configured"}
-
         conn = await asyncpg.connect(database_url)
         results = []
 
