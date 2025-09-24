@@ -16,6 +16,33 @@ async def simple_test():
     """Ultra simple test that should always work"""
     return {"status": "working", "message": "Simple endpoint is responsive"}
 
+@router.get("/simple/db-info")
+async def db_info():
+    """Check database URL format without connecting"""
+    database_url = os.getenv('DATABASE_URL')
+
+    if not database_url:
+        return {"error": "DATABASE_URL not set"}
+
+    # Parse the URL to hide password
+    if '@' in database_url:
+        parts = database_url.split('@')
+        if '://' in parts[0]:
+            protocol = parts[0].split('://')[0]
+            host_part = parts[1] if len(parts) > 1 else 'unknown'
+            masked = f"{protocol}://[CREDENTIALS]@{host_part}"
+        else:
+            masked = "Invalid format"
+    else:
+        masked = database_url
+
+    return {
+        "database_url_present": True,
+        "url_format": masked,
+        "url_length": len(database_url),
+        "starts_with": database_url[:10] if len(database_url) > 10 else database_url
+    }
+
 @router.get("/simple/list")
 async def simple_list():
     """List documents without any complex initialization"""
