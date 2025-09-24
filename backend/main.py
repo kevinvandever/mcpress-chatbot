@@ -196,6 +196,19 @@ app.add_middleware(
 # Include auth router
 app.include_router(auth_router)
 
+# Simple metadata endpoints that actually work
+try:
+    from simple_metadata_fix import router as simple_router
+    app.include_router(simple_router)
+    print("✅ Simple metadata endpoints enabled at /simple/")
+except ImportError:
+    try:
+        from backend.simple_metadata_fix import router as simple_router
+        app.include_router(simple_router)
+        print("✅ Simple metadata endpoints enabled at /simple/")
+    except Exception as e:
+        print(f"⚠️ Simple metadata endpoints not available: {e}")
+
 # Story 004 migration endpoint
 try:
     # Try Railway-style import first
