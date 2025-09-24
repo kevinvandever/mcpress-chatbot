@@ -53,11 +53,18 @@ class PostgresVectorStore:
     
     async def init_database(self):
         """Initialize database with or without pgvector extension"""
-        if not self.pool:
-            self.pool = await asyncpg.create_pool(
-                self.database_url,
-                statement_cache_size=0  # Fix for pgbouncer compatibility
-            )
+        # Skip if already initialized
+        if self.pool:
+            logger.info("Database pool already initialized, skipping...")
+            return
+
+        self.pool = await asyncpg.create_pool(
+            self.database_url,
+            statement_cache_size=0,  # Fix for pgbouncer compatibility
+            min_size=1,
+            max_size=10,
+            command_timeout=10
+        )
         
         self.has_pgvector = False
         
@@ -161,8 +168,10 @@ class PostgresVectorStore:
         """Add documents with embeddings to the database"""
         if not documents:
             return
-        
-        await self.init_database()
+
+        # Only init if pool doesn't exist
+        if not self.pool:
+            await self.init_database()
         
         # Extract texts for embedding
         texts = [doc['content'] for doc in documents]
@@ -224,7 +233,9 @@ class PostgresVectorStore:
     
     async def search(self, query: str, n_results: int = 5, **kwargs) -> List[Dict[str, Any]]:
         """Search for similar documents using vector similarity"""
-        await self.init_database()
+        # Only init if pool doesn't exist
+        if not self.pool:
+            await self.init_database()
         
         # Generate query embedding
         query_embedding = self._generate_embeddings([query])[0]
@@ -315,7 +326,9 @@ class PostgresVectorStore:
     
     async def list_documents(self) -> Dict[str, Any]:
         """List all unique documents in the database"""
-        await self.init_database()
+        # Only init if pool doesn't exist
+        if not self.pool:
+            await self.init_database()
         
         async with self.pool.acquire() as conn:
             rows = await conn.fetch("""
@@ -348,7 +361,9 @@ class PostgresVectorStore:
     
     async def delete_by_filename(self, filename: str):
         """Delete all chunks for a specific filename"""
-        await self.init_database()
+        # Only init if pool doesn't exist
+        if not self.pool:
+            await self.init_database()
         
         async with self.pool.acquire() as conn:
             result = await conn.execute("DELETE FROM documents WHERE filename = $1", filename)
@@ -357,7 +372,9 @@ class PostgresVectorStore:
     
     async def get_document_count(self) -> int:
         """Get total number of document chunks"""
-        await self.init_database()
+        # Only init if pool doesn't exist
+        if not self.pool:
+            await self.init_database()
         
         async with self.pool.acquire() as conn:
             count = await conn.fetchval("SELECT COUNT(*) FROM documents")
