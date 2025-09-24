@@ -42,22 +42,18 @@ except ImportError:
     from backend.backup_manager import backup_manager
     from backend.auth_routes import router as auth_router
 
-# Try to import admin_documents but don't fail if it doesn't work
+# Import the fixed admin documents router
 try:
-    # Try the simple version first (works in production)
+    # Try Railway-style import first
     try:
-        from admin_documents_simple import router as admin_docs_router
+        from admin_documents_fixed import router as admin_docs_router, set_vector_store
         admin_docs_available = True
-        set_vector_store = None
-        print("✅ Using simple admin documents endpoints")
+        print("✅ Using fixed admin documents endpoints")
     except ImportError:
-        # Fallback to complex version
-        try:
-            from admin_documents import router as admin_docs_router, set_vector_store
-            admin_docs_available = True
-        except ImportError:
-            from backend.admin_documents import router as admin_docs_router, set_vector_store
-            admin_docs_available = True
+        # Fallback to local development import
+        from backend.admin_documents_fixed import router as admin_docs_router, set_vector_store
+        admin_docs_available = True
+        print("✅ Using fixed admin documents endpoints (local)")
 except Exception as e:
     print(f"⚠️ Admin documents not available: {e}")
     admin_docs_router = None
