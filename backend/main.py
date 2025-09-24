@@ -196,13 +196,21 @@ app.add_middleware(
 # Include auth router
 app.include_router(auth_router)
 
-# Temporary migration router for Story 004
+# Story 004 migration endpoint
 try:
-    from migration_endpoint import migration_router
-    app.include_router(migration_router)
-    print("✅ Migration endpoints enabled at /migration/")
+    # Try Railway-style import first
+    try:
+        from migration_story_004_endpoint import router as story4_migration_router, set_vector_store as set_migration_store
+        migration_available = True
+    except ImportError:
+        from backend.migration_story_004_endpoint import router as story4_migration_router, set_migration_store
+        migration_available = True
+    print("✅ Story 004 migration endpoint enabled")
 except Exception as e:
-    print(f"⚠️ Migration endpoints not available: {e}")
+    print(f"⚠️ Story 004 migration endpoint not available: {e}")
+    story4_migration_router = None
+    set_migration_store = None
+    migration_available = False
 
 pdf_processor = PDFProcessorFull()
 vector_store = VectorStoreClass()
@@ -216,6 +224,16 @@ if admin_docs_available:
         print("✅ Admin documents endpoints enabled at /admin/documents")
     except Exception as e:
         print(f"⚠️ Could not enable admin documents: {e}")
+
+# Set vector store for migration if available
+if migration_available:
+    try:
+        if set_migration_store:
+            set_migration_store(vector_store)
+        app.include_router(story4_migration_router)
+        print("✅ Story 004 migration endpoint enabled at /run-story4-migration-safe")
+    except Exception as e:
+        print(f"⚠️ Could not enable migration endpoint: {e}")
 
 # Global cache for documents
 _documents_cache = None
