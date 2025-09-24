@@ -995,9 +995,14 @@ async def admin_list_documents(
 ):
     """Admin endpoint to list all documents from books table with proper IDs"""
     import asyncpg
+    import asyncio
 
     try:
-        conn = await asyncpg.connect(os.getenv('DATABASE_URL'))
+        # Add timeout to prevent hanging
+        conn = await asyncio.wait_for(
+            asyncpg.connect(os.getenv('DATABASE_URL')),
+            timeout=5.0
+        )
 
         # Get all books
         rows = await conn.fetch("""
@@ -1048,20 +1053,29 @@ async def admin_list_documents(
             "total_pages": (total + per_page - 1) // per_page
         }
 
+    except asyncio.TimeoutError:
+        print("Admin documents timeout - database connection failed")
+        return {"documents": [], "error": "Database connection timeout"}
     except Exception as e:
         print(f"Admin documents error: {e}")
+        import traceback
+        print(traceback.format_exc())
         return {"documents": [], "error": str(e)}
 
 @app.get("/admin/documents/export")
 async def admin_export_csv():
     """Export all documents as CSV"""
     import asyncpg
+    import asyncio
     from fastapi.responses import StreamingResponse
     import csv
     import io
 
     try:
-        conn = await asyncpg.connect(os.getenv('DATABASE_URL'))
+        conn = await asyncio.wait_for(
+            asyncpg.connect(os.getenv('DATABASE_URL')),
+            timeout=5.0
+        )
 
         rows = await conn.fetch("""
             SELECT id, filename, title, author, category, subcategory,
@@ -1113,9 +1127,13 @@ async def admin_export_csv():
 async def admin_stats():
     """Get admin dashboard statistics"""
     import asyncpg
+    import asyncio
 
     try:
-        conn = await asyncpg.connect(os.getenv('DATABASE_URL'))
+        conn = await asyncio.wait_for(
+            asyncpg.connect(os.getenv('DATABASE_URL')),
+            timeout=5.0
+        )
 
         doc_count = await conn.fetchval("SELECT COUNT(*) FROM books")
         chunk_count = await conn.fetchval("SELECT COUNT(*) FROM documents")
@@ -1131,6 +1149,57 @@ async def admin_stats():
 
     except Exception as e:
         return {"total_documents": 0, "total_chunks": 0, "error": str(e)}
+
+@app.get("/debug-db")
+async def debug_database():
+    """Debug endpoint to check database connectivity"""
+    import asyncpg
+    import asyncio
+
+    db_url = os.getenv('DATABASE_URL', 'Not set')
+
+    # Mask password in URL for security
+    if db_url and '@' in db_url:
+        parts = db_url.split('@')
+        if '://' in parts[0]:
+            proto_and_creds = parts[0].split('://')
+            if ':' in proto_and_creds[1]:
+                user_pass = proto_and_creds[1].split(':')
+                masked = f"{proto_and_creds[0]}://{user_pass[0]}:****@{parts[1]}"
+            else:
+                masked = db_url
+        else:
+            masked = db_url
+    else:
+        masked = db_url
+
+    result = {
+        "database_url_set": db_url != 'Not set',
+        "database_url_masked": masked,
+        "connection_test": "pending"
+    }
+
+    if db_url != 'Not set':
+        try:
+            conn = await asyncio.wait_for(
+                asyncpg.connect(db_url),
+                timeout=5.0
+            )
+
+            # Test books table
+            books_count = await conn.fetchval("SELECT COUNT(*) FROM books")
+            result["connection_test"] = "success"
+            result["books_count"] = books_count
+
+            await conn.close()
+        except asyncio.TimeoutError:
+            result["connection_test"] = "timeout"
+            result["error"] = "Connection timed out after 5 seconds"
+        except Exception as e:
+            result["connection_test"] = "failed"
+            result["error"] = str(e)
+
+    return result
 
 @app.get("/run-story4-migration")
 async def run_story4_migration():
