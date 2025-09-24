@@ -998,6 +998,31 @@ def health_check():
         "restart_trigger": "2025-08-13-restart"  # Force restart
     }
 
+# Simple diagnostic endpoints
+@app.get("/diag/db-test")
+async def diagnostic_db_test():
+    """Ultra-simple database test"""
+    import asyncpg
+    import asyncio
+
+    database_url = os.getenv('DATABASE_URL')
+    if not database_url:
+        return {"error": "No DATABASE_URL"}
+
+    try:
+        # Test with very short timeout
+        conn = await asyncio.wait_for(
+            asyncpg.connect(database_url, command_timeout=2),
+            timeout=3.0
+        )
+        result = await conn.fetchval("SELECT 1")
+        await conn.close()
+        return {"success": True, "result": result}
+    except asyncio.TimeoutError:
+        return {"error": "timeout", "message": "Connection timed out after 3 seconds"}
+    except Exception as e:
+        return {"error": str(e)}
+
 @app.get("/test-books-table")
 async def test_books_table():
     """Simple test to check if books table exists and has data"""
