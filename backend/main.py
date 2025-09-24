@@ -319,7 +319,12 @@ class BatchUploadProgress(BaseModel):
 
 @app.get("/")
 def read_root():
-    return {"message": "MC Press Chatbot API is running"}
+    return {
+        "message": "MC Press Chatbot API is running",
+        "version": "2024-09-24-v3",  # Update this to verify deployment
+        "commit": "2b549bb",
+        "diagnostics_available": True
+    }
 
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):
