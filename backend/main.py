@@ -196,18 +196,26 @@ app.add_middleware(
 # Include auth router
 app.include_router(auth_router)
 
-# Simple metadata endpoints that actually work
+# Minimal test endpoints with NO database
 try:
-    from simple_metadata_fix import router as simple_router
-    app.include_router(simple_router)
-    print("✅ Simple metadata endpoints enabled at /simple/")
+    from minimal_test import router as minimal_router
+    app.include_router(minimal_router)
+    print("✅ Minimal test endpoints enabled at /minimal/")
 except ImportError:
     try:
-        from backend.simple_metadata_fix import router as simple_router
-        app.include_router(simple_router)
-        print("✅ Simple metadata endpoints enabled at /simple/")
+        from backend.minimal_test import router as minimal_router
+        app.include_router(minimal_router)
+        print("✅ Minimal test endpoints enabled at /minimal/")
     except Exception as e:
-        print(f"⚠️ Simple metadata endpoints not available: {e}")
+        print(f"⚠️ Minimal test endpoints not available: {e}")
+
+# DISABLED - Simple metadata endpoints causing issues
+# try:
+#     from simple_metadata_fix import router as simple_router
+#     app.include_router(simple_router)
+#     print("✅ Simple metadata endpoints enabled at /simple/")
+# except Exception as e:
+#     print(f"⚠️ Simple metadata endpoints not available: {e}")
 
 # Story 004 migration endpoint
 try:
