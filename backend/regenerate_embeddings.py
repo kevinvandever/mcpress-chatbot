@@ -19,30 +19,64 @@ def set_vector_store(vs):
     vector_store = vs
     logger.info("✅ Regenerate embeddings router initialized with vector store")
 
+@router.get("/admin/regenerate-embeddings-status")
+async def regenerate_embeddings_status() -> Dict[str, Any]:
+    """Check how many documents need embeddings regenerated"""
+    if not vector_store:
+        raise HTTPException(status_code=500, detail="Vector store not initialized")
+
+    try:
+        if not vector_store.pool:
+            await vector_store.init_database()
+
+        async with vector_store.pool.acquire() as conn:
+            # Count documents without embeddings
+            result = await conn.fetchrow("""
+                SELECT COUNT(*) as count
+                FROM documents
+                WHERE embedding IS NULL OR embedding::text = 'null'
+            """)
+
+            return {
+                "documents_needing_embeddings": result['count'],
+                "vector_store_type": "pgvector" if vector_store.has_pgvector else "pure_postgresql"
+            }
+    except Exception as e:
+        logger.error(f"Error checking status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.post("/admin/regenerate-embeddings")
-async def regenerate_embeddings() -> Dict[str, Any]:
+async def regenerate_embeddings(limit: int = 10) -> Dict[str, Any]:
     """
-    Regenerate embeddings for all documents in the database
+    Regenerate embeddings for documents in the database
+
+    Args:
+        limit: Number of documents to process (default 10, use 0 for all)
+
     This fixes the issue where documents exist but have NULL embeddings
     """
     if not vector_store:
         raise HTTPException(status_code=500, detail="Vector store not initialized")
 
     try:
-        logger.info("🔄 Starting embedding regeneration for all documents...")
+        logger.info(f"🔄 Starting embedding regeneration (limit: {limit if limit > 0 else 'all'})...")
 
         # Get vector store pool
         if not vector_store.pool:
             await vector_store.init_database()
 
         async with vector_store.pool.acquire() as conn:
-            # Get all documents without embeddings
-            rows = await conn.fetch("""
+            # Get documents without embeddings
+            query = """
                 SELECT id, content, filename, page_number, chunk_index, metadata
                 FROM documents
                 WHERE embedding IS NULL OR embedding::text = 'null'
                 ORDER BY id
-            """)
+            """
+            if limit > 0:
+                query += f" LIMIT {limit}"
+
+            rows = await conn.fetch(query)
 
             total_docs = len(rows)
             logger.info(f"📊 Found {total_docs} documents without embeddings")
