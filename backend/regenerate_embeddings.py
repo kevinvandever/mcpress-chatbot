@@ -14,6 +14,12 @@ router = APIRouter()
 # Will be set by main.py
 vector_store = None
 
+# Import background task module
+try:
+    from background_embeddings import start_background_regeneration, get_regeneration_status
+except ImportError:
+    from backend.background_embeddings import start_background_regeneration, get_regeneration_status
+
 def set_vector_store(vs):
     global vector_store
     vector_store = vs
@@ -21,11 +27,15 @@ def set_vector_store(vs):
 
 @router.get("/admin/regenerate-embeddings-status")
 async def regenerate_embeddings_status() -> Dict[str, Any]:
-    """Check how many documents need embeddings regenerated"""
+    """Check status of embedding regeneration (both pending and in-progress)"""
     if not vector_store:
         raise HTTPException(status_code=500, detail="Vector store not initialized")
 
     try:
+        # Get background task status
+        bg_status = get_regeneration_status()
+
+        # Also check database status
         if not vector_store.pool:
             await vector_store.init_database()
 
@@ -39,10 +49,31 @@ async def regenerate_embeddings_status() -> Dict[str, Any]:
 
             return {
                 "documents_needing_embeddings": result['count'],
-                "vector_store_type": "pgvector" if vector_store.has_pgvector else "pure_postgresql"
+                "vector_store_type": "pgvector" if vector_store.has_pgvector else "pure_postgresql",
+                "background_task": bg_status
             }
     except Exception as e:
         logger.error(f"Error checking status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/admin/regenerate-embeddings-start")
+async def regenerate_embeddings_start(batch_size: int = 100) -> Dict[str, Any]:
+    """
+    Start background embedding regeneration
+
+    Args:
+        batch_size: Number of documents to process per batch (default 100)
+
+    This runs in the background and you can check progress with /admin/regenerate-embeddings-status
+    """
+    if not vector_store:
+        raise HTTPException(status_code=500, detail="Vector store not initialized")
+
+    try:
+        result = start_background_regeneration(vector_store, batch_size)
+        return result
+    except Exception as e:
+        logger.error(f"Error starting background regeneration: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/admin/regenerate-embeddings")
