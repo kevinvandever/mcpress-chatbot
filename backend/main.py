@@ -60,6 +60,19 @@ except Exception as e:
     set_vector_store = None
     admin_docs_available = False
 
+# Import regenerate embeddings router
+try:
+    try:
+        from regenerate_embeddings import router as regenerate_router, set_vector_store as set_regen_store
+        print("✅ Using regenerate embeddings endpoint")
+    except ImportError:
+        from backend.regenerate_embeddings import router as regenerate_router, set_vector_store as set_regen_store
+        print("✅ Using regenerate embeddings endpoint (local)")
+except Exception as e:
+    print(f"⚠️ Regenerate embeddings not available: {e}")
+    regenerate_router = None
+    set_regen_store = None
+
 # Check vector store preference - try multiple variable names due to Railway caching issues
 use_postgresql_env = os.getenv('USE_POSTGRESQL', '')
 enable_postgresql_env = os.getenv('ENABLE_POSTGRESQL', '')
@@ -239,6 +252,16 @@ if migration_available:
         print("✅ Story 004 migration endpoint enabled at /run-story4-migration-safe")
     except Exception as e:
         print(f"⚠️ Could not enable migration endpoint: {e}")
+
+# Set vector store for regenerate embeddings if available
+if regenerate_router:
+    try:
+        if set_regen_store:
+            set_regen_store(vector_store)
+        app.include_router(regenerate_router)
+        print("✅ Regenerate embeddings endpoint enabled at /admin/regenerate-embeddings")
+    except Exception as e:
+        print(f"⚠️ Could not enable regenerate embeddings endpoint: {e}")
 
 # Global cache for documents
 _documents_cache = None
