@@ -422,8 +422,8 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
           <div className="text-center text-gray-500 mt-8 animate-chat-appear">
             {hasDocuments ? (
               <>
-                <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl flex items-center justify-center shadow-lg animate-float-subtle">
-                  <svg className="w-10 h-10 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-blue-100 to-blue-50 rounded-2xl flex items-center justify-center shadow-lg animate-float-subtle">
+                  <svg className="w-10 h-10 text-mc-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                   </svg>
                 </div>
@@ -432,20 +432,20 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
               </>
             ) : (
               <div className="max-w-lg">
-                <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl flex items-center justify-center shadow-2xl animate-float-subtle">
+                <div className="w-24 h-24 mx-auto mb-6 bg-mc-blue rounded-3xl flex items-center justify-center shadow-2xl animate-float-subtle">
                   <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                   </svg>
                 </div>
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-3">Welcome to MC Press Chatbot</h2>
+                <h2 className="text-3xl font-bold text-mc-blue mb-3">Welcome to MC Press Chatbot</h2>
                 <p className="text-gray-700 mb-6 text-lg">
                   Your AI assistant for MC Press technical documentation
                 </p>
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 p-6 rounded-2xl text-sm text-blue-900 shadow-lg">
+                <div className="bg-blue-50 border border-blue-200 p-6 rounded-2xl text-sm text-gray-800 shadow-lg">
                   <p className="font-semibold mb-4 text-base">✨ What I can help you with:</p>
                   <ul className="text-left space-y-3" role="list">
                     <li role="listitem" className="flex items-start gap-3 p-2 rounded-lg hover:bg-blue-100 transition-colors">
-                      <span className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <span className="w-8 h-8 bg-mc-blue rounded-lg flex items-center justify-center flex-shrink-0">
                         <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
@@ -453,23 +453,23 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
                       <span className="font-medium">Answer technical questions from documentation</span>
                     </li>
                     <li role="listitem" className="flex items-start gap-3 p-2 rounded-lg hover:bg-green-100 transition-colors">
-                      <span className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <span className="w-8 h-8 bg-mc-green rounded-lg flex items-center justify-center flex-shrink-0">
                         <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                       </span>
                       <span className="font-medium">Extract and analyze images with OCR</span>
                     </li>
-                    <li role="listitem" className="flex items-start gap-3 p-2 rounded-lg hover:bg-purple-100 transition-colors">
-                      <span className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <li role="listitem" className="flex items-start gap-3 p-2 rounded-lg hover:bg-orange-100 transition-colors">
+                      <span className="w-8 h-8 bg-mc-orange rounded-lg flex items-center justify-center flex-shrink-0">
                         <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
                         </svg>
                       </span>
                       <span className="font-medium">Explain and debug code examples</span>
                     </li>
-                    <li role="listitem" className="flex items-start gap-3 p-2 rounded-lg hover:bg-indigo-100 transition-colors">
-                      <span className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <li role="listitem" className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                      <span className="w-8 h-8 bg-mc-gray rounded-lg flex items-center justify-center flex-shrink-0">
                         <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
@@ -492,8 +492,8 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
               {/* Message Header */}
               <div className={`flex items-center gap-2 mb-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold shadow-md ${
-                  message.role === 'user' 
-                    ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white' 
+                  message.role === 'user'
+                    ? 'bg-mc-blue text-white'
                     : 'bg-gradient-to-r from-slate-600 to-slate-700 text-white'
                 }`}>
                   {message.role === 'user' ? (
@@ -519,7 +519,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
               {/* Message Content */}
               <div className={`rounded-xl px-4 py-3 shadow-md transition-all hover:shadow-lg ${
                 message.role === 'user'
-                  ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
+                  ? 'bg-mc-blue text-white'
                   : 'bg-white border border-gray-100 hover:border-gray-200'
               }`}>
                 {message.role === 'assistant' ? (
@@ -633,14 +633,14 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
                 </div>
                 <div className="flex flex-col">
                   <span className="text-sm font-medium text-gray-700">MC Press AI</span>
-                  <span className="text-xs text-indigo-600 font-medium">thinking...</span>
+                  <span className="text-xs text-mc-blue font-medium">thinking...</span>
                 </div>
               </div>
               <div className="bg-gradient-to-r from-slate-50 to-gray-50 border border-slate-200 rounded-2xl px-6 py-4 shadow-lg">
                 <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full animate-pulse-dot"></div>
-                  <div className="w-3 h-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full animate-pulse-dot-delay-1"></div>
-                  <div className="w-3 h-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full animate-pulse-dot-delay-2"></div>
+                  <div className="w-3 h-3 bg-mc-blue rounded-full animate-pulse-dot"></div>
+                  <div className="w-3 h-3 bg-mc-blue rounded-full animate-pulse-dot-delay-1"></div>
+                  <div className="w-3 h-3 bg-mc-blue rounded-full animate-pulse-dot-delay-2"></div>
                 </div>
               </div>
             </div>
@@ -686,7 +686,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={hasDocuments ? "Ask me about your MC Press books..." : "Upload documents first to start chatting..."}
-              className="w-full px-6 py-4 border-2 border-gray-200 rounded-2xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all text-lg placeholder-gray-400 shadow-sm hover:shadow-md resize-none min-h-[60px] max-h-[120px]"
+              className="w-full px-6 py-4 border-2 border-gray-200 rounded-2xl focus:border-mc-blue focus:ring-4 focus:ring-blue-100 transition-all text-lg placeholder-gray-400 shadow-sm hover:shadow-md resize-none min-h-[60px] max-h-[120px]"
               disabled={isStreaming}
               rows={1}
               style={{
@@ -714,7 +714,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
           <button
             onClick={sendMessage}
             disabled={!input.trim() || isStreaming}
-            className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-2xl transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 text-base flex-shrink-0 self-end"
+            className="bg-mc-blue hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-2xl transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 text-base flex-shrink-0 self-end"
           >
             {isStreaming ? (
               <>
@@ -736,7 +736,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
         {suggestedQuestions.length > 0 && !isStreaming && (
           <div className="mt-4 animate-slide-in-up">
             <div className="flex items-center gap-2 mb-2">
-              <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-mc-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
               <p className="text-sm font-medium text-gray-700">Continue the conversation:</p>
@@ -746,7 +746,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
                 <button
                   key={index}
                   onClick={() => setInput(question)}
-                  className="group px-3 py-2 bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 border border-indigo-200 hover:border-indigo-300 text-indigo-700 rounded-lg text-xs font-medium transition-all hover:scale-105 hover:shadow-md focus:ring-2 focus:ring-indigo-300 focus:outline-none"
+                  className="group px-3 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 hover:border-blue-300 text-blue-700 rounded-lg text-xs font-medium transition-all hover:scale-105 hover:shadow-md focus:ring-2 focus:ring-blue-300 focus:outline-none"
                 >
                   <span className="group-hover:animate-bounce-subtle">✨</span> {question}
                 </button>

@@ -88,30 +88,30 @@ export default function Home() {
                 
                 {/* System Status Indicator */}
                 {systemStatus === 'loading' && (
-                  <div className="mb-4 p-4 rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                  <div className="mb-4 p-4 rounded-xl border border-blue-200 bg-blue-50">
                     <div className="flex items-center gap-3">
                       <div className="w-6 h-6 relative">
-                        <div className="w-6 h-6 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                        <div className="w-6 h-6 border-4 border-blue-200 border-t-mc-blue rounded-full animate-spin"></div>
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-semibold text-blue-900 mb-1">🚀 Initializing MC Press AI...</p>
-                        <p className="text-xs text-blue-700">Connecting to document library and preparing knowledge base</p>
+                        <p className="text-sm font-semibold text-gray-800 mb-1">🚀 Initializing MC Press AI...</p>
+                        <p className="text-xs text-gray-600">Connecting to document library and preparing knowledge base</p>
                       </div>
                     </div>
                   </div>
                 )}
                 
                 {systemStatus === 'ready' && hasDocuments && (
-                  <div className="mb-4 p-4 rounded-xl border border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
+                  <div className="mb-4 p-4 rounded-xl border border-green-200 bg-green-50">
                     <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                      <div className="w-6 h-6 bg-mc-green rounded-full flex items-center justify-center">
                         <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                         </svg>
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-semibold text-green-900 mb-1">✨ System Ready!</p>
-                        <p className="text-xs text-green-700">{documentCount.toLocaleString()} documents loaded and indexed • AI assistant active</p>
+                        <p className="text-sm font-semibold text-gray-800 mb-1">✨ System Ready!</p>
+                        <p className="text-xs text-gray-600">{documentCount.toLocaleString()} documents loaded and indexed • AI assistant active</p>
                       </div>
                     </div>
                   </div>
