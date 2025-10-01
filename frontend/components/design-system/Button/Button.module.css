@@ -1,0 +1,264 @@
+/* Button Component - MC Press Design System */
+
+.button {
+  /* Layout */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+
+  /* Typography */
+  font-family: var(--font-family-sans);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+
+  /* Appearance */
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+
+  /* Transitions */
+  transition: all var(--transition-base);
+
+  /* Remove default styles */
+  text-decoration: none;
+  user-select: none;
+}
+
+/* Focus States - Accessibility */
+.button:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   SIZE VARIANTS
+   ============================================ */
+
+.size-sm {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  min-height: 32px;
+}
+
+.size-md {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-base);
+  min-height: 40px;
+}
+
+.size-lg {
+  padding: var(--space-4) var(--space-6);
+  font-size: var(--font-size-lg);
+  min-height: 48px;
+}
+
+/* ============================================
+   STYLE VARIANTS - MC PRESS BRAND COLORS
+   ============================================ */
+
+/* Primary - MC Blue (#878DBC)
+   Used for standard primary actions */
+.variant-primary {
+  /* Using darker variant for WCAG AA compliance (6.12:1 contrast) */
+  background-color: var(--mc-blue-darker);
+  color: white;
+}
+
+.variant-primary:hover:not(:disabled) {
+  background-color: var(--mc-blue-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.variant-primary:active:not(:disabled) {
+  background-color: var(--mc-blue-darker);
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+/* CTA - MC Orange (#EF9537)
+   CRITICAL: For e-commerce conversion actions like "Buy Now"
+   Per David's requirements - directly impacts revenue */
+.variant-cta {
+  background-color: var(--mc-orange);
+  color: white;
+  font-weight: var(--font-weight-semibold);
+  /* Semibold improves readability and meets WCAG AA at 16px+ */
+}
+
+.variant-cta:hover:not(:disabled) {
+  background-color: var(--mc-orange-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.variant-cta:active:not(:disabled) {
+  background-color: var(--mc-orange-darker);
+  transform: translateY(0);
+  box-shadow: var(--shadow-md);
+}
+
+/* Success - MC Green (#A1A88B)
+   For positive confirmations and success states */
+.variant-success {
+  background-color: var(--mc-green-dark);
+  color: white;
+}
+
+.variant-success:hover:not(:disabled) {
+  background-color: var(--mc-green-darker);
+}
+
+.variant-success:active:not(:disabled) {
+  background-color: var(--mc-green-darker);
+  transform: scale(0.98);
+}
+
+/* Danger - MC Red (#990000)
+   For destructive actions like delete */
+.variant-danger {
+  background-color: var(--mc-red);
+  color: white;
+}
+
+.variant-danger:hover:not(:disabled) {
+  background-color: var(--mc-red-light);
+}
+
+.variant-danger:active:not(:disabled) {
+  background-color: var(--mc-red-dark);
+  transform: scale(0.98);
+}
+
+/* Secondary - Outlined with MC Blue
+   For secondary actions */
+.variant-secondary {
+  background-color: transparent;
+  color: var(--mc-blue-dark);
+  border: 2px solid var(--mc-blue);
+}
+
+.variant-secondary:hover:not(:disabled) {
+  background-color: var(--mc-blue-darker);
+  border-color: var(--mc-blue-darker);
+  color: white;
+}
+
+.variant-secondary:active:not(:disabled) {
+  background-color: var(--mc-blue-darker);
+  transform: scale(0.98);
+}
+
+/* Tertiary - Text only with MC Blue
+   For low-emphasis actions */
+.variant-tertiary {
+  background-color: transparent;
+  color: var(--mc-blue-dark);
+}
+
+.variant-tertiary:hover:not(:disabled) {
+  background-color: var(--bg-tertiary);
+}
+
+.variant-tertiary:active:not(:disabled) {
+  background-color: var(--bg-secondary);
+}
+
+/* ============================================
+   FULL WIDTH MODIFIER
+   ============================================ */
+
+.fullWidth {
+  width: 100%;
+}
+
+/* ============================================
+   LOADING STATE
+   ============================================ */
+
+.loading {
+  position: relative;
+  color: transparent;
+  pointer-events: none;
+}
+
+.spinner {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+/* ============================================
+   ICON POSITIONING
+   ============================================ */
+
+.iconLeft,
+.iconRight {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.iconLeft {
+  margin-right: calc(var(--space-2) * -0.5);
+}
+
+.iconRight {
+  margin-left: calc(var(--space-2) * -0.5);
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .button {
+    border: 2px solid currentColor;
+  }
+
+  .variant-secondary {
+    border-width: 3px;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .button {
+    transition: none;
+  }
+
+  .button:hover:not(:disabled) {
+    transform: none;
+  }
+
+  .spinner {
+    animation: none;
+    border-top-color: transparent;
+    border-right-color: white;
+  }
+}

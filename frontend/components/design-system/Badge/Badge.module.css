@@ -1,0 +1,158 @@
+/* Badge Component - MC Press Design System */
+
+.badge {
+  /* Layout */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Typography */
+  font-family: var(--font-family-sans);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+
+  /* Transitions */
+  transition: all var(--transition-base);
+}
+
+/* ============================================
+   SIZE VARIANTS
+   ============================================ */
+
+.size-sm {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-xs);
+  min-height: 18px;
+}
+
+.size-md {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  min-height: 24px;
+}
+
+.size-lg {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-base);
+  min-height: 32px;
+}
+
+/* ============================================
+   SHAPE VARIANTS
+   ============================================ */
+
+.shape-rounded {
+  border-radius: var(--radius-md);
+}
+
+.shape-pill {
+  border-radius: var(--radius-full);
+}
+
+/* ============================================
+   COLOR VARIANTS - MC PRESS BRAND COLORS
+   ============================================ */
+
+/* Primary - MC Blue */
+.variant-primary {
+  background-color: var(--mc-blue);
+  color: white;
+}
+
+.variant-primary.outlined {
+  background-color: transparent;
+  color: var(--mc-blue-dark);
+  border: 1px solid var(--mc-blue);
+}
+
+/* Success - MC Green */
+.variant-success {
+  background-color: var(--mc-green);
+  color: white;
+}
+
+.variant-success.outlined {
+  background-color: transparent;
+  color: var(--mc-green-dark);
+  border: 1px solid var(--mc-green);
+}
+
+/* Warning - MC Orange */
+.variant-warning {
+  background-color: var(--mc-orange);
+  color: white;
+}
+
+.variant-warning.outlined {
+  background-color: transparent;
+  color: var(--mc-orange-dark);
+  border: 1px solid var(--mc-orange);
+}
+
+/* Danger - MC Red */
+.variant-danger {
+  background-color: var(--mc-red);
+  color: white;
+}
+
+.variant-danger.outlined {
+  background-color: transparent;
+  color: var(--mc-red-dark);
+  border: 1px solid var(--mc-red);
+}
+
+/* Info - MC Blue Light */
+.variant-info {
+  background-color: var(--mc-blue-light);
+  color: white;
+}
+
+.variant-info.outlined {
+  background-color: transparent;
+  color: var(--mc-blue-dark);
+  border: 1px solid var(--mc-blue-light);
+}
+
+/* Neutral - MC Gray */
+.variant-neutral {
+  background-color: var(--mc-gray);
+  color: white;
+}
+
+.variant-neutral.outlined {
+  background-color: transparent;
+  color: var(--mc-gray-dark);
+  border: 1px solid var(--mc-gray);
+}
+
+/* ============================================
+   OUTLINED VARIANT ADJUSTMENTS
+   ============================================ */
+
+.outlined {
+  border-width: 1px;
+  border-style: solid;
+}
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .badge {
+    border-width: 2px;
+  }
+
+  .outlined {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .badge {
+    transition: none;
+  }
+}

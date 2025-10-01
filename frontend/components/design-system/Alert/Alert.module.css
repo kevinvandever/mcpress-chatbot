@@ -1,0 +1,146 @@
+/* Alert Component - MC Press Design System */
+
+.alert {
+  /* Layout */
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-4);
+
+  /* Appearance */
+  border-radius: var(--radius-lg);
+  border-left: 4px solid;
+
+  /* Typography */
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-relaxed);
+}
+
+.icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  font-size: var(--font-size-xl);
+  line-height: 1;
+  padding-top: 2px;
+}
+
+.content {
+  flex: 1;
+  min-width: 0; /* Prevent flex item overflow */
+}
+
+.title {
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--space-2);
+  font-size: var(--font-size-base);
+}
+
+.message {
+  color: inherit;
+}
+
+.closeButton {
+  /* Reset */
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+
+  /* Appearance */
+  color: inherit;
+  opacity: 0.6;
+  font-size: var(--font-size-xl);
+  line-height: 1;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Transitions */
+  transition: opacity var(--transition-base);
+}
+
+.closeButton:hover {
+  opacity: 1;
+}
+
+.closeButton:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ============================================
+   VARIANTS - MC PRESS BRAND COLORS
+   ============================================ */
+
+/* Success - MC Green (#A1A88B)
+   For positive confirmations and success states */
+.variant-success {
+  background-color: var(--color-success-bg);
+  border-left-color: var(--mc-green);
+  color: var(--color-success-text);
+}
+
+.variant-success .icon {
+  color: var(--mc-green-dark);
+}
+
+/* Error - MC Red (#990000)
+   For errors, failures, and critical issues */
+.variant-error {
+  background-color: var(--color-danger-bg);
+  border-left-color: var(--mc-red);
+  color: var(--color-danger-text);
+}
+
+.variant-error .icon {
+  color: var(--mc-red);
+}
+
+/* Warning - MC Orange (#EF9537)
+   For warnings and caution messages */
+.variant-warning {
+  background-color: var(--color-warning-bg);
+  border-left-color: var(--mc-orange);
+  color: var(--color-warning-text);
+}
+
+.variant-warning .icon {
+  color: var(--mc-orange-dark);
+}
+
+/* Info - MC Blue (#878DBC)
+   For informational messages */
+.variant-info {
+  background-color: var(--color-info-bg);
+  border-left-color: var(--mc-blue);
+  color: var(--color-info-text);
+}
+
+.variant-info .icon {
+  color: var(--mc-blue-dark);
+}
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .alert {
+    border: 2px solid;
+    border-left-width: 4px;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .closeButton {
+    transition: none;
+  }
+}

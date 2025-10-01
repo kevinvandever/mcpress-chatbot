@@ -1,0 +1,228 @@
+/* Loading Components - MC Press Design System */
+
+/* ============================================
+   SPINNER
+   ============================================ */
+
+.spinner {
+  display: inline-block;
+  border-radius: 50%;
+  border-style: solid;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Spinner Sizes */
+.spinner-sm {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
+.spinner-md {
+  width: 24px;
+  height: 24px;
+  border-width: 3px;
+}
+
+.spinner-lg {
+  width: 32px;
+  height: 32px;
+  border-width: 3px;
+}
+
+.spinner-xl {
+  width: 48px;
+  height: 48px;
+  border-width: 4px;
+}
+
+/* Spinner Variants */
+.spinner-primary {
+  border-color: var(--mc-blue-light);
+  border-top-color: var(--mc-blue);
+}
+
+.spinner-secondary {
+  border-color: var(--mc-gray-light);
+  border-top-color: var(--mc-gray-dark);
+}
+
+.spinner-white {
+  border-color: rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+}
+
+/* Visually hidden text for screen readers */
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ============================================
+   SKELETON
+   ============================================ */
+
+.skeleton {
+  background-color: var(--mc-gray-lighter);
+  display: block;
+}
+
+.skeleton-text {
+  border-radius: var(--radius-sm);
+  height: 1em;
+}
+
+.skeleton-circular {
+  border-radius: 50%;
+}
+
+.skeleton-rectangular {
+  border-radius: var(--radius-md);
+}
+
+/* Skeleton Animation */
+.skeletonAnimation {
+  background: linear-gradient(
+    90deg,
+    var(--mc-gray-lighter) 25%,
+    var(--mc-gray-light) 50%,
+    var(--mc-gray-lighter) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ============================================
+   PROGRESS BAR
+   ============================================ */
+
+.progressContainer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.progressLabel {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+.progressBar {
+  width: 100%;
+  background-color: var(--bg-tertiary);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+/* Progress Bar Sizes */
+.progress-sm {
+  height: 4px;
+}
+
+.progress-md {
+  height: 8px;
+}
+
+.progress-lg {
+  height: 12px;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width var(--transition-slow);
+}
+
+/* Progress Bar Variants - MC Press Colors */
+.progress-primary {
+  background-color: var(--mc-blue);
+}
+
+.progress-success {
+  background-color: var(--mc-green);
+}
+
+.progress-warning {
+  background-color: var(--mc-orange);
+}
+
+.progress-danger {
+  background-color: var(--mc-red);
+}
+
+/* Indeterminate Progress Animation */
+.progressIndeterminate {
+  width: 40%;
+  animation: indeterminateProgress 1.5s ease-in-out infinite;
+}
+
+@keyframes indeterminateProgress {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(250%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .spinner,
+  .skeletonAnimation,
+  .progressFill,
+  .progressIndeterminate {
+    animation: none;
+  }
+
+  .progressFill {
+    transition: none;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .spinner-primary {
+    border-color: transparent;
+    border-top-color: currentColor;
+  }
+
+  .progressBar {
+    border: 1px solid var(--border-primary);
+  }
+}

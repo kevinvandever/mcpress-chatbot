@@ -1,0 +1,189 @@
+/* Card Component - MC Press Design System */
+
+.card {
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+
+  /* Appearance */
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-lg);
+
+  /* Typography */
+  font-family: var(--font-family-sans);
+  color: var(--text-primary);
+
+  /* Transitions */
+  transition: all var(--transition-base);
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+/* ============================================
+   VARIANT STYLES
+   ============================================ */
+
+/* Default - Subtle border */
+.variant-default {
+  border: 1px solid var(--border-secondary);
+}
+
+/* Elevated - Uses shadow, no border */
+.variant-elevated {
+  box-shadow: var(--shadow-md);
+  border: none;
+}
+
+/* Outlined - Prominent border using MC Gray */
+.variant-outlined {
+  border: 2px solid var(--mc-gray);
+}
+
+/* Interactive - Elevated with hover state (for clickable cards) */
+.variant-interactive {
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-secondary);
+  cursor: pointer;
+}
+
+/* ============================================
+   HOVERABLE STATE
+   ============================================ */
+
+.hoverable:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.variant-interactive.hoverable:hover {
+  border-color: var(--mc-blue);
+  box-shadow: 0 8px 16px rgba(135, 141, 188, 0.15); /* MC Blue shadow */
+}
+
+/* ============================================
+   PADDING VARIANTS
+   ============================================ */
+
+.padding-none .content {
+  padding: 0;
+}
+
+.padding-sm .content {
+  padding: var(--space-3);
+}
+
+.padding-md .content {
+  padding: var(--space-4);
+}
+
+.padding-lg .content {
+  padding: var(--space-6);
+}
+
+/* Apply same padding to header/footer when present */
+.padding-sm .header,
+.padding-sm .footer {
+  padding: var(--space-3);
+}
+
+.padding-md .header,
+.padding-md .footer {
+  padding: var(--space-4);
+}
+
+.padding-lg .header,
+.padding-lg .footer {
+  padding: var(--space-6);
+}
+
+/* ============================================
+   CARD SECTIONS
+   ============================================ */
+
+.media {
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.image {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+}
+
+.header {
+  border-bottom: 1px solid var(--border-secondary);
+  padding-bottom: var(--space-3);
+  font-weight: var(--font-weight-semibold);
+}
+
+.content {
+  flex: 1;
+  min-width: 0; /* Prevent flex item overflow */
+}
+
+.footer {
+  border-top: 1px solid var(--border-secondary);
+  padding-top: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+/* When media is present, adjust first section padding */
+.media + .header,
+.media + .content {
+  padding-top: var(--space-4);
+}
+
+/* ============================================
+   FOCUS STYLES (for interactive cards)
+   ============================================ */
+
+.variant-interactive:focus-visible {
+  outline: 2px solid var(--mc-blue);
+  outline-offset: 2px;
+}
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .card {
+    border-width: 2px;
+  }
+
+  .variant-outlined {
+    border-width: 3px;
+  }
+
+  .variant-interactive:focus-visible {
+    outline-width: 3px;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .hoverable {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 640px) {
+  .padding-lg .content,
+  .padding-lg .header,
+  .padding-lg .footer {
+    padding: var(--space-4);
+  }
+}

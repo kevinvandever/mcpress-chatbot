@@ -1,0 +1,266 @@
+/* Modal Component - MC Press Design System */
+
+.backdrop {
+  /* Positioning */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-modal-backdrop);
+
+  /* Appearance */
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+
+  /* Layout */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+
+  /* Animation */
+  animation: fadeIn var(--transition-base);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal {
+  /* Positioning */
+  position: relative;
+  z-index: var(--z-modal);
+
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  width: 100%;
+
+  /* Appearance */
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+
+  /* Animation */
+  animation: slideUp var(--transition-base);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Focus outline for accessibility */
+.modal:focus {
+  outline: none;
+}
+
+/* ============================================
+   SIZE VARIANTS
+   ============================================ */
+
+.size-sm {
+  max-width: 400px;
+}
+
+.size-md {
+  max-width: 600px;
+}
+
+.size-lg {
+  max-width: 800px;
+}
+
+.size-xl {
+  max-width: 1200px;
+}
+
+.size-full {
+  max-width: calc(100vw - var(--space-8));
+  max-height: calc(100vh - var(--space-8));
+}
+
+/* ============================================
+   MODAL SECTIONS
+   ============================================ */
+
+.header {
+  /* Layout */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border-bottom: 1px solid var(--border-secondary);
+
+  /* Prevent shrinking */
+  flex-shrink: 0;
+}
+
+.title {
+  /* Typography */
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin: 0;
+
+  /* Layout */
+  flex: 1;
+}
+
+.closeButton {
+  /* Reset */
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+
+  /* Appearance */
+  color: var(--text-secondary);
+  font-size: 32px;
+  line-height: 1;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+
+  /* Transitions */
+  transition: all var(--transition-base);
+
+  /* Prevent shrinking */
+  flex-shrink: 0;
+}
+
+.closeButton:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.closeButton:focus-visible {
+  outline: 2px solid var(--mc-blue);
+  outline-offset: 2px;
+}
+
+.content {
+  /* Layout */
+  padding: var(--space-5);
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0; /* Allow flex child to shrink */
+
+  /* Typography */
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+  line-height: var(--line-height-relaxed);
+}
+
+.footer {
+  /* Layout */
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border-top: 1px solid var(--border-secondary);
+
+  /* Prevent shrinking */
+  flex-shrink: 0;
+}
+
+/* ============================================
+   SCROLLBAR STYLING
+   ============================================ */
+
+.content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.content::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+}
+
+.content::-webkit-scrollbar-thumb {
+  background: var(--mc-gray);
+  border-radius: var(--radius-sm);
+}
+
+.content::-webkit-scrollbar-thumb:hover {
+  background: var(--mc-gray-dark);
+}
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .modal {
+    border: 2px solid var(--border-primary);
+  }
+
+  .closeButton:focus-visible {
+    outline-width: 3px;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .backdrop,
+  .modal {
+    animation: none;
+  }
+
+  .closeButton {
+    transition: none;
+  }
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 640px) {
+  .backdrop {
+    padding: var(--space-2);
+  }
+
+  .modal {
+    max-height: calc(100vh - var(--space-4));
+  }
+
+  .size-sm,
+  .size-md,
+  .size-lg,
+  .size-xl {
+    max-width: 100%;
+  }
+
+  .header,
+  .content,
+  .footer {
+    padding: var(--space-4);
+  }
+
+  .title {
+    font-size: var(--font-size-lg);
+  }
+}

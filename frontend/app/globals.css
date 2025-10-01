@@ -1,3 +1,6 @@
+/* Import MC Press Design System Tokens */
+@import './styles/design-tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
