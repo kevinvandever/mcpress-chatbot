@@ -139,7 +139,7 @@ export const Input = forwardRef<HTMLInputElement | HTMLTextAreaElement, InputPro
         )
       }
 
-      const { type = 'text', ...inputProps } = props as StandardInputProps
+      const { type = 'text', size: _size, ...inputProps } = props as StandardInputProps
       return (
         <input
           ref={ref as React.Ref<HTMLInputElement>}
