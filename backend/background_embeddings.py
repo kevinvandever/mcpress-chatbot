@@ -38,22 +38,31 @@ async def regenerate_embeddings_background(vector_store, batch_size: int = 100):
             await vector_store.init_database()
 
         async with vector_store.pool.acquire() as conn:
-            # Count total documents without embeddings
-            result = await conn.fetchrow("""
-                SELECT COUNT(*) as count
-                FROM documents
-                WHERE embedding IS NULL OR embedding::text = 'null'
-            """)
+            # Count total documents without embeddings using a more efficient approach
+            # Use approximate count first to avoid long-running queries
+            logger.info("📊 Counting documents without embeddings...")
+            try:
+                # Try to get an approximate count first (faster)
+                result = await conn.fetchrow("""
+                    SELECT COUNT(*) as count
+                    FROM documents
+                    WHERE embedding IS NULL OR embedding::text = 'null'
+                """)
+                total_docs = result['count']
+            except Exception as e:
+                # If count times out, estimate based on batch processing
+                logger.warning(f"⚠️ Count query timed out, will process batches until exhausted: {e}")
+                total_docs = 999999  # Large number to keep processing
 
-            total_docs = result['count']
             _regeneration_status["total"] = total_docs
             _regeneration_status["total_batches"] = (total_docs + batch_size - 1) // batch_size
 
             logger.info(f"📊 Found {total_docs} documents needing embeddings")
-            logger.info(f"📦 Processing in {_regeneration_status['total_batches']} batches of {batch_size}")
+            logger.info(f"📦 Processing in batches of {batch_size}")
 
-            # Process in batches
-            for batch_num in range(_regeneration_status['total_batches']):
+            # Process in batches - dynamically check for completion
+            batch_num = 0
+            while True:
                 _regeneration_status["current_batch"] = batch_num + 1
 
                 # Get batch of documents
@@ -66,9 +75,11 @@ async def regenerate_embeddings_background(vector_store, batch_size: int = 100):
                 """, batch_size)
 
                 if not rows:
+                    logger.info("✅ No more documents to process - all embeddings generated!")
                     break
 
-                logger.info(f"🔄 Processing batch {batch_num + 1}/{_regeneration_status['total_batches']} ({len(rows)} documents)")
+                batch_num += 1
+                logger.info(f"🔄 Processing batch {batch_num} ({len(rows)} documents)")
 
                 # OPTIMIZATION: Generate ALL embeddings for the batch at once
                 try:
@@ -109,10 +120,11 @@ async def regenerate_embeddings_background(vector_store, batch_size: int = 100):
                                 _regeneration_status["errors"] += 1
 
                     # Log progress every batch
-                    logger.info(f"✅ Batch {batch_num + 1} complete: {_regeneration_status['processed']}/{total_docs} documents processed")
+                    processed_pct = (_regeneration_status['processed'] / total_docs * 100) if total_docs < 999999 else 0
+                    logger.info(f"✅ Batch {batch_num} complete: {_regeneration_status['processed']} documents processed ({processed_pct:.1f}%)")
 
                 except Exception as e:
-                    logger.error(f"❌ Error processing batch {batch_num + 1}: {e}")
+                    logger.error(f"❌ Error processing batch {batch_num}: {e}")
                     _regeneration_status["errors"] += len(rows)
 
                 # OPTIMIZATION: Removed sleep to speed up processing

@@ -63,7 +63,7 @@ class PostgresVectorStore:
             statement_cache_size=0,  # Fix for pgbouncer compatibility
             min_size=1,
             max_size=10,
-            command_timeout=10
+            command_timeout=60  # Increased from 10 to 60 seconds for large table queries
         )
         
         self.has_pgvector = False
