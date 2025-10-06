@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import ChatInterface, { ChatInterfaceRef } from '@/components/ChatInterface'
 import { API_URL } from '@/config/api'
 
@@ -163,11 +163,10 @@ export default function Home() {
                         onClick={() => chatInterfaceRef.current?.setInputValue("How do I configure DB2 on IBM i?")}
                         className="group px-4 py-2 rounded-full text-xs font-medium transition-all transform hover:scale-105 hover:shadow-md focus:ring-2 focus:outline-none text-white"
                         style={{
-                          backgroundColor: 'var(--mc-blue)',
-                          focusRingColor: 'var(--mc-blue-light)'
+                          backgroundColor: 'var(--mc-blue)'
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--mc-blue-dark)'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--mc-blue)'}
+                        onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-blue-dark)'}
+                        onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-blue)'}
                       >
                         <span className="group-hover:animate-pulse">💾</span> "How do I configure DB2 on IBM i?"
                       </button>
@@ -175,11 +174,10 @@ export default function Home() {
                         onClick={() => chatInterfaceRef.current?.setInputValue("RPG programming best practices")}
                         className="group px-4 py-2 rounded-full text-xs font-medium transition-all transform hover:scale-105 hover:shadow-md focus:ring-2 focus:outline-none text-white"
                         style={{
-                          backgroundColor: 'var(--mc-green)',
-                          focusRingColor: 'var(--mc-green-light)'
+                          backgroundColor: 'var(--mc-green)'
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--mc-green-dark)'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--mc-green)'}
+                        onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-green-dark)'}
+                        onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-green)'}
                       >
                         <span className="group-hover:animate-pulse">🔧</span> "RPG programming best practices"
                       </button>
@@ -187,11 +185,10 @@ export default function Home() {
                         onClick={() => chatInterfaceRef.current?.setInputValue("AS/400 system administration")}
                         className="group px-4 py-2 rounded-full text-xs font-medium transition-all transform hover:scale-105 hover:shadow-md focus:ring-2 focus:outline-none text-white"
                         style={{
-                          backgroundColor: 'var(--mc-gray)',
-                          focusRingColor: 'var(--mc-gray-light)'
+                          backgroundColor: 'var(--mc-gray)'
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--mc-gray-dark)'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--mc-gray)'}
+                        onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-gray-dark)'}
+                        onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-gray)'}
                       >
                         <span className="group-hover:animate-pulse">⚙️</span> "AS/400 system administration"
                       </button>
@@ -199,11 +196,10 @@ export default function Home() {
                         onClick={() => chatInterfaceRef.current?.setInputValue("Show me code examples for JSON handling")}
                         className="group px-4 py-2 rounded-full text-xs font-medium transition-all transform hover:scale-105 hover:shadow-md focus:ring-2 focus:outline-none text-white"
                         style={{
-                          backgroundColor: 'var(--mc-orange)',
-                          focusRingColor: 'var(--mc-orange-light)'
+                          backgroundColor: 'var(--mc-orange)'
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--mc-orange-dark)'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--mc-orange)'}
+                        onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-orange-dark)'}
+                        onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-orange)'}
                       >
                         <span className="group-hover:animate-pulse">💻</span> "Show me code examples for JSON handling"
                       </button>
