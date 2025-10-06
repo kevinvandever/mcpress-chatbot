@@ -56,58 +56,66 @@ async def regenerate_embeddings_background(vector_store, batch_size: int = 100):
             for batch_num in range(_regeneration_status['total_batches']):
                 _regeneration_status["current_batch"] = batch_num + 1
 
-                async with vector_store.pool.acquire() as batch_conn:
-                    # Get batch of documents
-                    rows = await batch_conn.fetch("""
-                        SELECT id, content, filename, page_number, chunk_index, metadata
-                        FROM documents
-                        WHERE embedding IS NULL OR embedding::text = 'null'
-                        ORDER BY id
-                        LIMIT $1
-                    """, batch_size)
+                # Get batch of documents
+                rows = await conn.fetch("""
+                    SELECT id, content, filename, page_number, chunk_index, metadata
+                    FROM documents
+                    WHERE embedding IS NULL OR embedding::text = 'null'
+                    ORDER BY id
+                    LIMIT $1
+                """, batch_size)
 
-                    if not rows:
-                        break
+                if not rows:
+                    break
 
-                    logger.info(f"🔄 Processing batch {batch_num + 1}/{_regeneration_status['total_batches']} ({len(rows)} documents)")
+                logger.info(f"🔄 Processing batch {batch_num + 1}/{_regeneration_status['total_batches']} ({len(rows)} documents)")
 
-                    # Generate embeddings for batch
-                    for row in rows:
-                        try:
-                            # Generate embedding
-                            content = row['content']
-                            embedding = vector_store.embedding_model.encode(content).tolist()
+                # OPTIMIZATION: Generate ALL embeddings for the batch at once
+                try:
+                    contents = [row['content'] for row in rows]
+                    embeddings = vector_store.embedding_model.encode(contents)
 
-                            # Update document with embedding
-                            if vector_store.has_pgvector:
-                                # Use vector type
+                    # Convert to list format
+                    embeddings_list = [emb.tolist() for emb in embeddings]
+
+                    # OPTIMIZATION: Batch update all documents at once
+                    if vector_store.has_pgvector:
+                        # Prepare batch update for pgvector
+                        for row, embedding in zip(rows, embeddings_list):
+                            try:
                                 embedding_str = '[' + ','.join(map(str, embedding)) + ']'
-                                await batch_conn.execute("""
+                                await conn.execute("""
                                     UPDATE documents
                                     SET embedding = $1::vector
                                     WHERE id = $2
                                 """, embedding_str, row['id'])
-                            else:
-                                # Use JSONB type
-                                import json
-                                await batch_conn.execute("""
+                                _regeneration_status["processed"] += 1
+                            except Exception as e:
+                                logger.error(f"❌ Error updating document {row['id']}: {e}")
+                                _regeneration_status["errors"] += 1
+                    else:
+                        # Use JSONB type - batch update
+                        import json
+                        for row, embedding in zip(rows, embeddings_list):
+                            try:
+                                await conn.execute("""
                                     UPDATE documents
                                     SET embedding = $1::jsonb
                                     WHERE id = $2
                                 """, json.dumps(embedding), row['id'])
-
-                            _regeneration_status["processed"] += 1
-
-                        except Exception as e:
-                            logger.error(f"❌ Error processing document {row['id']}: {e}")
-                            _regeneration_status["errors"] += 1
-                            continue
+                                _regeneration_status["processed"] += 1
+                            except Exception as e:
+                                logger.error(f"❌ Error updating document {row['id']}: {e}")
+                                _regeneration_status["errors"] += 1
 
                     # Log progress every batch
                     logger.info(f"✅ Batch {batch_num + 1} complete: {_regeneration_status['processed']}/{total_docs} documents processed")
 
-                    # Small delay to prevent overwhelming the database
-                    await asyncio.sleep(0.5)
+                except Exception as e:
+                    logger.error(f"❌ Error processing batch {batch_num + 1}: {e}")
+                    _regeneration_status["errors"] += len(rows)
+
+                # OPTIMIZATION: Removed sleep to speed up processing
 
         logger.info(f"🎉 Embedding regeneration complete! Processed {_regeneration_status['processed']}/{total_docs} documents with {_regeneration_status['errors']} errors")
 
