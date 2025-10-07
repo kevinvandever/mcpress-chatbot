@@ -289,9 +289,10 @@ class PostgresVectorStore:
                 if self.has_pgvector:
                     # pgvector results have similarity/distance already calculated
                     row = item
-                    # Handle metadata - could be dict (JSONB) or string (JSON)
+                    # FIXED: Handle metadata - could be dict (JSONB) or string (JSON)
+                    # This prevents AttributeError: 'str' object has no attribute 'update'
                     if isinstance(row['metadata'], dict):
-                        metadata = row['metadata']
+                        metadata = row['metadata'].copy()  # Create a copy to avoid mutations
                     elif isinstance(row['metadata'], str):
                         metadata = json.loads(row['metadata']) if row['metadata'] else {}
                     else:
@@ -313,9 +314,10 @@ class PostgresVectorStore:
                 else:
                     # Manual similarity calculation results
                     row, similarity, distance = item
-                    # Handle metadata - could be dict (JSONB) or string (JSON)
+                    # FIXED: Handle metadata - could be dict (JSONB) or string (JSON)
+                    # This prevents AttributeError: 'str' object has no attribute 'update'
                     if isinstance(row['metadata'], dict):
-                        metadata = row['metadata']
+                        metadata = row['metadata'].copy()  # Create a copy to avoid mutations
                     elif isinstance(row['metadata'], str):
                         metadata = json.loads(row['metadata']) if row['metadata'] else {}
                     else:
