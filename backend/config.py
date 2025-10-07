@@ -51,8 +51,10 @@ OPENAI_CONFIG = {
 }
 
 # Vector Search Configuration
+# NOTE: For pgvector with cosine distance (0=identical, 2=opposite), lower is better
+# For fallback similarity (0=unrelated, 1=identical), higher is better
 SEARCH_CONFIG = {
-    "relevance_threshold": float(os.getenv("RELEVANCE_THRESHOLD", "0.75")),  # Increased to get more relevant results
+    "relevance_threshold": float(os.getenv("RELEVANCE_THRESHOLD", "0.55")),  # pgvector distance threshold (lower = more permissive)
     "max_sources": int(os.getenv("MAX_SOURCES", "12")),  # Increased from 8 to 12 for more context
     "initial_search_results": int(os.getenv("INITIAL_SEARCH_RESULTS", "30"))  # Increased from 10 to 30 to cast wider net
 }

@@ -51,17 +51,20 @@ class ChatHandler:
         return truncated
     
     def calculate_confidence(self, relevant_docs: List[Dict[str, Any]]) -> float:
-        """Calculate confidence score based on document relevance"""
+        """
+        Calculate confidence score based on document relevance
+        Uses the pre-calculated similarity scores from vector store
+        """
         if not relevant_docs:
             return 0.0
-            
-        # Average similarity score (convert from distance)
+
+        # Use pre-calculated similarity scores (0-1 scale)
         total_similarity = 0
         for doc in relevant_docs:
-            distance = doc.get("distance", 2.0)
-            similarity = max(0, (2 - distance) / 2)  # Convert to 0-1 scale
+            # Use pre-calculated similarity if available, otherwise convert from distance
+            similarity = doc.get("similarity", 0.0)
             total_similarity += similarity
-            
+
         avg_confidence = total_similarity / len(relevant_docs)
         return round(avg_confidence, 3)
         
@@ -228,66 +231,79 @@ Please answer the following question based on your general knowledge, but clearl
         return "\n---\n".join(context_parts)
     
     def _get_dynamic_threshold(self, query: str) -> float:
-        """Determine relevance threshold based on query characteristics"""
+        """
+        Determine relevance threshold based on query characteristics
+        NOTE: This returns a DISTANCE threshold (lower = more permissive for pgvector)
+        pgvector cosine distance: 0=identical, 2=opposite
+        """
         query_lower = query.lower()
 
         # RPG/IBM i specific technical terms - need comprehensive context
         rpg_keywords = ['subprocedure', 'subfile', 'rpg', 'ile', 'cl', 'db2', 'sql', 'as/400', 'ibm i', 'iseries']
         if any(keyword in query_lower for keyword in rpg_keywords):
-            return 0.85  # Very permissive to get all relevant RPG content
+            return 0.70  # Very permissive (was 0.85 for ChromaDB)
 
         # Code/technical queries - broader matching for better coverage
         code_keywords = ['function', 'class', 'method', 'error', 'code', 'syntax', 'api', 'import', 'return', 'how do i', 'what is']
         if any(keyword in query_lower for keyword in code_keywords):
-            return 0.8  # Increased from 0.6 for more results
+            return 0.65  # Permissive (was 0.8 for ChromaDB)
 
         # Specific technical terms - still need good coverage
         tech_keywords = ['configure', 'install', 'setup', 'parameter', 'variable', 'property']
         if any(keyword in query_lower for keyword in tech_keywords):
-            return 0.75  # Increased from 0.65
+            return 0.60  # Moderate (was 0.75 for ChromaDB)
 
         # Exact searches (with quotes) need higher precision
         if '"' in query:
-            return 0.65
+            return 0.40  # Stricter for exact matches (was 0.65 for ChromaDB)
 
         # General questions - broader matching allowed
-        return SEARCH_CONFIG["relevance_threshold"]
+        return SEARCH_CONFIG["relevance_threshold"]  # 0.55 default
 
     def _filter_relevant_documents(self, documents: List[Dict[str, Any]], query: str) -> List[Dict[str, Any]]:
-        """Filter documents by relevance threshold and log the decision process"""
-        # ChromaDB uses cosine distance: 0 = identical, 2 = completely different
+        """
+        Filter documents by relevance threshold and log the decision process
+        Handles both pgvector distance and fallback similarity metrics
+        """
         RELEVANCE_THRESHOLD = self._get_dynamic_threshold(query)
         MAX_SOURCES = SEARCH_CONFIG["max_sources"]
-        
+
+        # Check if we're using pgvector or fallback
+        using_pgvector = documents[0].get("using_pgvector", True) if documents else True
+        logger.info(f"🔍 Vector Store Mode: {'pgvector' if using_pgvector else 'fallback (no pgvector)'}")
         logger.info(f"Query: '{query}'")
         logger.info(f"Initial search returned {len(documents)} documents")
-        
+        logger.info(f"Distance threshold: {RELEVANCE_THRESHOLD} (lower distance = better match)")
+
         filtered_docs = []
         for i, doc in enumerate(documents):
-            distance = doc.get("distance", 2.0)  # Default to max distance if missing
-            similarity_score = max(0, (2 - distance) / 2)  # Convert to 0-1 scale
-            similarity_percent = similarity_score * 100
-            
+            distance = doc.get("distance", 2.0)  # pgvector distance or fallback distance
+            similarity = doc.get("similarity", 0.0)  # Pre-calculated similarity (0-1)
+
             metadata = doc.get("metadata", {})
             filename = metadata.get("filename", "Unknown")
             page = metadata.get("page", "N/A")
-            
-            logger.info(f"  Result {i+1}: {filename} (Page {page}) - Distance: {distance:.3f}, Similarity: {similarity_percent:.1f}%")
-            
+
+            # Log with appropriate precision
+            logger.info(f"  Result {i+1}: {filename} (Page {page})")
+            logger.info(f"    Distance: {distance:.4f}, Similarity: {similarity:.4f} ({similarity*100:.1f}%)")
+
+            # Filter by distance threshold (works for both pgvector and fallback)
             if distance <= RELEVANCE_THRESHOLD:
                 filtered_docs.append(doc)
-                logger.info(f"    ✓ INCLUDED - Above threshold ({RELEVANCE_THRESHOLD})")
+                logger.info(f"    ✅ INCLUDED - Distance {distance:.4f} <= threshold {RELEVANCE_THRESHOLD}")
             else:
-                logger.info(f"    ✗ EXCLUDED - Below threshold ({RELEVANCE_THRESHOLD})")
-        
+                logger.info(f"    ❌ EXCLUDED - Distance {distance:.4f} > threshold {RELEVANCE_THRESHOLD}")
+
         # Limit to MAX_SOURCES and sort by relevance (lowest distance first)
         filtered_docs = sorted(filtered_docs, key=lambda x: x.get("distance", 2.0))[:MAX_SOURCES]
-        
-        logger.info(f"Final result: {len(filtered_docs)} relevant documents included")
-        
+
+        logger.info(f"✅ Final result: {len(filtered_docs)} relevant documents included (max {MAX_SOURCES})")
+
         if len(filtered_docs) == 0:
-            logger.warning("No documents met the relevance threshold - user query may not match available content")
-        
+            logger.warning("⚠️ No documents met the relevance threshold - user query may not match available content")
+            logger.warning(f"   Consider lowering threshold (current: {RELEVANCE_THRESHOLD})")
+
         return filtered_docs
     
     def _format_sources(self, documents: List[Dict[str, Any]]) -> List[Dict[str, Any]]:

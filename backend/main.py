@@ -235,7 +235,34 @@ except Exception as e:
 
 print(f"🚀 Backend version: {__version__}")
 pdf_processor = PDFProcessorFull()
+
+# Initialize vector store and verify configuration
+print("="*60)
+print("🔍 VECTOR STORE INITIALIZATION")
+print("="*60)
 vector_store = VectorStoreClass()
+print(f"✅ Vector Store Class: {VectorStoreClass.__name__}")
+
+# Additional verification for PostgresVectorStore
+if VectorStoreClass.__name__ == "PostgresVectorStore":
+    import asyncio
+    async def verify_pgvector():
+        await vector_store.init_database()
+        has_pgvector = getattr(vector_store, 'has_pgvector', False)
+        doc_count = await vector_store.get_document_count()
+        print(f"📊 pgvector enabled: {has_pgvector}")
+        print(f"📊 Total documents in database: {doc_count:,}")
+        if has_pgvector:
+            print("✅ Using native pgvector with cosine distance operator")
+        else:
+            print("⚠️ pgvector NOT available - using fallback Python calculation")
+        print("="*60)
+
+    try:
+        asyncio.run(verify_pgvector())
+    except Exception as e:
+        print(f"⚠️ Could not verify pgvector status: {e}")
+        print("="*60)
 
 # Set vector store for admin_documents if available
 if admin_docs_available:

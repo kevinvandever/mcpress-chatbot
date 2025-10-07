@@ -236,35 +236,39 @@ class PostgresVectorStore:
         # Only init if pool doesn't exist
         if not self.pool:
             await self.init_database()
-        
+
         # Generate query embedding
         query_embedding = self._generate_embeddings([query])[0]
-        
+
         async with self.pool.acquire() as conn:
             if self.has_pgvector:
                 # Use pgvector for efficient similarity search
                 # Format query embedding as PostgreSQL array string
                 query_vector = '[' + ','.join(map(str, query_embedding.tolist())) + ']'
+                logger.info(f"🔍 Using pgvector to search ALL {await self.get_document_count():,} documents")
                 rows = await conn.fetch("""
-                    SELECT 
+                    SELECT
                         filename, content, page_number, chunk_index, metadata,
                         1 - (embedding <=> $1::vector) as similarity,
                         (embedding <=> $1::vector) as distance
                     FROM documents
+                    WHERE embedding IS NOT NULL
                     ORDER BY embedding <=> $1::vector
                     LIMIT $2
                 """, query_vector, n_results)
             else:
                 # Calculate similarity in Python without pgvector
-                # CRITICAL: Limit rows to prevent memory/performance issues
-                # For now, sample a subset until we implement proper indexing
+                # WARNING: Without pgvector, this loads ALL documents into memory
+                # This is inefficient but ensures we search the full corpus
+                logger.warning("⚠️ pgvector not available - using fallback Python similarity calculation")
                 rows = await conn.fetch("""
                     SELECT filename, content, page_number, chunk_index, metadata, embedding
                     FROM documents
                     WHERE embedding IS NOT NULL
-                    LIMIT 5000
                 """)
-                
+
+                logger.info(f"🔍 Calculating similarity for {len(rows):,} documents in Python")
+
                 # Calculate cosine similarity for each document
                 similarities = []
                 for row in rows:
@@ -279,7 +283,7 @@ class PostgresVectorStore:
                             numpy.linalg.norm(query_embedding) * numpy.linalg.norm(doc_embedding)
                         )
                         similarities.append((row, similarity, 1.0 - similarity))
-                
+
                 # Sort by similarity and take top results
                 similarities.sort(key=lambda x: x[1], reverse=True)
                 rows = [(row[0], row[1], row[2]) for row in similarities[:n_results]]
@@ -317,15 +321,18 @@ class PostgresVectorStore:
                         'page_number': row['page_number'],
                         'chunk_index': row['chunk_index']
                     })
-                    
+
+                    # pgvector uses cosine DISTANCE (0=identical, 2=opposite)
+                    # We store BOTH distance and similarity for compatibility
                     results.append({
                         'content': row['content'],
                         'metadata': metadata,
-                        'distance': float(row['distance']),
-                        'similarity': float(row['similarity'])
+                        'distance': float(row['distance']),  # pgvector cosine distance (0-2)
+                        'similarity': float(row['similarity']),  # converted to similarity (0-1)
+                        'using_pgvector': True  # Flag to indicate pgvector was used
                     })
                 else:
-                    # Manual similarity calculation results
+                    # Manual similarity calculation results (fallback without pgvector)
                     row, similarity, distance = item
                     # FIXED: Handle metadata - could be dict (JSONB), string (JSON), or None
                     # This prevents AttributeError: 'str' object has no attribute 'update'
@@ -355,12 +362,14 @@ class PostgresVectorStore:
                         'page_number': row['page_number'],
                         'chunk_index': row['chunk_index']
                     })
-                    
+
+                    # Fallback mode: similarity is already 0-1, distance is 1-similarity
                     results.append({
                         'content': row['content'],
                         'metadata': metadata,
-                        'distance': float(distance),
-                        'similarity': float(similarity)
+                        'distance': float(distance),  # 1 - similarity
+                        'similarity': float(similarity),  # cosine similarity (0-1)
+                        'using_pgvector': False  # Flag to indicate fallback mode
                     })
         
         logger.info(f"Found {len(results)} similar documents for query")
