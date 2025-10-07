@@ -289,13 +289,26 @@ class PostgresVectorStore:
                 if self.has_pgvector:
                     # pgvector results have similarity/distance already calculated
                     row = item
-                    # FIXED: Handle metadata - could be dict (JSONB) or string (JSON)
+                    # FIXED: Handle metadata - could be dict (JSONB), string (JSON), or None
                     # This prevents AttributeError: 'str' object has no attribute 'update'
-                    if isinstance(row['metadata'], dict):
-                        metadata = row['metadata'].copy()  # Create a copy to avoid mutations
-                    elif isinstance(row['metadata'], str):
-                        metadata = json.loads(row['metadata']) if row['metadata'] else {}
-                    else:
+                    try:
+                        if row['metadata'] is None:
+                            metadata = {}
+                        elif isinstance(row['metadata'], dict):
+                            metadata = row['metadata'].copy()  # Create a copy to avoid mutations
+                        elif isinstance(row['metadata'], str):
+                            try:
+                                parsed = json.loads(row['metadata'])
+                                # Ensure parsed result is a dict
+                                metadata = parsed if isinstance(parsed, dict) else {}
+                            except (json.JSONDecodeError, ValueError):
+                                logger.warning(f"Failed to parse metadata JSON: {row['metadata'][:100]}")
+                                metadata = {}
+                        else:
+                            logger.warning(f"Unexpected metadata type: {type(row['metadata'])}")
+                            metadata = {}
+                    except Exception as e:
+                        logger.error(f"Error processing metadata: {e}")
                         metadata = {}
 
                     metadata.update({
@@ -314,13 +327,26 @@ class PostgresVectorStore:
                 else:
                     # Manual similarity calculation results
                     row, similarity, distance = item
-                    # FIXED: Handle metadata - could be dict (JSONB) or string (JSON)
+                    # FIXED: Handle metadata - could be dict (JSONB), string (JSON), or None
                     # This prevents AttributeError: 'str' object has no attribute 'update'
-                    if isinstance(row['metadata'], dict):
-                        metadata = row['metadata'].copy()  # Create a copy to avoid mutations
-                    elif isinstance(row['metadata'], str):
-                        metadata = json.loads(row['metadata']) if row['metadata'] else {}
-                    else:
+                    try:
+                        if row['metadata'] is None:
+                            metadata = {}
+                        elif isinstance(row['metadata'], dict):
+                            metadata = row['metadata'].copy()  # Create a copy to avoid mutations
+                        elif isinstance(row['metadata'], str):
+                            try:
+                                parsed = json.loads(row['metadata'])
+                                # Ensure parsed result is a dict
+                                metadata = parsed if isinstance(parsed, dict) else {}
+                            except (json.JSONDecodeError, ValueError):
+                                logger.warning(f"Failed to parse metadata JSON: {row['metadata'][:100]}")
+                                metadata = {}
+                        else:
+                            logger.warning(f"Unexpected metadata type: {type(row['metadata'])}")
+                            metadata = {}
+                    except Exception as e:
+                        logger.error(f"Error processing metadata: {e}")
                         metadata = {}
 
                     metadata.update({

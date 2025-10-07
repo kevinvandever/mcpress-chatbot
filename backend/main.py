@@ -7,7 +7,7 @@ warnings.filterwarnings("ignore", category=UserWarning, module="transformers")
 warnings.filterwarnings("ignore", message=".*tokenizers.*")
 
 # Version marker to force Railway rebuild
-__version__ = "1.0.1-metadata-fix"
+__version__ = "1.0.2-comprehensive-metadata-handling"
 
 # Run startup check if on Railway
 if os.getenv("RAILWAY_ENVIRONMENT"):
