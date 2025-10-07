@@ -123,7 +123,7 @@ class ChatHandler:
                   * Related concepts and context mentioned in the documents
                   * Common pitfalls or best practices if mentioned in the sources
                 - Quote specific passages when relevant, using exact text from the documents
-                - Always cite sources in format: [Book/Document Title, p.XX]
+                - Do NOT include inline citations or source references in your response - sources are displayed separately below your answer
                 - Format code blocks with appropriate syntax highlighting (```language)
                 - Use markdown tables for comparisons or structured data
                 - Be precise and technical in your responses
