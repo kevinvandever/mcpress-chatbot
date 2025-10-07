@@ -52,9 +52,9 @@ OPENAI_CONFIG = {
 
 # Vector Search Configuration
 SEARCH_CONFIG = {
-    "relevance_threshold": float(os.getenv("RELEVANCE_THRESHOLD", "0.55")),  # Lowered from 0.7 to 0.55 for better recall
-    "max_sources": int(os.getenv("MAX_SOURCES", "8")),
-    "initial_search_results": int(os.getenv("INITIAL_SEARCH_RESULTS", "10"))
+    "relevance_threshold": float(os.getenv("RELEVANCE_THRESHOLD", "0.75")),  # Increased to get more relevant results
+    "max_sources": int(os.getenv("MAX_SOURCES", "12")),  # Increased from 8 to 12 for more context
+    "initial_search_results": int(os.getenv("INITIAL_SEARCH_RESULTS", "30"))  # Increased from 10 to 30 to cast wider net
 }
 
 # Response Configuration

@@ -23,7 +23,7 @@ class ChatHandler:
         # Initialize tiktoken encoder for token counting
         self.model = OPENAI_CONFIG["model"]
         self.encoding = tiktoken.encoding_for_model(self.model)
-        self.max_context_tokens = 3000  # Leave room for response
+        self.max_context_tokens = 6000  # Increased from 3000 to provide richer context
         
     def count_tokens(self, text: str) -> int:
         """Count tokens in text using tiktoken"""
@@ -230,21 +230,26 @@ Please answer the following question based on your general knowledge, but clearl
     def _get_dynamic_threshold(self, query: str) -> float:
         """Determine relevance threshold based on query characteristics"""
         query_lower = query.lower()
-        
-        # Exact searches (with quotes) need higher precision
-        if '"' in query:
-            return 0.5
-        
-        # Code/technical queries - more specific matching
-        code_keywords = ['function', 'class', 'method', 'error', 'code', 'syntax', 'api', 'import', 'return']
+
+        # RPG/IBM i specific technical terms - need comprehensive context
+        rpg_keywords = ['subprocedure', 'subfile', 'rpg', 'ile', 'cl', 'db2', 'sql', 'as/400', 'ibm i', 'iseries']
+        if any(keyword in query_lower for keyword in rpg_keywords):
+            return 0.85  # Very permissive to get all relevant RPG content
+
+        # Code/technical queries - broader matching for better coverage
+        code_keywords = ['function', 'class', 'method', 'error', 'code', 'syntax', 'api', 'import', 'return', 'how do i', 'what is']
         if any(keyword in query_lower for keyword in code_keywords):
-            return 0.6
-            
-        # Specific technical terms - precise matching
+            return 0.8  # Increased from 0.6 for more results
+
+        # Specific technical terms - still need good coverage
         tech_keywords = ['configure', 'install', 'setup', 'parameter', 'variable', 'property']
         if any(keyword in query_lower for keyword in tech_keywords):
+            return 0.75  # Increased from 0.65
+
+        # Exact searches (with quotes) need higher precision
+        if '"' in query:
             return 0.65
-        
+
         # General questions - broader matching allowed
         return SEARCH_CONFIG["relevance_threshold"]
 
