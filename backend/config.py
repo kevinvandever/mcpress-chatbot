@@ -44,9 +44,9 @@ CORS_ORIGINS = os.getenv("CORS_ORIGINS", '["*"]')
 
 # OpenAI Configuration
 OPENAI_CONFIG = {
-    "model": os.getenv("OPENAI_MODEL", "gpt-3.5-turbo"),
-    "temperature": float(os.getenv("OPENAI_TEMPERATURE", "0.3")),
-    "max_tokens": int(os.getenv("OPENAI_MAX_TOKENS", "2000")),
+    "model": os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+    "temperature": float(os.getenv("OPENAI_TEMPERATURE", "0.5")),
+    "max_tokens": int(os.getenv("OPENAI_MAX_TOKENS", "3000")),
     "stream": True
 }
 
