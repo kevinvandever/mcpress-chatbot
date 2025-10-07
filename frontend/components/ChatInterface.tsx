@@ -732,8 +732,8 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
           </button>
         </div>
         
-        {/* 🎯 Smart Suggestions */}
-        {suggestedQuestions.length > 0 && !isStreaming && (
+        {/* Smart Suggestions - Disabled for now */}
+        {false && suggestedQuestions.length > 0 && !isStreaming && (
           <div className="mt-4 animate-slide-in-up">
             <div className="flex items-center gap-2 mb-2">
               <svg className="w-4 h-4 text-mc-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
