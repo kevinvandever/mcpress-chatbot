@@ -343,16 +343,26 @@ class PostgresVectorStore:
             
             documents = []
             for row in rows:
-                metadata = json.loads(row['metadata']) if row['metadata'] else {}
-                
+                # Handle metadata - could be dict, string, or None
+                metadata = row['metadata']
+                if metadata is None:
+                    metadata = {}
+                elif isinstance(metadata, str):
+                    try:
+                        metadata = json.loads(metadata)
+                    except:
+                        metadata = {}
+                elif not isinstance(metadata, dict):
+                    metadata = {}
+
                 documents.append({
                     'filename': row['filename'],
                     'chunk_count': row['chunk_count'],
                     'total_pages': row['total_pages'] or 'N/A',
                     'uploaded_at': row['uploaded_at'].isoformat() if row['uploaded_at'] else None,
-                    'author': metadata.get('author', 'Unknown'),
-                    'category': metadata.get('category', 'Uncategorized'),
-                    'title': metadata.get('title', row['filename'].replace('.pdf', ''))
+                    'author': metadata.get('author', 'Unknown') if isinstance(metadata, dict) else 'Unknown',
+                    'category': metadata.get('category', 'Uncategorized') if isinstance(metadata, dict) else 'Uncategorized',
+                    'title': metadata.get('title', row['filename'].replace('.pdf', '')) if isinstance(metadata, dict) else row['filename'].replace('.pdf', '')
                 })
         
         result = {'documents': documents}
