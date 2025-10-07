@@ -6,6 +6,9 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 warnings.filterwarnings("ignore", category=UserWarning, module="transformers")
 warnings.filterwarnings("ignore", message=".*tokenizers.*")
 
+# Version marker to force Railway rebuild
+__version__ = "1.0.1-metadata-fix"
+
 # Run startup check if on Railway
 if os.getenv("RAILWAY_ENVIRONMENT"):
     try:
@@ -230,6 +233,7 @@ except Exception as e:
     set_migration_store = None
     migration_available = False
 
+print(f"🚀 Backend version: {__version__}")
 pdf_processor = PDFProcessorFull()
 vector_store = VectorStoreClass()
 
