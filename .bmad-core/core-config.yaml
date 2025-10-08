@@ -11,7 +11,7 @@ devLoadAlwaysFiles:
 development:
   localBackendPort: 8000
   localFrontendPort: 3000
-  productionBackend: https://mcpress-chatbot-production-569b.up.railway.app
+  productionBackend: https://mcpress-chatbot-production.up.railway.app
   productionFrontend: https://mc-press-chatbot.netlify.app
 
 standards:
