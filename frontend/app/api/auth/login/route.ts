@@ -8,6 +8,11 @@ export async function POST(request: Request) {
     // Get demo password from environment variable
     const DEMO_PASSWORD = process.env.DEMO_PASSWORD || 'mcpress2024';
 
+    // Debug logging (remove after testing)
+    console.log('Password attempt length:', password?.length);
+    console.log('Expected password length:', DEMO_PASSWORD?.length);
+    console.log('Env var set?', !!process.env.DEMO_PASSWORD);
+
     // Simple password check
     if (password === DEMO_PASSWORD) {
       // Set HTTP-only cookie (more secure than localStorage)
