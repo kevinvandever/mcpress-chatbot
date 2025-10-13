@@ -279,3 +279,76 @@ async def processing_health_check():
             status_code=500,
             detail=f"Health check failed: {str(e)}"
         )
+
+
+@router.post("/run-migration")
+async def run_migration():
+    """
+    Run database migration for Story-005 tables
+
+    ONE-TIME USE: Creates processing_jobs, processing_events, and storage_metrics tables
+    Safe to run multiple times (uses CREATE TABLE IF NOT EXISTS)
+    """
+    service = get_service()
+
+    try:
+        await service.init_pool()
+
+        # Check if tables already exist
+        async with service.pool.acquire() as conn:
+            existing_tables = await conn.fetch("""
+                SELECT table_name
+                FROM information_schema.tables
+                WHERE table_name IN ('processing_jobs', 'processing_events', 'storage_metrics')
+            """)
+
+            if len(existing_tables) == 3:
+                return {
+                    "status": "skipped",
+                    "message": "Migration already completed - all tables exist",
+                    "tables": [row['table_name'] for row in existing_tables]
+                }
+
+        # Read migration SQL
+        from pathlib import Path
+        migration_file = Path(__file__).parent / 'migrations' / '001_processing_pipeline.sql'
+
+        if not migration_file.exists():
+            raise HTTPException(
+                status_code=500,
+                detail=f"Migration file not found: {migration_file}"
+            )
+
+        with open(migration_file, 'r') as f:
+            migration_sql = f.read()
+
+        # Execute migration
+        async with service.pool.acquire() as conn:
+            await conn.execute(migration_sql)
+
+        # Verify tables created
+        async with service.pool.acquire() as conn:
+            tables = await conn.fetch("""
+                SELECT table_name
+                FROM information_schema.tables
+                WHERE table_name IN ('processing_jobs', 'processing_events', 'storage_metrics')
+            """)
+
+            table_counts = {}
+            for table in tables:
+                count = await conn.fetchval(f"SELECT COUNT(*) FROM {table['table_name']}")
+                table_counts[table['table_name']] = count
+
+        return {
+            "status": "success",
+            "message": "Migration completed successfully",
+            "tables_created": list(table_counts.keys()),
+            "row_counts": table_counts,
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Migration failed: {str(e)}"
+        )
