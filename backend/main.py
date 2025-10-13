@@ -125,6 +125,20 @@ except ImportError:
     from backend.category_mapper import get_category_mapper
     from backend.async_upload import process_pdf_async, create_upload_job, get_job_status, cleanup_old_jobs
 
+# Story-005: Document Processing Pipeline
+try:
+    from processing_integration import (
+        init_processing_service,
+        processing_router,
+        get_processing_service
+    )
+    PROCESSING_PIPELINE_AVAILABLE = True
+    print("📦 Story-005: Processing pipeline module loaded")
+except ImportError as e:
+    print(f"⚠️  Story-005 processing pipeline not available: {e}")
+    PROCESSING_PIPELINE_AVAILABLE = False
+    processing_router = None
+
 load_dotenv()
 
 app = FastAPI(title="MC Press Chatbot API")
@@ -294,6 +308,14 @@ if regenerate_router:
     except Exception as e:
         print(f"⚠️ Could not enable regenerate embeddings endpoint: {e}")
 
+# Include Story-005 processing routes
+if PROCESSING_PIPELINE_AVAILABLE and processing_router:
+    try:
+        app.include_router(processing_router)
+        print("✅ Processing pipeline endpoints enabled at /api/process/*")
+    except Exception as e:
+        print(f"⚠️ Could not enable processing pipeline endpoints: {e}")
+
 # Global cache for documents
 _documents_cache = None
 _cache_timestamp = 0
@@ -332,12 +354,12 @@ async def get_cached_documents(force_refresh: bool = False):
 async def startup_event():
     # Create automatic backup of existing data
     backup_manager.auto_backup_on_startup()
-    
+
     if hasattr(vector_store, 'init_database'):
         await vector_store.init_database()
     else:
         print("✅ ChromaDB initialized successfully")
-    
+
     # Pre-load documents cache for fast responses
     print("🚀 Pre-loading documents cache...")
     try:
@@ -348,6 +370,14 @@ async def startup_event():
         print(f"⚠️  Cache preload failed: {e} (will load on first request)")
         import traceback
         print(f"🔍 Debug traceback: {traceback.format_exc()}")
+
+    # Story-005: Initialize processing service
+    if PROCESSING_PIPELINE_AVAILABLE:
+        try:
+            processing_service = init_processing_service(vector_store, pdf_processor)
+            print("✅ Document Processing Service ready (Story-005)")
+        except Exception as e:
+            print(f"⚠️  Could not initialize processing service: {e}")
 chat_handler = ChatHandler(vector_store)
 category_mapper = get_category_mapper()
 
