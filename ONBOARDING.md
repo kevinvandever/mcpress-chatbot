@@ -94,9 +94,12 @@ books           # Metadata (Story-004)
 
 ### 4. OpenAI Configuration
 ```python
-model: "gpt-3.5-turbo"
-temperature: 0.3  # Low for factual responses
-max_tokens: 2000
+# Current Railway environment variables:
+OPENAI_MODEL=gpt-4o-mini
+OPENAI_TEMPERATURE=0.5
+OPENAI_MAX_TOKENS=3000
+
+# These can be changed via Railway dashboard without code changes
 ```
 
 ### 5. Brand Colors (Frontend)
