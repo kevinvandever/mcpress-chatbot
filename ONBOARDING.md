@@ -39,7 +39,7 @@ When starting a new session, read these files in order:
 |------|---------|--------------|
 | `TECHNOLOGY_STACK.md` | Full tech stack, architecture, constraints | **READ FIRST** - Prevents breaking production |
 | `backend/config.py` | Search thresholds, OpenAI settings | Contains tuned values (don't change blindly) |
-| `backend/requirements.txt` | Python dependencies | Update when adding new packages |
+| `requirements.txt` | Python dependencies (root) | Update when adding new packages |
 
 ### Agent Configuration
 | File | Purpose |
@@ -275,7 +275,7 @@ curl https://mcpress-chatbot-production.up.railway.app/api/process/health
 ### Issue: Tests failing
 **Check**:
 1. Virtual environment activated?
-2. Dependencies installed? (`pip install -r backend/requirements.txt`)
+2. Dependencies installed? (`pip install -r requirements.txt`)
 3. DATABASE_URL set? (for integration tests)
 
 ---
