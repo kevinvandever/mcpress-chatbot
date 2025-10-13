@@ -127,11 +127,18 @@ except ImportError:
 
 # Story-005: Document Processing Pipeline
 try:
-    from processing_integration import (
-        init_processing_service,
-        processing_router,
-        get_processing_service
-    )
+    try:
+        from processing_integration import (
+            init_processing_service,
+            processing_router,
+            get_processing_service
+        )
+    except ImportError:
+        from backend.processing_integration import (
+            init_processing_service,
+            processing_router,
+            get_processing_service
+        )
     PROCESSING_PIPELINE_AVAILABLE = True
     print("📦 Story-005: Processing pipeline module loaded")
 except ImportError as e:
