@@ -105,24 +105,25 @@ class StorageOptimizer:
     async def calculate_storage_metrics(self) -> StorageMetrics:
         """Calculate current storage usage"""
         async with self.pool.acquire() as conn:
+            # Get document and embedding counts
             stats = await conn.fetchrow("""
                 SELECT
                     COUNT(DISTINCT filename) as total_documents,
                     COUNT(*) as total_embeddings,
-                    SUM(LENGTH(content)) as storage_bytes,
-                    AVG(chunks_per_doc) as avg_chunks
-                FROM (
-                    SELECT filename, COUNT(*) as chunks_per_doc
-                    FROM documents
-                    GROUP BY filename
-                ) subq
+                    COALESCE(SUM(LENGTH(content)), 0) as storage_bytes
+                FROM documents
             """)
+
+            # Calculate average chunks per document
+            avg_chunks = 0.0
+            if stats['total_documents'] and stats['total_documents'] > 0:
+                avg_chunks = float(stats['total_embeddings']) / float(stats['total_documents'])
 
             return StorageMetrics(
                 total_documents=stats['total_documents'] or 0,
                 total_embeddings=stats['total_embeddings'] or 0,
                 storage_bytes=stats['storage_bytes'] or 0,
-                avg_chunks_per_doc=float(stats['avg_chunks'] or 0)
+                avg_chunks_per_doc=avg_chunks
             )
 
 
