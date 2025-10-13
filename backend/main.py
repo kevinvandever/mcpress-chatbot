@@ -146,6 +146,29 @@ except ImportError as e:
     PROCESSING_PIPELINE_AVAILABLE = False
     processing_router = None
 
+# Story-006: Code File Upload System
+try:
+    try:
+        from code_upload_integration import (
+            init_code_upload_system,
+            shutdown_code_upload_system,
+            router as code_upload_router,
+            get_code_upload_health
+        )
+    except ImportError:
+        from backend.code_upload_integration import (
+            init_code_upload_system,
+            shutdown_code_upload_system,
+            router as code_upload_router,
+            get_code_upload_health
+        )
+    CODE_UPLOAD_AVAILABLE = True
+    print("📦 Story-006: Code upload system module loaded")
+except ImportError as e:
+    print(f"⚠️  Story-006 code upload system not available: {e}")
+    CODE_UPLOAD_AVAILABLE = False
+    code_upload_router = None
+
 load_dotenv()
 
 app = FastAPI(title="MC Press Chatbot API")
