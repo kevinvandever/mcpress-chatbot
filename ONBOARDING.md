@@ -246,7 +246,7 @@ git push origin main  # Netlify auto-deploys in 2-3 min
 
 **Backend** (automatic):
 ```bash
-git push origin main  # Railway auto-deploys in 3-5 min
+git push origin main  # Railway auto-deploys in ~10 min
 ```
 
 ### Check Deployment Health
