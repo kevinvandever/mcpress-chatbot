@@ -117,7 +117,7 @@ OPENAI_MAX_TOKENS=3000
 - ✅ **Story-002**: Admin authentication system
 - ✅ **Story-003**: PDF upload interface
 - ✅ **Story-004**: Metadata management system
-- ✅ **Story-005**: Document processing pipeline (feature branch)
+- ✅ **Story-005**: Document processing pipeline (deployed to production)
 
 ### Next Stories (Recommended Order)
 - 📋 **Story-006**: File upload for code analysis
@@ -155,7 +155,7 @@ feature/story-005-doc-processing-pipeline # Story-005 (ready for merge)
 │   • /upload - PDF processing           │
 │   • /documents - List/manage docs      │
 │   • /admin/* - Admin operations        │
-│   • /api/process/* - Story-005 (new)   │
+│   • /api/process/* - Processing jobs   │
 └──────────────┬──────────────────────────┘
                │ asyncpg
                ▼
@@ -255,8 +255,11 @@ git push origin main  # Railway auto-deploys in ~10 min
 # Backend health
 curl https://mcpress-chatbot-production.up.railway.app/health
 
-# Story-005 processing health (if deployed)
+# Story-005 processing health
 curl https://mcpress-chatbot-production.up.railway.app/api/process/health
+
+# Story-005 storage metrics (115 docs, 235k chunks, 181MB)
+curl https://mcpress-chatbot-production.up.railway.app/api/process/metrics
 ```
 
 ---
