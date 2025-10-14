@@ -111,12 +111,7 @@ export default function CodeFilePreview({ file, isOpen, onClose }: CodeFilePrevi
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={
-        <div className="flex items-center gap-3">
-          <span className="truncate">{file.filename}</span>
-          <FileTypeIndicator fileName={file.filename} />
-        </div>
-      }
+      title={file.filename}
       size="xl"
       footer={
         <div className="flex justify-between items-center w-full">

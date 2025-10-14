@@ -7,14 +7,14 @@ interface FileTypeIndicatorProps {
   className?: string
 }
 
-const FILE_TYPE_CONFIG: Record<string, { label: string; color: 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'info'; icon: string }> = {
+const FILE_TYPE_CONFIG: Record<string, { label: string; color: 'neutral' | 'primary' | 'success' | 'warning' | 'danger' | 'info'; icon: string }> = {
   '.rpg': { label: 'RPG', color: 'primary', icon: '📝' },
   '.rpgle': { label: 'RPGLE', color: 'primary', icon: '📝' },
   '.sqlrpgle': { label: 'SQLRPGLE', color: 'info', icon: '🗄️' },
   '.cl': { label: 'CL', color: 'success', icon: '⚙️' },
   '.clle': { label: 'CLLE', color: 'success', icon: '⚙️' },
   '.sql': { label: 'SQL', color: 'info', icon: '🗄️' },
-  '.txt': { label: 'TXT', color: 'default', icon: '📄' },
+  '.txt': { label: 'TXT', color: 'neutral', icon: '📄' },
 }
 
 /**
