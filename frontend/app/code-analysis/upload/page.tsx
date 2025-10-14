@@ -123,7 +123,7 @@ export default function CodeAnalysisUploadPage() {
         )}
 
         {error && (
-          <Alert variant="danger">
+          <Alert variant="error">
             <div>
               <p className="font-semibold">Session Error</p>
               <p className="text-sm mt-1">{error}</p>

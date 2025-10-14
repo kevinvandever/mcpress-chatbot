@@ -95,7 +95,7 @@ export default function CodeFileList({
   return (
     <div className={`space-y-4 ${className}`}>
       {error && (
-        <Alert variant="danger" onDismiss={() => setError(null)}>
+        <Alert variant="error" onClose={() => setError(null)}>
           {error}
         </Alert>
       )}

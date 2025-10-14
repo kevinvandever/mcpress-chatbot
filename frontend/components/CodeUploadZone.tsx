@@ -335,7 +335,7 @@ export default function CodeUploadZone({
 
       {/* Error Alert */}
       {uploadState.status === 'error' && (
-        <Alert variant="danger">
+        <Alert variant="error">
           <div className="whitespace-pre-line">{uploadState.message}</div>
         </Alert>
       )}

@@ -152,7 +152,7 @@ export default function CodeFilePreview({ file, isOpen, onClose }: CodeFilePrevi
         )}
 
         {error && (
-          <Alert variant="danger">
+          <Alert variant="error">
             <div>
               <p className="font-semibold">Failed to load file</p>
               <p className="text-sm mt-1">{error}</p>
