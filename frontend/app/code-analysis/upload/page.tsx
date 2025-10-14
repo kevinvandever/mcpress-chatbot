@@ -103,7 +103,7 @@ export default function CodeAnalysisUploadPage() {
                 Upload your IBM i code files for AI-powered analysis and optimization
               </p>
             </div>
-            <Button variant="outline" onClick={() => router.push('/')}>
+            <Button variant="secondary" onClick={() => router.push('/')}>
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
@@ -127,7 +127,7 @@ export default function CodeAnalysisUploadPage() {
             <div>
               <p className="font-semibold">Session Error</p>
               <p className="text-sm mt-1">{error}</p>
-              <Button variant="outline" size="sm" onClick={createSession} className="mt-3">
+              <Button variant="secondary" size="sm" onClick={createSession} className="mt-3">
                 Retry
               </Button>
             </div>

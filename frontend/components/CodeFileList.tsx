@@ -106,7 +106,7 @@ export default function CodeFileList({
         </h3>
         {onRefresh && (
           <Button
-            variant="ghost"
+            variant="tertiary"
             size="sm"
             onClick={onRefresh}
             className="text-xs"
@@ -156,7 +156,7 @@ export default function CodeFileList({
                   {/* Actions */}
                   <div className="flex gap-2 mt-3">
                     <Button
-                      variant="outline"
+                      variant="secondary"
                       size="sm"
                       onClick={() => onFilePreview(file)}
                       disabled={isDeleting}
@@ -169,7 +169,7 @@ export default function CodeFileList({
                     </Button>
 
                     <Button
-                      variant="outline"
+                      variant="secondary"
                       size="sm"
                       onClick={() => handleDelete(file.id)}
                       disabled={isDeleting}
