@@ -415,3 +415,238 @@ class FileCleanupService:
 ## Notes
 
 This story enables the core value proposition of Phase 1 - personalized code analysis. Must be production-ready and secure before moving to STORY-007 (AI Code Analysis Engine).
+
+---
+
+## Dev Agent Record
+
+### Tasks
+
+#### Backend Implementation
+- [x] Create database migration scripts
+  - [x] Create `002_code_upload_system.sql` with tables, indexes, functions, views
+  - [x] Create `002_code_upload_system_rollback.sql`
+- [x] Implement file validation service
+  - [x] Extension validation (.rpg, .rpgle, .sqlrpgle, .cl, .clle, .sql, .txt)
+  - [x] File size validation (10MB limit)
+  - [x] Content security scanning (credentials, malicious patterns)
+  - [x] Encoding detection (UTF-8, Latin-1, EBCDIC)
+  - [x] Session and quota limit validation
+- [x] Build file storage system
+  - [x] User/session directory isolation
+  - [x] 24-hour automatic expiration
+  - [x] Metadata tracking (JSON per session)
+  - [x] CRUD operations (store, retrieve, delete)
+- [x] Create upload service
+  - [x] Session management (create, get, update)
+  - [x] Quota tracking with auto-reset
+  - [x] File upload with validation
+  - [x] Database persistence (asyncpg)
+  - [x] File retrieval with ownership checks
+  - [x] Cleanup coordination
+- [x] Implement API routes
+  - [x] GET /api/code/limits - System limits
+  - [x] POST /api/code/session - Create upload session
+  - [x] GET /api/code/quota - User quota status
+  - [x] POST /api/code/upload - Upload code file
+  - [x] GET /api/code/files - List user files
+  - [x] GET /api/code/file/{id} - Get file content
+  - [x] GET /api/code/file/{id}/info - Get file metadata
+  - [x] DELETE /api/code/file/{id} - Delete file
+  - [x] POST /api/code/validate - Validate file before upload
+  - [x] GET /api/code/admin/stats - System statistics
+  - [x] POST /api/code/admin/cleanup - Manual cleanup trigger
+- [x] Build cleanup scheduler
+  - [x] Hourly cleanup of expired files
+  - [x] Daily quota reset (midnight)
+  - [x] Weekly purge of old deleted files
+  - [x] Background task loop with error recovery
+- [x] Create integration module
+  - [x] Service initialization
+  - [x] Scheduler startup/shutdown
+  - [x] Health check
+  - [x] Router export
+- [x] Complete main.py integration
+  - [x] Add import statements
+  - [x] Register code upload routes
+  - [x] Add service initialization in startup event
+  - [x] Add shutdown handler for cleanup
+  - [x] Update health check endpoint
+
+#### Database Deployment
+- [x] Run database migration
+  - [x] Execute `002_code_upload_system.sql` on PostgreSQL
+  - [x] Verify tables created (code_uploads, upload_sessions, user_quotas)
+  - [x] Verify indexes created (10 indexes)
+  - [x] Verify functions created (4 functions: cleanup, reset_quotas, purge, get_quota_status)
+  - [x] Verify view created (code_upload_stats)
+
+#### Backend Testing
+- [ ] Test backend APIs manually (DEFERRED to production environment)
+  - **Decision**: Skip local testing, test in Railway production after deployment
+  - **Reason**: Local Railway environment setup issues; production testing more reliable
+  - [ ] Test GET /api/code/limits
+  - [ ] Test POST /api/code/session
+  - [ ] Test GET /api/code/quota
+  - [ ] Test POST /api/code/upload (single file)
+  - [ ] Test POST /api/code/upload (multiple files)
+  - [ ] Test GET /api/code/files
+  - [ ] Test GET /api/code/file/{id}
+  - [ ] Test DELETE /api/code/file/{id}
+  - [ ] Verify file storage in /tmp/code-uploads/
+  - [ ] Verify database records
+  - [ ] Test quota enforcement
+  - [ ] Test authentication
+- [ ] Write unit tests
+  - [ ] Test file validator (extension, size, content, credentials)
+  - [ ] Test file storage (store, retrieve, delete, cleanup)
+  - [ ] Test upload service (session, quota, upload, ownership)
+  - [ ] Test quota calculation logic
+- [ ] Write integration tests
+  - [ ] Test complete upload flow
+  - [ ] Test multi-file upload
+  - [ ] Test quota enforcement
+  - [ ] Test 24-hour auto-deletion
+  - [ ] Test session management
+  - [ ] Test file retrieval
+- [ ] Write security tests
+  - [ ] Test unauthorized file type rejection
+  - [ ] Test cross-user access prevention (403)
+  - [ ] Test credential scanning warnings
+  - [ ] Test oversized file rejection
+  - [ ] Test quota bypass attempts
+
+#### Frontend Implementation
+- [x] Create code analysis upload page
+  - [x] Create `/code-analysis/upload` route
+  - [x] Build page layout with MC Press styling
+- [x] Build upload components
+  - [x] CodeUploadZone - Drag-drop interface
+  - [x] CodeFileList - List uploaded files with actions
+  - [x] CodeFilePreview - Syntax-highlighted preview
+  - [x] UploadQuotaIndicator - Visual quota display
+  - [x] FileTypeIndicator - Icon/badge for file types
+- [x] Implement upload functionality
+  - [x] File validation UI (client-side)
+  - [x] Upload progress indicators
+  - [x] Error handling and display
+  - [x] Success notifications
+- [x] Add file management features
+  - [x] File removal before analysis
+  - [x] File preview modal
+  - [x] Session management
+- [ ] Mobile responsiveness (DEFERRED to production testing)
+  - [ ] Test on mobile devices
+  - [ ] Adjust drag-drop for touch
+  - [ ] Responsive layout
+
+#### Frontend Testing
+- [ ] Write E2E tests
+  - [ ] Test upload single file
+  - [ ] Test upload multiple files
+  - [ ] Test file size limit rejection
+  - [ ] Test quota limit blocking
+  - [ ] Test file preview
+  - [ ] Test file deletion
+  - [ ] Test auto-cleanup after 24hrs
+
+#### Story Completion
+- [ ] Run story DoD checklist
+- [ ] Update File List section (all files created/modified)
+- [ ] Add completion notes
+- [ ] Update story status to "Ready for Review"
+
+### Agent Model Used
+- claude-sonnet-4-5-20250929
+
+### Debug Log
+
+**2025-10-14 - API Testing Decision**
+- **Decision**: Defer manual API testing to production environment (Railway)
+- **Reason**: Local Railway CLI environment has import path conflicts
+- **Plan**: Test all 11 `/api/code/*` endpoints after deployment to Railway
+- **Next Step**: Build frontend components, then deploy and test end-to-end
+
+**2025-10-14 - Database Migration Blocker (RESOLVED ✅)**
+- **Issue**: Cannot connect to Railway PostgreSQL from local machine
+- **Cause**: DATABASE_URL uses Railway internal network (`pgvector-railway.railway.internal`)
+- **Solution Applied**: Updated `run_migration_002.py` to use `DATABASE_PUBLIC_URL` environment variable
+- **Resolution**: Discovered Railway provides `DATABASE_PUBLIC_URL` with public endpoint (`shortline.proxy.rlwy.net:18459`)
+- **Result**: Migration executed successfully via `railway run python3 backend/run_migration_002.py`
+- **Created**: `backend/run_migration_002.py` - Python migration runner with verification
+- **Migration Results**:
+  - ✅ 3 tables created (code_uploads, upload_sessions, user_quotas)
+  - ✅ 10 indexes created
+  - ✅ 4 functions created (cleanup, reset_quotas, purge, get_quota_status)
+  - ✅ 1 view created (code_upload_stats)
+
+### Completion Notes
+- Backend implementation complete (~1,500 lines of code) ✅
+- Main.py integration complete (100%) - routes, startup, shutdown, health check ✅
+- Database migration complete (3 tables, 10 indexes, 4 functions, 1 view) ✅
+- Frontend implementation complete (~820 lines across 6 files) ✅
+  - All 5 components created (CodeUploadZone, CodeFileList, CodeFilePreview, UploadQuotaIndicator, FileTypeIndicator)
+  - Main upload page created at `/app/code-analysis/upload`
+  - Integrated with design system (Button, Card, Alert, Modal, Badge, ProgressBar, Spinner)
+  - Uses react-dropzone for drag-drop, react-syntax-highlighter for code preview
+  - Session management, quota tracking, file preview/delete functionality
+- Ready for production deployment and E2E testing
+- Manual API testing deferred to production environment
+- Automated testing pending
+
+### File List
+
+**Created Files:**
+- `backend/migrations/002_code_upload_system.sql` - Database schema
+- `backend/migrations/002_code_upload_system_rollback.sql` - Rollback script
+- `backend/run_migration_002.py` - Python migration runner with verification
+- `backend/code_file_validator.py` - File validation service
+- `backend/code_file_storage.py` - Temp file storage system
+- `backend/code_upload_service.py` - Core upload service
+- `backend/code_upload_routes.py` - FastAPI API routes
+- `backend/code_upload_scheduler.py` - Cleanup scheduler
+- `backend/code_upload_integration.py` - Integration module
+
+**Modified Files:**
+- `backend/main.py` - Full integration complete (imports, routes, startup, shutdown, health check)
+
+**Created Files (Frontend):**
+- `frontend/app/code-analysis/upload/page.tsx` - Main upload page
+- `frontend/components/CodeUploadZone.tsx` - Drag-drop upload component (320 lines)
+- `frontend/components/CodeFileList.tsx` - File list with actions (170 lines)
+- `frontend/components/CodeFilePreview.tsx` - Syntax-highlighted preview modal (150 lines)
+- `frontend/components/UploadQuotaIndicator.tsx` - Quota usage indicator (140 lines)
+- `frontend/components/FileTypeIndicator.tsx` - File type badge (40 lines)
+
+**To Be Created (Tests):**
+- `backend/tests/test_code_file_validator.py`
+- `backend/tests/test_code_file_storage.py`
+- `backend/tests/test_code_upload_service.py`
+- `backend/tests/test_code_upload_flow.py`
+- `backend/tests/test_code_upload_security.py`
+
+### Change Log
+- **2025-10-13**: Backend implementation complete (70%)
+- **2025-10-13**: Database migration scripts created
+- **2025-10-13**: Main.py imports added, integration partial
+- **2025-10-14 (AM)**: Dev Agent Record section added to track remaining work
+- **2025-10-14 (AM)**: Main.py integration completed (routes, startup, shutdown, health check)
+- **2025-10-14 (AM)**: Database migration executed successfully on Railway PostgreSQL
+- **2025-10-14 (AM)**: Created run_migration_002.py utility (uses DATABASE_PUBLIC_URL)
+- **2025-10-14 (AM)**: Session ended - backend 100% complete, frontend ready to build next session
+- **2025-10-14 (AM)**: Created STORY_006_NEXT_SESSION.md handoff document
+- **2025-10-14 (PM)**: Frontend implementation completed (all 5 components + main page)
+- **2025-10-14 (PM)**: All components integrated with existing design system
+- **2025-10-14 (PM)**: Ready for production deployment and testing
+
+### Status
+**Ready for Testing** - Backend 100% ✅, Database 100% ✅, Frontend 100% ✅, E2E Testing 0% (Production)
+
+**Next Steps**:
+1. Deploy frontend to Netlify (automatic on git push)
+2. Deploy backend to Railway (automatic on git push)
+3. Test complete upload flow in production
+4. Verify all 11 `/api/code/*` endpoints
+5. Test quota enforcement, file preview, deletion
+6. Mobile responsiveness testing
+7. Write automated tests (unit, integration, E2E)

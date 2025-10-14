@@ -346,6 +346,14 @@ if PROCESSING_PIPELINE_AVAILABLE and processing_router:
     except Exception as e:
         print(f"⚠️ Could not enable processing pipeline endpoints: {e}")
 
+# Include Story-006 code upload routes
+if CODE_UPLOAD_AVAILABLE and code_upload_router:
+    try:
+        app.include_router(code_upload_router)
+        print("✅ Code upload endpoints enabled at /api/code/*")
+    except Exception as e:
+        print(f"⚠️ Could not enable code upload endpoints: {e}")
+
 # Global cache for documents
 _documents_cache = None
 _cache_timestamp = 0
@@ -408,6 +416,34 @@ async def startup_event():
             print("✅ Document Processing Service ready (Story-005)")
         except Exception as e:
             print(f"⚠️  Could not initialize processing service: {e}")
+
+    # Story-006: Initialize code upload system
+    if CODE_UPLOAD_AVAILABLE:
+        try:
+            database_url = os.getenv("DATABASE_URL")
+            storage_dir = os.getenv("CODE_UPLOAD_STORAGE_DIR", "/tmp/code-uploads")
+            upload_service = await init_code_upload_system(
+                database_url=database_url,
+                storage_dir=storage_dir
+            )
+            print(f"✅ Code Upload System ready (Story-006) - Storage: {storage_dir}")
+        except Exception as e:
+            print(f"⚠️  Could not initialize code upload system: {e}")
+
+# Shutdown event handler
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Graceful shutdown for background services"""
+    print("🛑 Shutting down services...")
+
+    # Story-006: Shutdown code upload system
+    if CODE_UPLOAD_AVAILABLE:
+        try:
+            await shutdown_code_upload_system()
+            print("✅ Code upload system shutdown complete")
+        except Exception as e:
+            print(f"⚠️  Error during code upload system shutdown: {e}")
+
 chat_handler = ChatHandler(vector_store)
 category_mapper = get_category_mapper()
 
@@ -1118,12 +1154,22 @@ async def bulk_upload_status():
 
 @app.get("/health")
 def health_check():
-    return {
+    health_data = {
         "status": "healthy",
         "vector_store": True,
         "openai": bool(os.getenv("OPENAI_API_KEY")),
         "restart_trigger": "2025-08-13-restart"  # Force restart
     }
+
+    # Story-006: Add code upload system health
+    if CODE_UPLOAD_AVAILABLE:
+        try:
+            code_health = get_code_upload_health()
+            health_data.update(code_health)
+        except Exception as e:
+            health_data["code_upload_error"] = str(e)
+
+    return health_data
 
 # Simple diagnostic endpoints
 @app.get("/diag/db-test")
