@@ -651,6 +651,13 @@ This story enables the core value proposition of Phase 1 - personalized code ana
   - **Fix**: Created config/axios.ts with request interceptor to auto-add token from localStorage (commit 0fad973)
   - **Changes**: Updated 5 files (upload page + 4 components) to use authenticated apiClient
   - **Resolution**: ✅ Auth token now automatically included in all Story-006 API requests
+- **2025-10-14 (PM)**: **BUG-006-003 FOUND**: Dashboard and documents pages not showing 115 documents (regression)
+  - **Root Cause**: Dashboard and documents management pages still using raw fetch() with manual auth headers instead of apiClient
+  - **Impact**: After fixing Story-006 auth (BUG-006-002), dashboard showed 0 documents instead of 115, documents page showed empty
+  - **Investigation**: Backend /documents endpoint returned all 115 documents correctly - confirmed frontend parsing issue
+  - **Fix**: Updated both pages to use authenticated apiClient with try/catch error handling (commit 5b83197)
+  - **Changes**: Modified `app/admin/dashboard/page.tsx` and `app/admin/documents/page.tsx` to use apiClient
+  - **Resolution**: ✅ Auth tokens now automatically included, 115 documents should display correctly
 
 ### Status
 **Ready for QA Testing** - Backend 100% ✅, Database 100% ✅, Frontend 100% ✅, Auth Fixed ✅
