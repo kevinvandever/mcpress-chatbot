@@ -1,0 +1,25 @@
+[build]
+  base = "frontend"
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NEXT_PUBLIC_API_URL = "https://mcpress-chatbot-production.up.railway.app"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[[redirects]]
+  from = "/api/chat*"
+  to = "https://mcpress-chatbot-production.up.railway.app/chat:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/documents*"
+  to = "https://mcpress-chatbot-production.up.railway.app/documents:splat"
+  status = 200
+  force = true
+
+# Auth routes stay in Next.js (not redirected to Railway)
+# /api/auth/* routes will be handled by Next.js API routes
