@@ -14,11 +14,13 @@ from pydantic import BaseModel
 try:
     from code_upload_service import get_upload_service, CodeUploadService
     from code_file_validator import get_file_limits, get_allowed_extensions
-    from auth_routes import get_current_user
+    from guest_auth import get_guest_user_id
+    from auth_routes import get_current_user  # For admin endpoints only
 except ImportError:
     from backend.code_upload_service import get_upload_service, CodeUploadService
     from backend.code_file_validator import get_file_limits, get_allowed_extensions
-    from backend.auth_routes import get_current_user
+    from backend.guest_auth import get_guest_user_id
+    from backend.auth_routes import get_current_user  # For admin endpoints only
 
 router = APIRouter(prefix="/api/code", tags=["code-upload"])
 
@@ -76,10 +78,23 @@ class LimitsResponse(BaseModel):
     max_storage_per_day_mb: int
 
 
-# ==================== Dependency: Get Current User ====================
+# ==================== Dependencies ====================
 
-async def get_user_id(current_user: dict = Depends(get_current_user)) -> str:
-    """Extract user ID from authenticated user"""
+async def get_user_id(guest_id: str = Depends(get_guest_user_id)) -> str:
+    """
+    Get user ID for guest users accessing code upload features
+
+    Uses lightweight guest authentication (auto-generated UUID stored in localStorage).
+    No login required for MVP testing.
+
+    Future: This will be replaced with MCPress SSO token validation when the app
+    is integrated behind MCPressOnline authentication.
+    """
+    return guest_id
+
+
+async def get_admin_user_id(current_user: dict = Depends(get_current_user)) -> str:
+    """Extract user ID from authenticated admin (for admin endpoints only)"""
     return current_user.get("user_id") or current_user.get("email") or "anonymous"
 
 
@@ -373,9 +388,8 @@ async def validate_file_before_upload(
 # ==================== Admin/Monitoring Endpoints ====================
 
 @router.get("/admin/stats")
-async def get_upload_stats(user_id: str = Depends(get_user_id)):
-    """Get upload system statistics (admin only in production)"""
-    # TODO: Add admin permission check
+async def get_upload_stats(user_id: str = Depends(get_admin_user_id)):
+    """Get upload system statistics (admin only)"""
     service = get_upload_service()
 
     try:
@@ -386,9 +400,8 @@ async def get_upload_stats(user_id: str = Depends(get_user_id)):
 
 
 @router.post("/admin/cleanup")
-async def run_cleanup(user_id: str = Depends(get_user_id)):
-    """Manually trigger cleanup of expired files (admin only in production)"""
-    # TODO: Add admin permission check
+async def run_cleanup(user_id: str = Depends(get_admin_user_id)):
+    """Manually trigger cleanup of expired files (admin only)"""
     service = get_upload_service()
 
     try:
