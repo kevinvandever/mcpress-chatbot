@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import AdminLayout from '@/components/AdminLayout';
+import apiClient from '../../../config/axios';
+import { API_URL } from '../../../config/api';
 
 interface Document {
   id: number;
@@ -53,8 +55,6 @@ export default function DocumentsManagement() {
     'Business Intelligence', 'Development Tools', 'Other'
   ];
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
   useEffect(() => {
     fetchDocuments();
   }, [pagination.page, searchTerm, categoryFilter, sortField, sortDirection]);
@@ -62,7 +62,6 @@ export default function DocumentsManagement() {
   const fetchDocuments = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('adminToken');
 
       const params = new URLSearchParams({
         page: pagination.page.toString(),
@@ -73,26 +72,20 @@ export default function DocumentsManagement() {
         sort_direction: sortDirection,
       });
 
-      const response = await fetch(`${apiUrl}/admin/documents?${params}`, {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-      });
-
-      if (response.ok) {
-        const data = await response.json();
+      try {
+        const response = await apiClient.get(`${API_URL}/admin/documents?${params}`);
+        const data = response.data;
         setDocuments(data.documents || []);
         setPagination(prev => ({
           ...prev,
           total: data.total || 0,
           totalPages: data.total_pages || 0,
         }));
-      } else if (response.status === 404) {
+      } catch (adminErr: any) {
         // Fallback to regular documents endpoint if admin endpoint doesn't exist yet
-        const fallbackResponse = await fetch(`${apiUrl}/documents`, {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-        });
-
-        if (fallbackResponse.ok) {
-          const data = await fallbackResponse.json();
+        if (adminErr.response?.status === 404) {
+          const fallbackResponse = await apiClient.get(`${API_URL}/documents`);
+          const data = fallbackResponse.data;
           const docs = data.documents || [];
 
           // Apply client-side filtering and sorting
@@ -127,9 +120,9 @@ export default function DocumentsManagement() {
             total: filteredDocs.length,
             totalPages: Math.ceil(filteredDocs.length / prev.perPage),
           }));
+        } else {
+          throw adminErr;
         }
-      } else {
-        setError('Failed to fetch documents');
       }
     } catch (err) {
       setError('Error connecting to server');
@@ -188,42 +181,23 @@ export default function DocumentsManagement() {
     if (!editingId) return;
 
     try {
-      const token = localStorage.getItem('adminToken');
-      const response = await fetch(`${apiUrl}/admin/documents/${editingId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(editingData),
-      });
-
-      if (response.ok) {
+      try {
+        await apiClient.patch(`${API_URL}/admin/documents/${editingId}`, editingData);
         await fetchDocuments();
         cancelEditing();
-      } else if (response.status === 404) {
+      } catch (adminErr: any) {
         // Fallback to regular endpoint
-        const fallbackResponse = await fetch(`${apiUrl}/documents/${documents.find(d => d.id === editingId)?.filename}/metadata`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({
+        if (adminErr.response?.status === 404) {
+          await apiClient.put(`${API_URL}/documents/${documents.find(d => d.id === editingId)?.filename}/metadata`, {
             title: editingData.title,
             author: editingData.author,
             category: editingData.category,
-          }),
-        });
-
-        if (fallbackResponse.ok) {
+          });
           await fetchDocuments();
           cancelEditing();
         } else {
-          setError('Failed to update document');
+          throw adminErr;
         }
-      } else {
-        setError('Failed to update document');
       }
     } catch (err) {
       setError('Error updating document');
@@ -233,51 +207,35 @@ export default function DocumentsManagement() {
 
   const handleDelete = async () => {
     try {
-      const token = localStorage.getItem('adminToken');
-
       if (deleteTarget === 'bulk') {
         // Bulk delete
-        const response = await fetch(`${apiUrl}/admin/documents/bulk`, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({ ids: Array.from(selectedIds) }),
-        });
-
-        if (response.ok || response.status === 404) {
+        try {
+          await apiClient.delete(`${API_URL}/admin/documents/bulk`, {
+            data: { ids: Array.from(selectedIds) },
+          });
+          setSelectedIds(new Set());
+          await fetchDocuments();
+        } catch (bulkErr: any) {
           // If bulk endpoint doesn't exist, delete one by one
-          if (response.status === 404) {
+          if (bulkErr.response?.status === 404) {
             for (const id of selectedIds) {
               const doc = documents.find(d => d.id === id);
               if (doc) {
-                await fetch(`${apiUrl}/documents/${doc.filename}`, {
-                  method: 'DELETE',
-                  headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-                });
+                await apiClient.delete(`${API_URL}/documents/${doc.filename}`);
               }
             }
+            setSelectedIds(new Set());
+            await fetchDocuments();
+          } else {
+            throw bulkErr;
           }
-          setSelectedIds(new Set());
-          await fetchDocuments();
-        } else {
-          setError('Failed to delete documents');
         }
       } else if (typeof deleteTarget === 'number') {
         // Single delete
         const doc = documents.find(d => d.id === deleteTarget);
         if (doc) {
-          const response = await fetch(`${apiUrl}/documents/${doc.filename}`, {
-            method: 'DELETE',
-            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-          });
-
-          if (response.ok) {
-            await fetchDocuments();
-          } else {
-            setError('Failed to delete document');
-          }
+          await apiClient.delete(`${API_URL}/documents/${doc.filename}`);
+          await fetchDocuments();
         }
       }
     } catch (err) {
@@ -293,24 +251,19 @@ export default function DocumentsManagement() {
     if (!bulkAction || selectedIds.size === 0) return;
 
     try {
-      const token = localStorage.getItem('adminToken');
-
-      const response = await fetch(`${apiUrl}/admin/documents/bulk`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
+      try {
+        await apiClient.patch(`${API_URL}/admin/documents/bulk`, {
           ids: Array.from(selectedIds),
           action: bulkAction,
           value: bulkValue,
-        }),
-      });
-
-      if (response.ok || response.status === 404) {
+        });
+        setSelectedIds(new Set());
+        setBulkAction('');
+        setBulkValue('');
+        await fetchDocuments();
+      } catch (bulkErr: any) {
         // If bulk endpoint doesn't exist, update one by one
-        if (response.status === 404) {
+        if (bulkErr.response?.status === 404) {
           for (const id of selectedIds) {
             const doc = documents.find(d => d.id === id);
             if (doc) {
@@ -318,24 +271,16 @@ export default function DocumentsManagement() {
               if (bulkAction === 'category') updateData.category = bulkValue;
               if (bulkAction === 'author') updateData.author = bulkValue;
 
-              await fetch(`${apiUrl}/documents/${doc.filename}/metadata`, {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json',
-                  ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-                },
-                body: JSON.stringify(updateData),
-              });
+              await apiClient.put(`${API_URL}/documents/${doc.filename}/metadata`, updateData);
             }
           }
+          setSelectedIds(new Set());
+          setBulkAction('');
+          setBulkValue('');
+          await fetchDocuments();
+        } else {
+          throw bulkErr;
         }
-
-        setSelectedIds(new Set());
-        setBulkAction('');
-        setBulkValue('');
-        await fetchDocuments();
-      } else {
-        setError('Failed to perform bulk action');
       }
     } catch (err) {
       setError('Error performing bulk action');
@@ -345,27 +290,21 @@ export default function DocumentsManagement() {
 
   const exportToCSV = async () => {
     try {
-      const token = localStorage.getItem('adminToken');
-
-      const response = await fetch(`${apiUrl}/admin/documents/export`, {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-      });
-
-      if (response.ok) {
-        const blob = await response.blob();
+      try {
+        const response = await apiClient.get(`${API_URL}/admin/documents/export`, {
+          responseType: 'blob',
+        });
+        const blob = response.data;
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = `documents_${new Date().toISOString().split('T')[0]}.csv`;
         a.click();
-      } else if (response.status === 404) {
+      } catch (exportErr: any) {
         // Fallback: generate CSV client-side
-        const allDocsResponse = await fetch(`${apiUrl}/documents`, {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-        });
-
-        if (allDocsResponse.ok) {
-          const data = await allDocsResponse.json();
+        if (exportErr.response?.status === 404) {
+          const allDocsResponse = await apiClient.get(`${API_URL}/documents`);
+          const data = allDocsResponse.data;
           const docs = data.documents || [];
 
           const csv = [
@@ -381,9 +320,9 @@ export default function DocumentsManagement() {
           a.href = url;
           a.download = `documents_${new Date().toISOString().split('T')[0]}.csv`;
           a.click();
+        } else {
+          throw exportErr;
         }
-      } else {
-        setError('Failed to export documents');
       }
     } catch (err) {
       setError('Error exporting documents');
@@ -393,22 +332,17 @@ export default function DocumentsManagement() {
 
   const handleImportCSV = async (file: File) => {
     try {
-      const token = localStorage.getItem('adminToken');
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch(`${apiUrl}/admin/documents/import`, {
-        method: 'POST',
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-        body: formData,
+      await apiClient.post(`${API_URL}/admin/documents/import`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
-      if (response.ok) {
-        await fetchDocuments();
-        setShowImportDialog(false);
-      } else {
-        setError('Failed to import CSV');
-      }
+      await fetchDocuments();
+      setShowImportDialog(false);
     } catch (err) {
       setError('Error importing CSV');
       console.error('Import error:', err);

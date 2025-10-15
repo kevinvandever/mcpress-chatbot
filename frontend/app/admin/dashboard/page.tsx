@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import AdminLayout from '@/components/AdminLayout';
+import apiClient from '../../../config/axios';
+import { API_URL } from '../../../config/api';
 
 interface Stats {
   totalDocuments: number;
@@ -23,38 +25,29 @@ export default function AdminDashboard() {
 
   const fetchStats = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const token = localStorage.getItem('adminToken');
-
       // Try to fetch stats from admin endpoint first
-      const adminResponse = await fetch(`${apiUrl}/admin/stats`, {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-      });
-
-      if (adminResponse.ok) {
-        const data = await adminResponse.json();
+      try {
+        const adminResponse = await apiClient.get(`${API_URL}/admin/stats`);
         setStats({
-          totalDocuments: data.total_documents || 0,
-          totalChunks: data.total_chunks || 0,
-          lastUpload: data.last_upload || null,
+          totalDocuments: adminResponse.data.total_documents || 0,
+          totalChunks: adminResponse.data.total_chunks || 0,
+          lastUpload: adminResponse.data.last_upload || null,
         });
-      } else {
+        return;
+      } catch (adminError) {
         // Fallback to regular documents endpoint
-        const response = await fetch(`${apiUrl}/documents`, {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          // Estimate chunks based on documents (typical PDF has ~50-100 chunks)
-          const estimatedChunks = (data.documents?.length || 0) * 75;
-          setStats({
-            totalDocuments: data.documents?.length || 0,
-            totalChunks: estimatedChunks,
-            lastUpload: data.documents?.[0]?.processed_at || data.documents?.[0]?.created_at || null,
-          });
-        }
+        console.log('Admin stats endpoint failed, falling back to documents endpoint');
       }
+
+      // Fallback to regular documents endpoint
+      const response = await apiClient.get(`${API_URL}/documents`);
+      // Estimate chunks based on documents (typical PDF has ~50-100 chunks)
+      const estimatedChunks = (response.data.documents?.length || 0) * 75;
+      setStats({
+        totalDocuments: response.data.documents?.length || 0,
+        totalChunks: estimatedChunks,
+        lastUpload: response.data.documents?.[0]?.processed_at || response.data.documents?.[0]?.created_at || null,
+      });
     } catch (error) {
       console.error('Failed to fetch stats:', error);
     } finally {

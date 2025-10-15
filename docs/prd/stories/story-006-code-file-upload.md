@@ -638,19 +638,41 @@ This story enables the core value proposition of Phase 1 - personalized code ana
 - **2025-10-14 (PM)**: Frontend implementation completed (all 5 components + main page)
 - **2025-10-14 (PM)**: All components integrated with existing design system
 - **2025-10-14 (PM)**: Ready for production deployment and testing
+- **2025-10-14 (PM)**: **QA Testing Phase Started** by Quinn (QA Agent)
+- **2025-10-14 (PM)**: Created comprehensive QA test plan (STORY_006_QA_TEST_PLAN.md) - 47 tests across 9 categories
+- **2025-10-14 (PM)**: Updated ONBOARDING.md to document production-only testing approach
+- **2025-10-14 (PM)**: **BUG-006-001 FOUND**: Netlify deployment failing - all pages returned 404
+  - **Root Cause**: netlify.toml missing `base = "frontend"` directive
+  - **Fix**: Created netlify.toml in repository root with base directory specified (commit 009192c)
+  - **Resolution**: ✅ All pages now accessible
+- **2025-10-14 (PM)**: **BUG-006-002 FOUND**: Authentication token not being sent with API requests
+  - **Root Cause**: Frontend using raw axios without Bearer token in Authorization header
+  - **Impact**: All code upload features showed "Not authenticated" error even after login
+  - **Fix**: Created config/axios.ts with request interceptor to auto-add token from localStorage (commit 0fad973)
+  - **Changes**: Updated 5 files (upload page + 4 components) to use authenticated apiClient
+  - **Resolution**: ✅ Auth token now automatically included in all Story-006 API requests
 
 ### Status
-**In QA Testing** - Backend 100% ✅, Database 100% ✅, Frontend 100% ✅, QA Testing in progress
+**Ready for QA Testing** - Backend 100% ✅, Database 100% ✅, Frontend 100% ✅, Auth Fixed ✅
+
+**Deployment Status**:
+1. ✅ Backend deployed to Railway (all 11 endpoints live)
+2. ✅ Frontend deployed to Netlify
+3. ✅ Database migration complete (3 tables, 10 indexes, 4 functions)
+4. ✅ Authentication bug fixed (commit 0fad973)
+5. ⏳ QA testing ready to begin
 
 **Next Steps**:
 1. ✅ Deploy frontend to Netlify (automatic on git push)
 2. ✅ Deploy backend to Railway (automatic on git push)
-3. ⏳ Execute QA test plan (see STORY_006_QA_TEST_PLAN.md)
-4. ⏳ Test complete upload flow in production
-5. ⏳ Verify all 11 `/api/code/*` endpoints
-6. ⏳ Test quota enforcement, file preview, deletion
-7. ⏳ Mobile responsiveness testing
-8. 📋 Write automated tests (unit, integration, E2E) - after QA pass
+3. ✅ Fix Netlify deployment (added base = "frontend" to netlify.toml)
+4. ✅ Fix authentication token not being sent with API requests
+5. ⏳ Execute QA test plan (see STORY_006_QA_TEST_PLAN.md)
+6. ⏳ Test complete upload flow in production
+7. ⏳ Verify all 11 `/api/code/*` endpoints with authenticated user
+8. ⏳ Test quota enforcement, file preview, deletion
+9. ⏳ Mobile responsiveness testing
+10. 📋 Write automated tests (unit, integration, E2E) - after QA pass
 
 ---
 
