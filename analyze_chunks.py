@@ -34,12 +34,17 @@ def analyze_chunk_ratios(documents):
     
     for doc in documents:
         filename = doc['filename']
-        total_chunks = doc.get('total_chunks', 0)
-        total_pages = doc.get('total_pages', 1)
-        
+        try:
+            total_chunks = int(doc.get('total_chunks', 0))
+            total_pages_raw = doc.get('total_pages', 1)
+            total_pages = int(total_pages_raw) if total_pages_raw != 'N/A' else 1
+        except (ValueError, TypeError):
+            total_chunks = 0
+            total_pages = 1
+
         if total_pages == 0:
             total_pages = 1  # Avoid division by zero
-            
+
         chunks_per_page = total_chunks / total_pages
         
         # Categorize documents

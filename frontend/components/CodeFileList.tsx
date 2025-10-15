@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import axios from 'axios'
+import apiClient from '../config/axios'
 import { API_URL } from '../config/api'
 import { Card, Button, Alert } from './design-system'
 import FileTypeIndicator from './FileTypeIndicator'
@@ -67,7 +67,7 @@ export default function CodeFileList({
     setError(null)
 
     try {
-      await axios.delete(`${API_URL}/api/code/file/${fileId}`)
+      await apiClient.delete(`${API_URL}/api/code/file/${fileId}`)
       onFileDeleted(fileId)
     } catch (err: any) {
       const errorMsg = err.response?.data?.detail || 'Failed to delete file'

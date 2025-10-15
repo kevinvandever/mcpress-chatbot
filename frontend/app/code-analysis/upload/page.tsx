@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import axios from 'axios'
+import apiClient from '../../../config/axios'
 import { API_URL } from '../../../config/api'
 import CodeUploadZone, { CodeFile } from '../../../components/CodeUploadZone'
 import CodeFileList from '../../../components/CodeFileList'
@@ -49,7 +49,7 @@ export default function CodeAnalysisUploadPage() {
     try {
       setLoading(true)
       setError(null)
-      const response = await axios.post<UploadSession>(`${API_URL}/api/code/session`)
+      const response = await apiClient.post<UploadSession>('/api/code/session')
       setSessionId(response.data.session_id)
     } catch (err: any) {
       const errorMsg = err.response?.data?.detail || 'Failed to create upload session'
@@ -62,7 +62,7 @@ export default function CodeAnalysisUploadPage() {
 
   const fetchFiles = async () => {
     try {
-      const response = await axios.get<CodeFile[]>(`${API_URL}/api/code/files`)
+      const response = await apiClient.get<CodeFile[]>('/api/code/files')
       setFiles(response.data)
     } catch (err: any) {
       console.error('File fetch error:', err)

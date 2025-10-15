@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
-import axios from 'axios'
+import apiClient from '../config/axios'
 import { API_URL } from '../config/api'
 import { Modal, Button, Alert, Spinner } from './design-system'
 import FileTypeIndicator from './FileTypeIndicator'
@@ -45,7 +45,7 @@ export default function CodeFilePreview({ file, isOpen, onClose }: CodeFilePrevi
       setError(null)
 
       try {
-        const response = await axios.get<{ content: string }>(`${API_URL}/api/code/file/${file.id}`)
+        const response = await apiClient.get<{ content: string }>(`${API_URL}/api/code/file/${file.id}`)
         setContent(response.data.content || '')
       } catch (err: any) {
         const errorMsg = err.response?.data?.detail || 'Failed to load file content'

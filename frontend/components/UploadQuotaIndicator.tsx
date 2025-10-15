@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Card, ProgressBar } from './design-system'
-import axios from 'axios'
+import apiClient from '../config/axios'
 import { API_URL } from '../config/api'
 
 interface QuotaData {
@@ -42,7 +42,7 @@ export default function UploadQuotaIndicator({
     try {
       setLoading(true)
       setError(null)
-      const response = await axios.get<QuotaData>(`${API_URL}/api/code/quota`)
+      const response = await apiClient.get<QuotaData>(`${API_URL}/api/code/quota`)
       setQuota(response.data)
       onQuotaUpdate?.(response.data)
     } catch (err: any) {

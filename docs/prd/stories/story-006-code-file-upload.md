@@ -640,13 +640,446 @@ This story enables the core value proposition of Phase 1 - personalized code ana
 - **2025-10-14 (PM)**: Ready for production deployment and testing
 
 ### Status
-**Ready for Testing** - Backend 100% ✅, Database 100% ✅, Frontend 100% ✅, E2E Testing 0% (Production)
+**In QA Testing** - Backend 100% ✅, Database 100% ✅, Frontend 100% ✅, QA Testing in progress
 
 **Next Steps**:
-1. Deploy frontend to Netlify (automatic on git push)
-2. Deploy backend to Railway (automatic on git push)
-3. Test complete upload flow in production
-4. Verify all 11 `/api/code/*` endpoints
-5. Test quota enforcement, file preview, deletion
-6. Mobile responsiveness testing
-7. Write automated tests (unit, integration, E2E)
+1. ✅ Deploy frontend to Netlify (automatic on git push)
+2. ✅ Deploy backend to Railway (automatic on git push)
+3. ⏳ Execute QA test plan (see STORY_006_QA_TEST_PLAN.md)
+4. ⏳ Test complete upload flow in production
+5. ⏳ Verify all 11 `/api/code/*` endpoints
+6. ⏳ Test quota enforcement, file preview, deletion
+7. ⏳ Mobile responsiveness testing
+8. 📋 Write automated tests (unit, integration, E2E) - after QA pass
+
+---
+
+## QA Results
+
+**QA Agent**: Quinn (Senior Developer & QA Architect)
+**Test Date**: October 14, 2025
+**Test Environment**: Production (Netlify + Railway)
+**Test Plan**: `/STORY_006_QA_TEST_PLAN.md`
+
+### Test Summary
+
+**Status**: 🔄 Testing in Progress
+
+**Test Categories**:
+- [ ] 1. API Endpoint Testing (11 endpoints)
+- [ ] 2. File Validation Testing (5 tests)
+- [ ] 3. Upload Flow Testing (6 E2E tests)
+- [ ] 4. Quota Management Testing (4 tests)
+- [ ] 5. Security Testing (5 tests)
+- [ ] 6. Frontend UI/UX Testing (6 tests)
+- [ ] 7. Cleanup & Expiration Testing (3 tests)
+- [ ] 8. Performance Testing (4 tests)
+- [ ] 9. Integration Testing (3 tests)
+
+**Overall Progress**: 0/47 tests completed
+
+---
+
+### 1. API Endpoint Testing (Backend)
+
+**Objective**: Verify all 11 `/api/code/*` endpoints functional in Railway production
+
+#### Test 1.1: GET /api/code/limits
+- **Date**: [To be tested]
+- **Tester**: Kevin/Quinn
+- **Result**: ⏳ Pending
+- **Expected**: Returns system limits (10MB max, 10 files/session, etc.)
+- **Actual**: [Results here]
+- **Notes**: [Observations]
+
+#### Test 1.2: POST /api/code/session
+- **Date**: [To be tested]
+- **Tester**: Kevin/Quinn
+- **Result**: ⏳ Pending
+- **Expected**: Creates upload session with UUID and 24hr expiration
+- **Actual**: [Results here]
+
+#### Test 1.3: GET /api/code/quota
+- **Date**: [To be tested]
+- **Tester**: Kevin/Quinn
+- **Result**: ⏳ Pending
+- **Expected**: Returns user quota status (daily uploads, storage used)
+- **Actual**: [Results here]
+
+#### Test 1.4: POST /api/code/validate
+- **Date**: [To be tested]
+- **Tester**: Kevin/Quinn
+- **Result**: ⏳ Pending
+- **Expected**: Validates file before upload (valid:true or errors)
+- **Actual**: [Results here]
+
+#### Test 1.5: POST /api/code/upload
+- **Date**: [To be tested]
+- **Tester**: Kevin/Quinn
+- **Result**: ⏳ Pending
+- **Expected**: Uploads file, stores in /tmp, creates DB record
+- **Actual**: [Results here]
+
+#### Test 1.6: GET /api/code/files
+- **Date**: [To be tested]
+- **Tester**: Kevin/Quinn
+- **Result**: ⏳ Pending
+- **Expected**: Lists user's uploaded files only
+- **Actual**: [Results here]
+
+#### Test 1.7: GET /api/code/file/{id}
+- **Date**: [To be tested]
+- **Tester**: Kevin/Quinn
+- **Result**: ⏳ Pending
+- **Expected**: Returns file content (owner only)
+- **Actual**: [Results here]
+
+#### Test 1.8: GET /api/code/file/{id}/info
+- **Date**: [To be tested]
+- **Tester**: Kevin/Quinn
+- **Result**: ⏳ Pending
+- **Expected**: Returns file metadata without content
+- **Actual**: [Results here]
+
+#### Test 1.9: DELETE /api/code/file/{id}
+- **Date**: [To be tested]
+- **Tester**: Kevin/Quinn
+- **Result**: ⏳ Pending
+- **Expected**: Deletes file from filesystem and DB, updates quota
+- **Actual**: [Results here]
+
+#### Test 1.10: GET /api/code/admin/stats
+- **Date**: [To be tested]
+- **Tester**: Kevin/Quinn (admin)
+- **Result**: ⏳ Pending
+- **Expected**: Returns system statistics (admin only)
+- **Actual**: [Results here]
+
+#### Test 1.11: POST /api/code/admin/cleanup
+- **Date**: [To be tested]
+- **Tester**: Kevin/Quinn (admin)
+- **Result**: ⏳ Pending
+- **Expected**: Triggers manual cleanup, returns file count
+- **Actual**: [Results here]
+
+---
+
+### 2. File Validation Testing
+
+#### Test 2.1: Valid File Extensions
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Upload .rpg, .rpgle, .sqlrpgle, .cl, .clle, .sql, .txt
+- **Expected**: All 7 types accepted
+- **Actual**: [Results here]
+
+#### Test 2.2: Invalid File Extensions
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Upload .exe, .py, .js, .pdf, .zip
+- **Expected**: All rejected with clear error message
+- **Actual**: [Results here]
+
+#### Test 2.3: File Size Limits
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Upload 1KB, 5MB, 9.9MB (accept), 10.1MB, 20MB (reject)
+- **Expected**: ≤10MB accepted, >10MB rejected
+- **Actual**: [Results here]
+
+#### Test 2.4: Content Security Scanning
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Upload file with API keys, passwords
+- **Expected**: Warning issued for credentials
+- **Actual**: [Results here]
+
+#### Test 2.5: Encoding Detection
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Upload UTF-8, Latin-1, EBCDIC files
+- **Expected**: All supported, EBCDIC converted
+- **Actual**: [Results here]
+
+---
+
+### 3. Upload Flow Testing (E2E)
+
+#### Test 3.1: Single File Upload
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Complete upload flow via frontend
+- **Expected**: Progress bar, success message, file in list, quota updated
+- **Actual**: [Results here]
+
+#### Test 3.2: Multiple File Upload
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Upload 10 files simultaneously
+- **Expected**: All uploaded, quota shows 10/50
+- **Actual**: [Results here]
+
+#### Test 3.3: Exceed Session File Limit
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Upload 11th file in session
+- **Expected**: Rejection with "max 10 files per session" error
+- **Actual**: [Results here]
+
+#### Test 3.4: Drag-and-Drop Interface
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Drag file over zone, verify visual feedback, drop
+- **Expected**: Border highlight, upload begins
+- **Actual**: [Results here]
+
+#### Test 3.5: File Preview
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Click preview button, verify syntax highlighting
+- **Expected**: Modal opens, code highlighted with line numbers
+- **Actual**: [Results here]
+
+#### Test 3.6: File Deletion
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Delete file manually
+- **Expected**: File removed from UI/backend, quota updated
+- **Actual**: [Results here]
+
+---
+
+### 4. Quota Management Testing
+
+#### Test 4.1: Daily Upload Limit
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Upload 50 files, attempt 51st
+- **Expected**: 51st rejected with quota error
+- **Actual**: [Results here]
+
+#### Test 4.2: Storage Quota Limit
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Upload 99MB, attempt file exceeding 100MB total
+- **Expected**: Rejection with storage quota error
+- **Actual**: [Results here]
+
+#### Test 4.3: Quota Reset at Midnight
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Verify database function resets quotas daily
+- **Expected**: Daily uploads/storage reset to 0
+- **Actual**: [Results here]
+
+#### Test 4.4: Quota Display Accuracy
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Upload/delete files, verify quota updates in real-time
+- **Expected**: Accurate file count and storage display
+- **Actual**: [Results here]
+
+---
+
+### 5. Security Testing
+
+#### Test 5.1: Cross-User File Access
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: User B attempts to access User A's file
+- **Expected**: 403 Forbidden response
+- **Actual**: [Results here]
+
+#### Test 5.2: Unauthenticated Access
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Access endpoints without auth token
+- **Expected**: 401 Unauthorized
+- **Actual**: [Results here]
+
+#### Test 5.3: Session Isolation
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Verify files stored in separate session directories
+- **Expected**: /user-id/session-id/ isolation
+- **Actual**: [Results here]
+
+#### Test 5.4: Malicious Filename Handling
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Upload ../../../etc/passwd.rpgle, XSS, command injection attempts
+- **Expected**: Filenames sanitized, no security issues
+- **Actual**: [Results here]
+
+#### Test 5.5: File Type Spoofing
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Rename malicious.exe to test.rpgle, attempt upload
+- **Expected**: Rejected based on content inspection
+- **Actual**: [Results here]
+
+---
+
+### 6. Frontend UI/UX Testing
+
+#### Test 6.1: Upload Zone Visual Feedback
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Hover, drag, drop interactions
+- **Expected**: Clear visual feedback for all states
+- **Actual**: [Results here]
+
+#### Test 6.2: Progress Indicators
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Upload 5MB file, verify progress bar
+- **Expected**: 0% → 100% progress visible
+- **Actual**: [Results here]
+
+#### Test 6.3: Error Message Display
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Trigger various errors (invalid type, size, quota)
+- **Expected**: Clear, user-friendly error messages
+- **Actual**: [Results here]
+
+#### Test 6.4: File Type Indicators
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Upload different file types, verify badges/icons
+- **Expected**: Correct badge for each file type
+- **Actual**: [Results here]
+
+#### Test 6.5: Mobile Responsiveness
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Test on iPhone, Android, iPad
+- **Expected**: Fully functional on mobile
+- **Actual**: [Results here]
+
+#### Test 6.6: Accessibility
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Keyboard navigation, screen reader
+- **Expected**: All functions accessible
+- **Actual**: [Results here]
+
+---
+
+### 7. Cleanup & Expiration Testing
+
+#### Test 7.1: 24-Hour Auto-Deletion
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Upload file, trigger cleanup after 24hrs
+- **Expected**: File deleted from filesystem and DB
+- **Actual**: [Results here]
+
+#### Test 7.2: Cleanup Scheduler Running
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Check Railway logs for cleanup task
+- **Expected**: Hourly cleanup logs visible
+- **Actual**: [Results here]
+
+#### Test 7.3: Weekly Purge
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Verify old deleted_at records purged
+- **Expected**: Records >7 days removed
+- **Actual**: [Results here]
+
+---
+
+### 8. Performance Testing
+
+#### Test 8.1: Upload Speed
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: 1MB (<3s), 5MB (<10s), 10MB (<20s)
+- **Expected**: All uploads within SLA
+- **Actual**: [Results here]
+
+#### Test 8.2: Concurrent Uploads
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: 10 users upload simultaneously
+- **Expected**: All succeed, no server errors
+- **Actual**: [Results here]
+
+#### Test 8.3: Database Performance
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Query performance with indexes
+- **Expected**: All queries <50ms
+- **Actual**: [Results here]
+
+#### Test 8.4: File List Load Time
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Load 50 files
+- **Expected**: <1 second
+- **Actual**: [Results here]
+
+---
+
+### 9. Integration Testing
+
+#### Test 9.1: Database Consistency
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Verify DB records match filesystem
+- **Expected**: Counts match
+- **Actual**: [Results here]
+
+#### Test 9.2: Session Management
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: Session lifecycle (create, upload, expire)
+- **Expected**: Status updates correctly
+- **Actual**: [Results here]
+
+#### Test 9.3: Health Check Integration
+- **Date**: [To be tested]
+- **Result**: ⏳ Pending
+- **Test**: GET /health includes code upload status
+- **Expected**: "code_upload_system": "operational"
+- **Actual**: [Results here]
+
+---
+
+### Bugs Found
+
+**No bugs identified yet** - Testing in progress
+
+[Format for bugs found:]
+```
+**BUG-006-XXX**: [Bug Title]
+- **Severity**: Critical / High / Medium / Low
+- **Test**: Test X.X
+- **Description**: [What went wrong]
+- **Steps to Reproduce**: [Steps]
+- **Expected**: [Expected behavior]
+- **Actual**: [Actual behavior]
+- **Status**: Open / In Progress / Fixed / Closed
+- **Assigned To**: Dexter (Dev Agent)
+```
+
+---
+
+### QA Sign-Off
+
+**QA Status**: ⏳ Testing in Progress
+
+- [ ] All critical path tests passed
+- [ ] All security tests passed
+- [ ] No critical or high-severity bugs
+- [ ] Performance benchmarks met
+- [ ] Mobile responsiveness verified
+- [ ] Acceptance criteria met
+
+**QA Approval**: [Pending test completion]
+**QA Agent**: Quinn (Senior Developer & QA Architect)
+**Date**: [When complete]
+
+---

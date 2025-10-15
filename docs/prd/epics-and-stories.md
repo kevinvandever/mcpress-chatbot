@@ -216,11 +216,11 @@ Based on the PRD phases, we have 4 major epics with multiple stories each:
 ---
 
 #### STORY-012: Conversation Export
-**Points**: 3  
-**Priority**: P1  
-**As a** user  
-**I want** to export conversations  
-**So that** I can share knowledge with my team  
+**Points**: 3
+**Priority**: P1
+**As a** user
+**I want** to export conversations
+**So that** I can share knowledge with my team
 
 **Acceptance Criteria:**
 - [ ] Export to PDF format
@@ -228,6 +228,35 @@ Based on the PRD phases, we have 4 major epics with multiple stories each:
 - [ ] Include code highlighting
 - [ ] Custom title and metadata
 - [ ] Bulk export options
+
+---
+
+#### STORY-019: Analytics Dashboard ⚡ **MOVED FROM EPIC-004**
+**Points**: 8
+**Priority**: P0 (Critical) - **ELEVATED FOR MVP**
+**As a** subscriber
+**I want** to see analytics showing my productivity gains and learning progress
+**So that** I can justify my $20/month investment and track my professional growth
+
+**Acceptance Criteria:**
+- [ ] Usage dashboard accessible from main navigation
+- [ ] Time saved calculator (estimates hours saved per session)
+- [ ] Activity timeline (daily/weekly/monthly usage patterns)
+- [ ] Code analysis stats (files analyzed, lines reviewed, errors caught)
+- [ ] Learning velocity (topics mastered, progress over time)
+- [ ] Query insights (most common questions, knowledge gaps)
+- [ ] ROI calculator (shows dollar value of time saved)
+- [ ] PDF/CSV export for reports
+- [ ] Benchmark comparison to average users
+- [ ] Email monthly summary reports
+
+**Why Moved to MVP:**
+- **Critical for pricing justification**: Must prove ROI vs free alternatives (Codeium)
+- **David's concern**: "Value justification for $20/month" requires demonstrable metrics
+- **Competitive pressure**: Users need to see concrete value immediately
+- **Retention driver**: Analytics showing value reduces churn
+
+**Full Story**: See `docs/prd/stories/story-019-analytics-dashboard.md`
 
 ---
 
@@ -324,11 +353,11 @@ Based on the PRD phases, we have 4 major epics with multiple stories each:
 ---
 
 #### STORY-018: Team Workspace
-**Points**: 8  
-**Priority**: P2  
-**As a** team  
-**I want** shared workspace  
-**So that** we can collaborate effectively  
+**Points**: 8
+**Priority**: P2
+**As a** team
+**I want** shared workspace
+**So that** we can collaborate effectively
 
 **Acceptance Criteria:**
 - [ ] Create team workspaces
@@ -340,29 +369,74 @@ Based on the PRD phases, we have 4 major epics with multiple stories each:
 
 ---
 
-## EPIC-004: Enterprise & Scalability
-**Priority**: P2  
-**Timeline**: Months 5-6 (8 weeks)  
-**Value**: Enterprise features and platform scaling
-
-### Stories
-
-#### STORY-019: Analytics Dashboard
-**Points**: 8  
-**Priority**: P2  
-**As a** manager  
-**I want** usage analytics  
-**So that** I can measure ROI  
+#### STORY-024: VS Code Extension 🆕 **COMPETITIVE NECESSITY**
+**Points**: 13
+**Priority**: P1 (High)
+**As an** IBM i developer using VS Code
+**I want** MC Press Chatbot integrated directly into my editor
+**So that** I can get AI assistance without context switching
 
 **Acceptance Criteria:**
-- [ ] User activity metrics
-- [ ] Time saved calculations
-- [ ] Popular query patterns
-- [ ] Knowledge gap identification
-- [ ] Custom date ranges
-- [ ] Export reports to PDF/CSV
+- [ ] Chat sidebar in VS Code
+- [ ] Right-click context menu "Ask MC Press"
+- [ ] Code actions for quick fixes
+- [ ] Inline suggestions and hover tooltips
+- [ ] File upload for analysis
+- [ ] Authentication with MC Press account
+- [ ] Apply code changes with one click
+- [ ] Diff view for before/after comparison
+- [ ] Command palette integration (Cmd+Shift+P)
+- [ ] Keyboard shortcuts (customizable)
+- [ ] Status bar showing usage stats
+- [ ] VS Code Marketplace publication
+
+**Why Critical:**
+- **Closes competitive gap**: Copilot, Cursor, Tabnine all have IDE integration
+- **Where developers work**: Native editor integration vs context switching to web
+- **Code for IBM i synergy**: 10,000+ installs, growing VS Code adoption in IBM i space
+
+**Full Story**: See `docs/prd/stories/story-024-vscode-extension.md`
 
 ---
+
+#### STORY-025: Slack & Microsoft Teams Bot Integration 🆕 **ENTERPRISE REQUIREMENT**
+**Points**: 8
+**Priority**: P1 (High)
+**As a** team lead or developer
+**I want** to access MC Press Chatbot from Slack/Teams
+**So that** I can get IBM i help without leaving my team's communication platform
+
+**Acceptance Criteria:**
+- [ ] Slack slash commands (`/mcpress <question>`)
+- [ ] Slack app mentions (`@MC Press`)
+- [ ] Slack DMs (private conversations)
+- [ ] Slack threaded responses
+- [ ] Teams bot with Adaptive Cards
+- [ ] Teams personal chat (1:1 DMs)
+- [ ] File upload/analysis in both platforms
+- [ ] Workspace authentication & linking
+- [ ] Team usage tracking & analytics
+- [ ] Rate limiting per tier (Team: 100/day, Enterprise: unlimited)
+- [ ] Shared team knowledge base
+- [ ] Interactive buttons (Ask Follow-up, Save, Buy Book)
+
+**Why Critical:**
+- **Enterprise sales requirement**: Team Lead ($35) & Enterprise ($60) tiers need this
+- **Table stakes**: Competitors (Stack Overflow, Notion AI, ChatGPT Team) have chat integration
+- **Network effects**: Team visibility drives viral adoption within organizations
+
+**Full Story**: See `docs/prd/stories/story-025-slack-teams-bots.md`
+
+---
+
+## EPIC-004: Enterprise & Scalability
+**Priority**: P2
+**Timeline**: Months 5-6 (8 weeks)
+**Value**: Enterprise features and platform scaling
+
+**Note**: Story-019 (Analytics Dashboard) was moved to EPIC-002 (MVP/Phase 1) due to critical importance for pricing justification.
+
+### Stories
 
 #### STORY-020: API Development
 **Points**: 13  
@@ -417,26 +491,28 @@ Based on the PRD phases, we have 4 major epics with multiple stories each:
 
 ## Story Point Summary
 
-### By Epic
-- **EPIC-001** (Technical Foundation): 29 points
-- **EPIC-002** (Core Productivity): 52 points
-- **EPIC-003** (Collaboration & Learning): 58 points
-- **EPIC-004** (Enterprise & Scale): 63 points
+### By Epic (UPDATED)
+- **EPIC-001** (Technical Foundation): 29 points (Stories 001-005)
+- **EPIC-002** (Core Productivity): **60 points** (Stories 006-012, 019) ⬆️ +8 from Story-019
+- **EPIC-003** (Collaboration & Learning): **79 points** (Stories 013-018, 024-025) ⬆️ +21 from new stories
+- **EPIC-004** (Enterprise & Scale): **55 points** (Stories 020-022) ⬇️ -8 from moving Story-019
 
-### By Priority
-- **P0 (Critical)**: 57 points
-- **P1 (High)**: 74 points
-- **P2 (Medium)**: 29 points
-- **P3 (Low)**: 42 points
+**Total Story Points**: 223 points (25 stories)
 
-### Velocity Planning
+### By Priority (UPDATED)
+- **P0 (Critical)**: **65 points** (Stories 001-008, 019) ⬆️ +8 from elevating Story-019
+- **P1 (High)**: **95 points** (Stories 009-016, 024-025) ⬆️ +21 from new stories
+- **P2 (Medium)**: **21 points** (Stories 017-018, 020) ⬇️ -8 from Story-019 elevation
+- **P3 (Low)**: 42 points (Stories 021-022)
+
+### Velocity Planning (UPDATED)
 Assuming 2-week sprints with 20-25 points velocity:
-- **Phase 0**: 2 sprints (4 weeks)
-- **Phase 1**: 3-4 sprints (6-8 weeks)
-- **Phase 2**: 3-4 sprints (6-8 weeks)
-- **Phase 3**: 3-4 sprints (6-8 weeks)
+- **Phase 0** (EPIC-001): 2 sprints (4 weeks) - 29 points
+- **Phase 1** (EPIC-002): 3 sprints (6 weeks) - 60 points ⬆️ Added Analytics
+- **Phase 2** (EPIC-003): 4 sprints (8 weeks) - 79 points ⬆️ Added VS Code + Slack/Teams
+- **Phase 3** (EPIC-004): 3 sprints (6 weeks) - 55 points
 
-**Total Timeline**: 20-24 weeks (5-6 months)
+**Total Timeline**: 22-26 weeks (5.5-6.5 months)
 
 ---
 

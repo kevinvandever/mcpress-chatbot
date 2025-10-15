@@ -32,6 +32,36 @@ When starting a new session, read these files in order:
 
 ---
 
+## ⚠️ CRITICAL: Production-Only Testing
+
+**This application has NO local development environment.**
+
+All development, testing, and QA must be done directly in the production environment:
+
+- **Frontend Testing**: https://mcpress-chatbot.netlify.app (Netlify production)
+- **Backend Testing**: https://mcpress-chatbot-production.up.railway.app (Railway production)
+- **Database**: Railway PostgreSQL (production only, accessible via `railway run`)
+
+**Why No Local Setup:**
+- Railway environment uses internal networking (`*.railway.internal`)
+- PostgreSQL with pgvector extension requires Railway infrastructure
+- OpenAI API keys and environment variables configured in Railway/Netlify only
+- Module import paths are configured for production deployment
+
+**Testing Workflow:**
+1. Make code changes locally
+2. Commit to feature branch or main
+3. Push to GitHub
+4. Auto-deploy to Netlify (2-3 min) and/or Railway (~10 min)
+5. Test in production environment
+6. Monitor logs via Railway dashboard or `railway logs`
+
+**Database Access:**
+- Use `railway run python3 your_script.py` to run scripts with production DATABASE_PUBLIC_URL
+- See `backend/run_migration_002.py` for example of Railway database access
+
+---
+
 ## 📂 Critical Files Reference
 
 ### Configuration & Architecture

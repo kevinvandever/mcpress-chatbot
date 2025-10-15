@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
-import axios from 'axios'
+import apiClient from '../config/axios'
 import { API_URL } from '../config/api'
 import { Alert } from './design-system'
 import FileTypeIndicator from './FileTypeIndicator'
@@ -162,7 +162,7 @@ export default function CodeUploadZone({
       formData.append('session_id', sessionId)
 
       try {
-        const response = await axios.post<CodeFile>(`${API_URL}/api/code/upload`, formData, {
+        const response = await apiClient.post<CodeFile>(`${API_URL}/api/code/upload`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
