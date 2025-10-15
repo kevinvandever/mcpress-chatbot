@@ -14,13 +14,13 @@ from pydantic import BaseModel
 try:
     from code_upload_service import get_upload_service, CodeUploadService
     from code_file_validator import get_file_limits, get_allowed_extensions
-    from guest_auth import get_guest_user_id
-    from auth_routes import get_current_user  # For admin endpoints only
+    from guest_auth import get_guest_user_id, is_guest_access_enabled
+    from auth_routes import get_current_user
 except ImportError:
     from backend.code_upload_service import get_upload_service, CodeUploadService
     from backend.code_file_validator import get_file_limits, get_allowed_extensions
-    from backend.guest_auth import get_guest_user_id
-    from backend.auth_routes import get_current_user  # For admin endpoints only
+    from backend.guest_auth import get_guest_user_id, is_guest_access_enabled
+    from backend.auth_routes import get_current_user
 
 router = APIRouter(prefix="/api/code", tags=["code-upload"])
 
@@ -80,22 +80,44 @@ class LimitsResponse(BaseModel):
 
 # ==================== Dependencies ====================
 
-async def get_user_id(guest_id: str = Depends(get_guest_user_id)) -> str:
+def get_user_id_dependency():
     """
-    Get user ID for guest users accessing code upload features
+    Factory function that returns the appropriate auth dependency based on environment
 
-    Uses lightweight guest authentication (auto-generated UUID stored in localStorage).
-    No login required for MVP testing.
-
-    Future: This will be replaced with MCPress SSO token validation when the app
-    is integrated behind MCPressOnline authentication.
+    This allows dynamic switching between guest and admin auth
     """
-    return guest_id
+    if is_guest_access_enabled():
+        # Public mode: use guest authentication
+        return get_guest_user_id
+    else:
+        # Private beta mode: require admin authentication
+        async def get_admin_id(current_user: dict = Depends(get_current_user)) -> str:
+            return current_user.get("user_id") or current_user.get("email") or str(current_user.get("id"))
+        return get_admin_id
+
+
+# Create the dependency at module load time based on environment
+_get_user_id_func = get_user_id_dependency()
+
+
+async def get_user_id(user_id: str = Depends(_get_user_id_func)) -> str:
+    """
+    Get user ID - switches between guest and admin auth based on GUEST_ACCESS_ENABLED
+
+    Private Beta Mode (GUEST_ACCESS_ENABLED=false):
+    - Requires admin authentication for testing
+    - Only you and your partner can access
+
+    Public Mode (GUEST_ACCESS_ENABLED=true):
+    - Allows guest access with auto-generated UUID
+    - Anyone can access (future: behind MCPress SSO)
+    """
+    return user_id
 
 
 async def get_admin_user_id(current_user: dict = Depends(get_current_user)) -> str:
-    """Extract user ID from authenticated admin (for admin endpoints only)"""
-    return current_user.get("user_id") or current_user.get("email") or "anonymous"
+    """Extract user ID from authenticated admin (for admin-only endpoints)"""
+    return current_user.get("user_id") or current_user.get("email") or str(current_user.get("id"))
 
 
 # ==================== API Endpoints ====================

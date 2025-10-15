@@ -5,9 +5,14 @@ This module provides lightweight authentication for guest users accessing
 code upload and chat features. Guest IDs are auto-generated UUIDs stored
 in browser localStorage.
 
+Private Beta Mode:
+- Set GUEST_ACCESS_ENABLED=false to require admin login during testing
+- Set GUEST_ACCESS_ENABLED=true (or omit) to allow public guest access
+
 Future: This will be replaced with MCPress SSO token validation when
 the app is integrated behind MCPressOnline authentication.
 """
+import os
 import uuid
 import re
 from fastapi import Header, HTTPException
@@ -67,6 +72,18 @@ async def get_guest_user_id(
         )
 
     return x_guest_user_id
+
+
+def is_guest_access_enabled() -> bool:
+    """
+    Check if guest access is enabled via environment variable
+
+    Returns:
+        True if GUEST_ACCESS_ENABLED is not set or is 'true' (case-insensitive)
+        False if GUEST_ACCESS_ENABLED is 'false' (private beta mode)
+    """
+    env_value = os.getenv('GUEST_ACCESS_ENABLED', 'true').lower()
+    return env_value in ('true', '1', 'yes', 'on')
 
 
 def generate_guest_id() -> str:
