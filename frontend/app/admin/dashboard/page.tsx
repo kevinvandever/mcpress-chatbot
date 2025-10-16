@@ -41,22 +41,27 @@ export default function AdminDashboard() {
     try {
       // Check if admin token exists before trying admin endpoint
       const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
+      console.log('Admin token exists:', !!adminToken);
 
       if (adminToken) {
         // Try to fetch stats from admin endpoint first if logged in
         try {
+          console.log('Trying admin stats endpoint...');
           const adminResponse = await apiClient.get(`${API_URL}/admin/stats`);
+          console.log('Admin stats succeeded:', adminResponse.data);
           setStats({
             totalDocuments: adminResponse.data.total_documents || 0,
             totalChunks: adminResponse.data.total_chunks || 0,
             lastUpload: adminResponse.data.last_upload || null,
           });
           return;
-        } catch (adminError) {
+        } catch (adminError: any) {
           // Admin endpoint failed, fall back to regular endpoint
-          console.log('Admin stats endpoint failed, falling back to documents endpoint');
+          console.log('Admin stats endpoint failed:', adminError.message, 'falling back to documents endpoint');
         }
       }
+
+      console.log('Fetching from /documents endpoint...');
 
       // Fallback to regular documents endpoint (public, no auth required)
       const response = await apiClient.get(`${API_URL}/documents`);
@@ -89,9 +94,12 @@ export default function AdminDashboard() {
       console.log('Setting stats to:', newStats);
       setStats(newStats);
       console.log('Stats set successfully');
-    } catch (error) {
-      console.error('Failed to fetch stats:', error);
+    } catch (error: any) {
+      console.error('Failed to fetch stats - ERROR:', error);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
     } finally {
+      console.log('fetchStats finally block - setting loading to false');
       setLoading(false);
     }
   };
