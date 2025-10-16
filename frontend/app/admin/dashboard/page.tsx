@@ -25,10 +25,12 @@ export default function AdminDashboard() {
   }, [stats]);
 
   useEffect(() => {
+    console.log('fetchStats useEffect triggered');
     fetchStats();
   }, []);
 
   const fetchStats = async () => {
+    console.log('fetchStats called');
     try {
       // Check if admin token exists before trying admin endpoint
       const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
