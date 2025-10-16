@@ -6,9 +6,12 @@ export function middleware(request: NextRequest) {
   const authCookie = request.cookies.get('demo_auth');
   const isLoginPage = request.nextUrl.pathname === '/login';
   const isApiRoute = request.nextUrl.pathname.startsWith('/api');
+  const isAdminRoute = request.nextUrl.pathname.startsWith('/admin');
+  const isCodeAnalysisRoute = request.nextUrl.pathname.startsWith('/code-analysis');
 
-  // Allow API routes and login page without authentication
-  if (isApiRoute || isLoginPage) {
+  // Allow API routes, login page, admin routes, and code-analysis routes without demo auth
+  // (admin routes and code-analysis have their own authentication via axios interceptor)
+  if (isApiRoute || isLoginPage || isAdminRoute || isCodeAnalysisRoute) {
     return NextResponse.next();
   }
 

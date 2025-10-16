@@ -40,9 +40,17 @@ apiClient.interceptors.request.use(
           config.headers.Authorization = `Bearer ${token}`
         }
       } else if (isCodeUploadEndpoint(url)) {
-        // Code upload endpoints: use guest ID
-        const guestId = getOrCreateGuestId()
-        config.headers['X-Guest-User-Id'] = guestId
+        // Code upload endpoints: prefer admin auth if available (private beta mode)
+        // Otherwise fall back to guest auth (public mode)
+        const adminToken = localStorage.getItem('adminToken')
+        if (adminToken) {
+          // Private beta: admin must login to upload code
+          config.headers.Authorization = `Bearer ${adminToken}`
+        } else {
+          // Public mode: use guest ID
+          const guestId = getOrCreateGuestId()
+          config.headers['X-Guest-User-Id'] = guestId
+        }
       }
       // Other endpoints: no auth required
     }
@@ -61,17 +69,13 @@ apiClient.interceptors.response.use(
       const url = error.config?.url || ''
 
       if (typeof window !== 'undefined') {
-        if (isAdminEndpoint(url)) {
-          // Admin auth failed - redirect to admin login
+        if (isAdminEndpoint(url) || isCodeUploadEndpoint(url)) {
+          // Admin or code upload auth failed - redirect to admin login
           localStorage.removeItem('adminToken')
           localStorage.removeItem('tokenExpiry')
           if (!window.location.pathname.includes('/login')) {
             window.location.href = '/admin/login'
           }
-        } else if (isCodeUploadEndpoint(url)) {
-          // Guest auth failed - show friendly error
-          console.error('Guest auth failed. Please reload the application.')
-          // Could show a toast notification here
         }
       }
     }
