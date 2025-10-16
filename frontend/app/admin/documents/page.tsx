@@ -72,58 +72,68 @@ export default function DocumentsManagement() {
         sort_direction: sortDirection,
       });
 
-      try {
-        const response = await apiClient.get(`${API_URL}/admin/documents?${params}`);
-        const data = response.data;
-        setDocuments(data.documents || []);
-        setPagination(prev => ({
-          ...prev,
-          total: data.total || 0,
-          totalPages: data.total_pages || 0,
-        }));
-      } catch (adminErr: any) {
-        // Fallback to regular documents endpoint if admin endpoint doesn't exist yet
-        if (adminErr.response?.status === 404) {
-          const fallbackResponse = await apiClient.get(`${API_URL}/documents`);
-          const data = fallbackResponse.data;
-          const docs = data.documents || [];
+      // Check if admin token exists before trying admin endpoint
+      const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
 
-          // Apply client-side filtering and sorting
-          let filteredDocs = docs;
-          if (searchTerm) {
-            filteredDocs = filteredDocs.filter((doc: any) =>
-              doc.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              doc.author?.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-          }
-          if (categoryFilter) {
-            filteredDocs = filteredDocs.filter((doc: any) =>
-              doc.category === categoryFilter
-            );
-          }
-
-          // Sort documents
-          filteredDocs.sort((a: any, b: any) => {
-            const aVal = a[sortField] || '';
-            const bVal = b[sortField] || '';
-            const comparison = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
-            return sortDirection === 'asc' ? comparison : -comparison;
-          });
-
-          // Paginate
-          const start = (pagination.page - 1) * pagination.perPage;
-          const paginatedDocs = filteredDocs.slice(start, start + pagination.perPage);
-
-          setDocuments(paginatedDocs);
+      if (adminToken) {
+        // Try admin endpoint first if logged in
+        try {
+          const response = await apiClient.get(`${API_URL}/admin/documents?${params}`);
+          const data = response.data;
+          setDocuments(data.documents || []);
           setPagination(prev => ({
             ...prev,
-            total: filteredDocs.length,
-            totalPages: Math.ceil(filteredDocs.length / prev.perPage),
+            total: data.total || 0,
+            totalPages: data.total_pages || 0,
           }));
-        } else {
-          throw adminErr;
+          return;
+        } catch (adminErr: any) {
+          // Admin endpoint failed (404 or other error), fall back to regular endpoint
+          if (adminErr.response?.status === 404 || adminErr.response?.status === 401) {
+            console.log('Admin documents endpoint failed, falling back to documents endpoint');
+          } else {
+            throw adminErr;
+          }
         }
       }
+
+      // Fallback to regular documents endpoint (public, no auth required)
+      const fallbackResponse = await apiClient.get(`${API_URL}/documents`);
+      const data = fallbackResponse.data;
+      const docs = data.documents || [];
+
+      // Apply client-side filtering and sorting
+      let filteredDocs = docs;
+      if (searchTerm) {
+        filteredDocs = filteredDocs.filter((doc: any) =>
+          doc.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          doc.author?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
+      if (categoryFilter) {
+        filteredDocs = filteredDocs.filter((doc: any) =>
+          doc.category === categoryFilter
+        );
+      }
+
+      // Sort documents
+      filteredDocs.sort((a: any, b: any) => {
+        const aVal = a[sortField] || '';
+        const bVal = b[sortField] || '';
+        const comparison = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+        return sortDirection === 'asc' ? comparison : -comparison;
+      });
+
+      // Paginate
+      const start = (pagination.page - 1) * pagination.perPage;
+      const paginatedDocs = filteredDocs.slice(start, start + pagination.perPage);
+
+      setDocuments(paginatedDocs);
+      setPagination(prev => ({
+        ...prev,
+        total: filteredDocs.length,
+        totalPages: Math.ceil(filteredDocs.length / prev.perPage),
+      }));
     } catch (err) {
       setError('Error connecting to server');
       console.error('Fetch error:', err);

@@ -25,21 +25,26 @@ export default function AdminDashboard() {
 
   const fetchStats = async () => {
     try {
-      // Try to fetch stats from admin endpoint first
-      try {
-        const adminResponse = await apiClient.get(`${API_URL}/admin/stats`);
-        setStats({
-          totalDocuments: adminResponse.data.total_documents || 0,
-          totalChunks: adminResponse.data.total_chunks || 0,
-          lastUpload: adminResponse.data.last_upload || null,
-        });
-        return;
-      } catch (adminError) {
-        // Fallback to regular documents endpoint
-        console.log('Admin stats endpoint failed, falling back to documents endpoint');
+      // Check if admin token exists before trying admin endpoint
+      const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
+
+      if (adminToken) {
+        // Try to fetch stats from admin endpoint first if logged in
+        try {
+          const adminResponse = await apiClient.get(`${API_URL}/admin/stats`);
+          setStats({
+            totalDocuments: adminResponse.data.total_documents || 0,
+            totalChunks: adminResponse.data.total_chunks || 0,
+            lastUpload: adminResponse.data.last_upload || null,
+          });
+          return;
+        } catch (adminError) {
+          // Admin endpoint failed, fall back to regular endpoint
+          console.log('Admin stats endpoint failed, falling back to documents endpoint');
+        }
       }
 
-      // Fallback to regular documents endpoint
+      // Fallback to regular documents endpoint (public, no auth required)
       const response = await apiClient.get(`${API_URL}/documents`);
       // Estimate chunks based on documents (typical PDF has ~50-100 chunks)
       const estimatedChunks = (response.data.documents?.length || 0) * 75;
