@@ -33,8 +33,19 @@ export default function CodeAnalysisUploadPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Create upload session on mount
+  // Check authentication and create upload session on mount
   useEffect(() => {
+    // Check if admin token exists (required for private beta mode)
+    const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null
+
+    if (!adminToken) {
+      // No admin token - redirect to admin login
+      console.log('No admin token found, redirecting to /admin/login')
+      router.push('/admin/login?redirect=/code-analysis/upload')
+      return
+    }
+
+    // Admin token exists, create session
     createSession()
   }, [])
 

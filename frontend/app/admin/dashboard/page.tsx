@@ -46,12 +46,24 @@ export default function AdminDashboard() {
 
       // Fallback to regular documents endpoint (public, no auth required)
       const response = await apiClient.get(`${API_URL}/documents`);
+
+      // Debug: Log what we're getting back
+      console.log('Dashboard /documents response:', {
+        status: response.status,
+        hasData: !!response.data,
+        dataKeys: Object.keys(response.data || {}),
+        documentsCount: response.data?.documents?.length || 0,
+        firstDoc: response.data?.documents?.[0]
+      });
+
+      const documents = response.data?.documents || [];
+
       // Estimate chunks based on documents (typical PDF has ~50-100 chunks)
-      const estimatedChunks = (response.data.documents?.length || 0) * 75;
+      const estimatedChunks = documents.length * 75;
       setStats({
-        totalDocuments: response.data.documents?.length || 0,
+        totalDocuments: documents.length,
         totalChunks: estimatedChunks,
-        lastUpload: response.data.documents?.[0]?.processed_at || response.data.documents?.[0]?.created_at || null,
+        lastUpload: documents[0]?.processed_at || documents[0]?.created_at || null,
       });
     } catch (error) {
       console.error('Failed to fetch stats:', error);
