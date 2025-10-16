@@ -19,6 +19,11 @@ export default function AdminDashboard() {
   });
   const [loading, setLoading] = useState(true);
 
+  // Debug: Log whenever stats changes
+  useEffect(() => {
+    console.log('Stats state changed to:', stats);
+  }, [stats]);
+
   useEffect(() => {
     fetchStats();
   }, []);
