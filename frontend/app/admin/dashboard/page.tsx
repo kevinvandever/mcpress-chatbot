@@ -57,14 +57,24 @@ export default function AdminDashboard() {
       });
 
       const documents = response.data?.documents || [];
+      console.log('Extracted documents array:', {
+        isArray: Array.isArray(documents),
+        length: documents.length,
+        firstThree: documents.slice(0, 3).map(d => d?.filename)
+      });
 
       // Estimate chunks based on documents (typical PDF has ~50-100 chunks)
       const estimatedChunks = documents.length * 75;
-      setStats({
+
+      const newStats = {
         totalDocuments: documents.length,
         totalChunks: estimatedChunks,
         lastUpload: documents[0]?.processed_at || documents[0]?.created_at || null,
-      });
+      };
+
+      console.log('Setting stats to:', newStats);
+      setStats(newStats);
+      console.log('Stats set successfully');
     } catch (error) {
       console.error('Failed to fetch stats:', error);
     } finally {
