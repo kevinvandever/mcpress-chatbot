@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import AdminLayout from '@/components/AdminLayout';
 import apiClient from '../../../config/axios';
 import { API_URL } from '../../../config/api';
@@ -18,6 +18,7 @@ export default function AdminDashboard() {
     lastUpload: null,
   });
   const [loading, setLoading] = useState(true);
+  const hasFetched = useRef(false);
 
   // Debug: Log whenever stats changes
   useEffect(() => {
@@ -25,6 +26,12 @@ export default function AdminDashboard() {
   }, [stats]);
 
   useEffect(() => {
+    // Prevent duplicate fetches (React StrictMode or component remounting)
+    if (hasFetched.current) {
+      console.log('fetchStats already called, skipping duplicate');
+      return;
+    }
+    hasFetched.current = true;
     console.log('fetchStats useEffect triggered');
     fetchStats();
   }, []);
