@@ -31,9 +31,11 @@ export default function AdminLogin() {
         // Store token in localStorage
         localStorage.setItem('adminToken', data.access_token);
         localStorage.setItem('tokenExpiry', String(Date.now() + data.expires_in * 1000));
-        
-        // Redirect to admin dashboard
-        router.push('/admin/dashboard');
+
+        // Get redirect URL from query params (client-side only, no SSR)
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectUrl = urlParams.get('redirect') || '/admin/dashboard';
+        router.push(redirectUrl);
       } else {
         setError(data.detail || 'Login failed');
       }

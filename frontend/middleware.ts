@@ -2,25 +2,21 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  // Check if user is authenticated (demo password protection)
-  const authCookie = request.cookies.get('demo_auth');
-  const isLoginPage = request.nextUrl.pathname === '/login';
+  // Site-wide admin authentication - entire site requires admin login
+  const isAdminLoginPage = request.nextUrl.pathname === '/admin/login';
   const isApiRoute = request.nextUrl.pathname.startsWith('/api');
-  const isAdminRoute = request.nextUrl.pathname.startsWith('/admin');
-  const isCodeAnalysisRoute = request.nextUrl.pathname.startsWith('/code-analysis');
 
-  // Allow API routes, login page, admin routes, and code-analysis routes without demo auth
-  // (admin routes and code-analysis have their own authentication via axios interceptor)
-  if (isApiRoute || isLoginPage || isAdminRoute || isCodeAnalysisRoute) {
+  // Allow API routes and admin login page without authentication
+  if (isApiRoute || isAdminLoginPage) {
     return NextResponse.next();
   }
 
-  // Redirect to login if not authenticated
-  if (!authCookie || authCookie.value !== 'authenticated') {
-    const loginUrl = new URL('/login', request.url);
-    return NextResponse.redirect(loginUrl);
-  }
+  // Note: Middleware can't access localStorage, so we rely on client-side auth checks
+  // and the axios interceptor to redirect if token is invalid.
+  // The middleware just ensures the login page is accessible.
 
+  // For now, allow all other routes through - client-side will handle auth
+  // This prevents redirect loops since we can't check localStorage from middleware
   return NextResponse.next();
 }
 

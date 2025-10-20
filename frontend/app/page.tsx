@@ -12,7 +12,17 @@ export default function Home() {
   const [systemStatus, setSystemStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const chatInterfaceRef = useRef<ChatInterfaceRef>(null)
   const router = useRouter()
-  
+
+  // Check admin authentication - entire site requires admin login
+  useEffect(() => {
+    const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null
+
+    if (!adminToken) {
+      router.push('/admin/login?redirect=/')
+      return
+    }
+  }, [router])
+
   // Check if documents are available
   useEffect(() => {
     const checkDocuments = async () => {
@@ -55,14 +65,13 @@ export default function Home() {
     // return () => clearInterval(interval)
   }, [])
 
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' })
-      router.push('/login')
-      router.refresh()
-    } catch (error) {
-      console.error('Logout failed:', error)
+  const handleLogout = () => {
+    // Clear admin token and redirect to admin login
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('adminToken')
+      localStorage.removeItem('tokenExpiry')
     }
+    router.push('/admin/login')
   }
 
   return (

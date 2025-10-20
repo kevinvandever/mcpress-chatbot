@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import AdminLayout from '@/components/AdminLayout';
 import apiClient from '../../../config/axios';
 import { API_URL } from '../../../config/api';
@@ -20,89 +20,42 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const hasFetched = useRef(false);
 
-  // Debug: Log whenever stats changes
-  useEffect(() => {
-    console.log('Stats state changed to:', stats);
-  }, [stats]);
-
-  useEffect(() => {
-    // Prevent duplicate fetches (React StrictMode or component remounting)
-    if (hasFetched.current) {
-      console.log('fetchStats already called, skipping duplicate');
-      return;
-    }
-    hasFetched.current = true;
-    console.log('fetchStats useEffect triggered');
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
-    console.log('fetchStats called');
+  const fetchStats = useCallback(async () => {
     try {
-      // Check if admin token exists before trying admin endpoint
-      const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
-      console.log('Admin token exists:', !!adminToken);
+      setLoading(true);
 
-      if (adminToken) {
-        // Try to fetch stats from admin endpoint first if logged in
-        try {
-          console.log('Trying admin stats endpoint...');
-          const adminResponse = await apiClient.get(`${API_URL}/admin/stats`);
-          console.log('Admin stats succeeded:', adminResponse.data);
-          setStats({
-            totalDocuments: adminResponse.data.total_documents || 0,
-            totalChunks: adminResponse.data.total_chunks || 0,
-            lastUpload: adminResponse.data.last_upload || null,
-          });
-          return;
-        } catch (adminError: any) {
-          // Admin endpoint failed, fall back to regular endpoint
-          console.log('Admin stats endpoint failed:', adminError.message, 'falling back to documents endpoint');
-        }
-      }
-
-      console.log('Fetching from /documents endpoint...');
-
-      // Fallback to regular documents endpoint (public, no auth required)
+      // Fetch directly from /documents endpoint (public, no auth required)
       const response = await apiClient.get(`${API_URL}/documents`);
-
-      // Debug: Log what we're getting back
-      console.log('Dashboard /documents response:', {
-        status: response.status,
-        hasData: !!response.data,
-        dataKeys: Object.keys(response.data || {}),
-        documentsCount: response.data?.documents?.length || 0,
-        firstDoc: response.data?.documents?.[0]
-      });
-
       const documents = response.data?.documents || [];
-      console.log('Extracted documents array:', {
-        isArray: Array.isArray(documents),
-        length: documents.length,
-        firstThree: documents.slice(0, 3).map(d => d?.filename)
-      });
 
       // Estimate chunks based on documents (typical PDF has ~50-100 chunks)
       const estimatedChunks = documents.length * 75;
 
-      const newStats = {
+      setStats({
         totalDocuments: documents.length,
         totalChunks: estimatedChunks,
         lastUpload: documents[0]?.processed_at || documents[0]?.created_at || null,
-      };
-
-      console.log('Setting stats to:', newStats);
-      setStats(newStats);
-      console.log('Stats set successfully');
+      });
     } catch (error: any) {
-      console.error('Failed to fetch stats - ERROR:', error);
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
+      console.error('Failed to fetch stats:', error);
+      setStats({
+        totalDocuments: 0,
+        totalChunks: 0,
+        lastUpload: null,
+      });
     } finally {
-      console.log('fetchStats finally block - setting loading to false');
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // Prevent duplicate fetches (React StrictMode or component remounting)
+    if (hasFetched.current) {
+      return;
+    }
+    hasFetched.current = true;
+    fetchStats();
+  }, [fetchStats]);
 
   return (
     <AdminLayout>
