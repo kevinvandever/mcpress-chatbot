@@ -139,7 +139,9 @@ export default function DocumentsManagement() {
 
     try {
       // Use the /documents/{filename}/metadata endpoint
-      await apiClient.put(`${API_URL}/documents/${editingId}/metadata`, {
+      // Encode filename to handle special characters (periods, spaces, etc.)
+      const encodedFilename = encodeURIComponent(editingId);
+      await apiClient.put(`${API_URL}/documents/${encodedFilename}/metadata`, {
         filename: editingId,
         title: editingData.title || '',
         author: editingData.author || '',
@@ -159,13 +161,15 @@ export default function DocumentsManagement() {
       if (deleteTarget === 'bulk') {
         // Delete selected files one by one
         for (const filename of selectedIds) {
-          await apiClient.delete(`${API_URL}/documents/${filename}`);
+          const encodedFilename = encodeURIComponent(filename);
+          await apiClient.delete(`${API_URL}/documents/${encodedFilename}`);
         }
         setSelectedIds(new Set());
         await fetchDocuments();
       } else if (typeof deleteTarget === 'string') {
         // Single delete
-        await apiClient.delete(`${API_URL}/documents/${deleteTarget}`);
+        const encodedFilename = encodeURIComponent(deleteTarget);
+        await apiClient.delete(`${API_URL}/documents/${encodedFilename}`);
         await fetchDocuments();
       }
     } catch (err) {
@@ -183,10 +187,21 @@ export default function DocumentsManagement() {
     try {
       // Update each document one by one
       for (const filename of selectedIds) {
-        const updateData: any = {};
-        if (bulkAction === 'author') updateData.author = bulkValue;
+        const encodedFilename = encodeURIComponent(filename);
 
-        await apiClient.put(`${API_URL}/documents/${filename}/metadata`, updateData);
+        // Find current document to preserve other fields
+        const currentDoc = documents.find(d => d.filename === filename);
+        if (!currentDoc) continue;
+
+        const updateData: any = {
+          filename: filename,
+          title: currentDoc.title || '',
+          author: bulkAction === 'author' ? bulkValue : (currentDoc.author || ''),
+          category: null,
+          mc_press_url: currentDoc.mc_press_url || null
+        };
+
+        await apiClient.put(`${API_URL}/documents/${encodedFilename}/metadata`, updateData);
       }
       setSelectedIds(new Set());
       setBulkAction('');
