@@ -12,19 +12,75 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class ChatHandler:
-    def __init__(self, vector_store):
+    def __init__(self, vector_store, conversation_service=None):
         self.vector_store = vector_store
+        self.conversation_service = conversation_service  # Optional - for persistence
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             logger.error("OPENAI_API_KEY not found in environment variables!")
             raise ValueError("OPENAI_API_KEY environment variable is required")
         self.client = openai.AsyncOpenAI(api_key=api_key)
-        self.conversations = {}
+        self.conversations = {}  # In-memory cache for performance
+        self.db_conversation_ids = {}  # Map in-memory IDs to DB conversation IDs
         # Initialize tiktoken encoder for token counting
         self.model = OPENAI_CONFIG["model"]
         self.encoding = tiktoken.encoding_for_model(self.model)
         self.max_context_tokens = 6000  # Increased from 3000 to provide richer context
         
+    async def _ensure_conversation_exists(self, conversation_id: str, first_message: str, user_id: str = "guest") -> str:
+        """
+        Ensure conversation exists in database. Creates if needed.
+        Returns the database conversation ID.
+        """
+        if not self.conversation_service:
+            return conversation_id  # No persistence - return as-is
+
+        # Check if we already have a DB conversation for this in-memory ID
+        if conversation_id in self.db_conversation_ids:
+            return self.db_conversation_ids[conversation_id]
+
+        try:
+            # Try to get existing conversation from DB
+            conv, messages = await self.conversation_service.get_conversation_with_messages(
+                conversation_id, user_id
+            )
+            # Found existing - map it
+            self.db_conversation_ids[conversation_id] = conv.id
+            logger.info(f"✅ Found existing conversation in DB: {conv.id}")
+            return conv.id
+        except ValueError:
+            # Conversation doesn't exist - create it
+            try:
+                conv = await self.conversation_service.create_conversation(
+                    user_id=user_id,
+                    initial_message=first_message
+                )
+                self.db_conversation_ids[conversation_id] = conv.id
+                logger.info(f"✅ Created new conversation in DB: {conv.id} - '{conv.title}'")
+                return conv.id
+            except Exception as e:
+                logger.error(f"⚠️ Failed to create conversation in DB: {e}")
+                return conversation_id  # Fallback to in-memory only
+
+    async def _save_message_to_db(self, conversation_id: str, role: str, content: str, metadata: dict = None):
+        """Save message to database"""
+        if not self.conversation_service:
+            return  # No persistence available
+
+        # Get the DB conversation ID
+        db_conv_id = self.db_conversation_ids.get(conversation_id, conversation_id)
+
+        try:
+            await self.conversation_service.add_message(
+                conversation_id=db_conv_id,
+                role=role,
+                content=content,
+                metadata=metadata or {}
+            )
+            logger.info(f"✅ Saved {role} message to DB conversation {db_conv_id}")
+        except Exception as e:
+            logger.error(f"⚠️ Failed to save message to DB: {e}")
+
     def count_tokens(self, text: str) -> int:
         """Count tokens in text using tiktoken"""
         return len(self.encoding.encode(text))
@@ -68,10 +124,14 @@ class ChatHandler:
         avg_confidence = total_similarity / len(relevant_docs)
         return round(avg_confidence, 3)
         
-    async def stream_response(self, message: str, conversation_id: str) -> AsyncGenerator[Dict[str, Any], None]:
+    async def stream_response(self, message: str, conversation_id: str, user_id: str = "guest") -> AsyncGenerator[Dict[str, Any], None]:
         logger.info(f"=== CHAT REQUEST DEBUG ===")
         logger.info(f"Query: '{message}'")
         logger.info(f"Conversation ID: {conversation_id}")
+        logger.info(f"User ID: {user_id}")
+
+        # Ensure conversation exists in database
+        await self._ensure_conversation_exists(conversation_id, message, user_id)
         
         # Get more results initially to have options for filtering
         logger.info("Step 1: Calling vector store search...")
@@ -195,8 +255,28 @@ Please answer the following question based on your general knowledge, but clearl
                         "timestamp": datetime.now().isoformat()
                     }
             
+            # Save to in-memory conversation
             self.conversations[conversation_id].append({"role": "user", "content": message})
             self.conversations[conversation_id].append({"role": "assistant", "content": full_response})
+
+            # Save messages to database
+            await self._save_message_to_db(
+                conversation_id,
+                "user",
+                message,
+                metadata={"sources": relevant_docs[:3] if relevant_docs else []}  # Store top 3 sources
+            )
+            await self._save_message_to_db(
+                conversation_id,
+                "assistant",
+                full_response,
+                metadata={
+                    "model": OPENAI_CONFIG["model"],
+                    "confidence": self.calculate_confidence(relevant_docs),
+                    "source_count": len(relevant_docs),
+                    "context_tokens": self.count_tokens(context) if context else 0
+                }
+            )
             
             # Calculate response metadata
             confidence_score = self.calculate_confidence(relevant_docs)

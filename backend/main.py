@@ -367,8 +367,17 @@ try:
     set_conversation_service(conversation_service)
     app.include_router(conversation_router)
     print("✅ Conversation history endpoints enabled at /api/conversations")
+
+    # Initialize chat_handler with conversation persistence
+    global chat_handler
+    chat_handler = ChatHandler(vector_store, conversation_service)
+    print("✅ Chat handler initialized with conversation persistence")
 except Exception as e:
     print(f"⚠️ Could not enable conversation service: {e}")
+    # Fallback to chat handler without persistence
+    if chat_handler is None:
+        chat_handler = ChatHandler(vector_store)
+        print("⚠️ Chat handler initialized WITHOUT conversation persistence")
 
 # Set vector store for regenerate embeddings if available
 if regenerate_router:
@@ -486,7 +495,8 @@ async def shutdown_event():
         except Exception as e:
             print(f"⚠️  Error during code upload system shutdown: {e}")
 
-chat_handler = ChatHandler(vector_store)
+# chat_handler will be initialized after conversation_service is created
+chat_handler = None
 category_mapper = get_category_mapper()
 
 # Global upload progress tracking
@@ -879,12 +889,17 @@ async def update_document_metadata(filename: str, request: UpdateMetadataRequest
 @app.post("/chat")
 async def chat(message: ChatMessage):
     async def generate():
+        # TODO: Extract user_id from authentication when implemented
+        # For now, use "guest" as default user
+        user_id = "guest"
+
         async for chunk in chat_handler.stream_response(
-            message.message, 
-            message.conversation_id
+            message.message,
+            message.conversation_id,
+            user_id
         ):
             yield f"data: {json.dumps(chunk)}\n\n"
-    
+
     return StreamingResponse(generate(), media_type="text/event-stream")
 
 # Search endpoint removed - will be replaced with conversation history search in future stories
