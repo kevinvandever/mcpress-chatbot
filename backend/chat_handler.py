@@ -130,8 +130,13 @@ class ChatHandler:
         logger.info(f"Conversation ID: {conversation_id}")
         logger.info(f"User ID: {user_id}")
 
-        # Ensure conversation exists in database
-        await self._ensure_conversation_exists(conversation_id, message, user_id)
+        # Ensure conversation exists in database (non-blocking - chat works even if this fails)
+        try:
+            await self._ensure_conversation_exists(conversation_id, message, user_id)
+        except Exception as e:
+            logger.error(f"⚠️ Failed to create/load conversation (continuing without persistence): {e}")
+            import traceback
+            logger.error(traceback.format_exc())
         
         # Get more results initially to have options for filtering
         logger.info("Step 1: Calling vector store search...")
@@ -259,24 +264,27 @@ Please answer the following question based on your general knowledge, but clearl
             self.conversations[conversation_id].append({"role": "user", "content": message})
             self.conversations[conversation_id].append({"role": "assistant", "content": full_response})
 
-            # Save messages to database
-            await self._save_message_to_db(
-                conversation_id,
-                "user",
-                message,
-                metadata={"sources": relevant_docs[:3] if relevant_docs else []}  # Store top 3 sources
-            )
-            await self._save_message_to_db(
-                conversation_id,
-                "assistant",
-                full_response,
-                metadata={
-                    "model": OPENAI_CONFIG["model"],
-                    "confidence": self.calculate_confidence(relevant_docs),
-                    "source_count": len(relevant_docs),
-                    "context_tokens": self.count_tokens(context) if context else 0
-                }
-            )
+            # Save messages to database (non-blocking - chat works even if this fails)
+            try:
+                await self._save_message_to_db(
+                    conversation_id,
+                    "user",
+                    message,
+                    metadata={"sources": relevant_docs[:3] if relevant_docs else []}  # Store top 3 sources
+                )
+                await self._save_message_to_db(
+                    conversation_id,
+                    "assistant",
+                    full_response,
+                    metadata={
+                        "model": OPENAI_CONFIG["model"],
+                        "confidence": self.calculate_confidence(relevant_docs),
+                        "source_count": len(relevant_docs),
+                        "context_tokens": self.count_tokens(context) if context else 0
+                    }
+                )
+            except Exception as e:
+                logger.error(f"⚠️ Failed to save messages to DB (continuing): {e}")
             
             # Calculate response metadata
             confidence_score = self.calculate_confidence(relevant_docs)
