@@ -383,11 +383,11 @@ class PostgresVectorStore:
         
         async with self.pool.acquire() as conn:
             rows = await conn.fetch("""
-                SELECT filename, COUNT(*) as chunk_count, 
+                SELECT filename, COUNT(*) as chunk_count,
                        MAX(page_number) as total_pages,
                        MIN(created_at) as uploaded_at,
-                       MIN(metadata::text)::jsonb as metadata
-                FROM documents 
+                       MAX(metadata) as metadata
+                FROM documents
                 GROUP BY filename
                 ORDER BY MIN(created_at) DESC
             """)
@@ -413,7 +413,8 @@ class PostgresVectorStore:
                     'uploaded_at': row['uploaded_at'].isoformat() if row['uploaded_at'] else None,
                     'author': metadata.get('author', 'Unknown') if isinstance(metadata, dict) else 'Unknown',
                     'category': metadata.get('category', 'Uncategorized') if isinstance(metadata, dict) else 'Uncategorized',
-                    'title': metadata.get('title', row['filename'].replace('.pdf', '')) if isinstance(metadata, dict) else row['filename'].replace('.pdf', '')
+                    'title': metadata.get('title', row['filename'].replace('.pdf', '')) if isinstance(metadata, dict) else row['filename'].replace('.pdf', ''),
+                    'mc_press_url': metadata.get('mc_press_url') if isinstance(metadata, dict) else None
                 })
         
         result = {'documents': documents}
