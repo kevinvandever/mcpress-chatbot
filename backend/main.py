@@ -38,12 +38,16 @@ try:
     from chat_handler import ChatHandler
     from backup_manager import backup_manager
     from auth_routes import router as auth_router
+    from conversation_routes import router as conversation_router, set_conversation_service
+    from conversation_service import ConversationService
 except ImportError:
     # Fall back to local development imports
     from backend.pdf_processor_full import PDFProcessorFull
     from backend.chat_handler import ChatHandler
     from backend.backup_manager import backup_manager
     from backend.auth_routes import router as auth_router
+    from backend.conversation_routes import router as conversation_router, set_conversation_service
+    from backend.conversation_service import ConversationService
 
 # Import the fixed admin documents router
 try:
@@ -256,6 +260,13 @@ app.add_middleware(
 # Include auth router
 app.include_router(auth_router)
 
+# Initialize and include conversation router (Story-011)
+print("🔄 Initializing conversation service...")
+conversation_service = ConversationService(vector_store)
+set_conversation_service(conversation_service)
+app.include_router(conversation_router)
+print("✅ Conversation history endpoints enabled at /api/conversations")
+
 # REMOVING ALL CUSTOM ENDPOINTS TO DEBUG
 # The app stops responding when we add ANY new code
 print("⚠️ All custom endpoints disabled for debugging")
@@ -327,6 +338,33 @@ if migration_available:
         print("✅ Story 004 migration endpoint enabled at /run-story4-migration-safe")
     except Exception as e:
         print(f"⚠️ Could not enable migration endpoint: {e}")
+
+# Story 011 conversation history migration endpoint
+try:
+    # Try Railway-style import first
+    try:
+        from conversation_migration_endpoint import router as story11_migration_router, set_vector_store as set_story11_store
+        story11_available = True
+    except ImportError:
+        # Fallback to local development import
+        from backend.conversation_migration_endpoint import router as story11_migration_router, set_vector_store as set_story11_store
+        story11_available = True
+    print("✅ Story 011 conversation migration endpoint enabled")
+except Exception as e:
+    print(f"⚠️ Story 011 migration endpoint not available: {e}")
+    story11_migration_router = None
+    set_story11_store = None
+    story11_available = False
+
+# Set vector store for Story 011 migration if available
+if story11_available:
+    try:
+        if set_story11_store:
+            set_story11_store(vector_store)
+        app.include_router(story11_migration_router)
+        print("✅ Story 011 migration endpoint enabled at /run-story11-conversation-migration")
+    except Exception as e:
+        print(f"⚠️ Could not enable Story 011 migration endpoint: {e}")
 
 # Set vector store for regenerate embeddings if available
 if regenerate_router:
