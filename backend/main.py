@@ -368,16 +368,13 @@ try:
     app.include_router(conversation_router)
     print("✅ Conversation history endpoints enabled at /api/conversations")
 
-    # Initialize chat_handler with conversation persistence
+    # Update existing chat_handler with conversation persistence
     global chat_handler
-    chat_handler = ChatHandler(vector_store, conversation_service)
-    print("✅ Chat handler initialized with conversation persistence")
+    chat_handler.conversation_service = conversation_service
+    print("✅ Chat handler updated with conversation persistence")
 except Exception as e:
     print(f"⚠️ Could not enable conversation service: {e}")
-    # Fallback to chat handler without persistence
-    if chat_handler is None:
-        chat_handler = ChatHandler(vector_store)
-        print("⚠️ Chat handler initialized WITHOUT conversation persistence")
+    print("⚠️ Chat handler will work WITHOUT conversation persistence")
 
 # Set vector store for regenerate embeddings if available
 if regenerate_router:
@@ -495,8 +492,9 @@ async def shutdown_event():
         except Exception as e:
             print(f"⚠️  Error during code upload system shutdown: {e}")
 
-# chat_handler will be initialized after conversation_service is created
-chat_handler = None
+# Initialize chat_handler without persistence first (works immediately)
+# Will be updated with conversation_service later if available
+chat_handler = ChatHandler(vector_store)
 category_mapper = get_category_mapper()
 
 # Global upload progress tracking
