@@ -6,19 +6,35 @@ from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import Optional, List
 from datetime import datetime
 
-from conversation_models import (
-    Conversation,
-    Message,
-    CreateConversationRequest,
-    AddMessageRequest,
-    UpdateConversationRequest,
-    ConversationListFilters,
-    ConversationListResponse,
-    ConversationWithMessages,
-    ConversationSearchRequest,
-    BulkOperationRequest,
-    ConversationStatsResponse
-)
+# Handle Railway vs local imports
+try:
+    from conversation_models import (
+        Conversation,
+        Message,
+        CreateConversationRequest,
+        AddMessageRequest,
+        UpdateConversationRequest,
+        ConversationListFilters,
+        ConversationListResponse,
+        ConversationWithMessages,
+        ConversationSearchRequest,
+        BulkOperationRequest,
+        ConversationStatsResponse
+    )
+except ImportError:
+    from backend.conversation_models import (
+        Conversation,
+        Message,
+        CreateConversationRequest,
+        AddMessageRequest,
+        UpdateConversationRequest,
+        ConversationListFilters,
+        ConversationListResponse,
+        ConversationWithMessages,
+        ConversationSearchRequest,
+        BulkOperationRequest,
+        ConversationStatsResponse
+    )
 
 router = APIRouter(prefix="/api/conversations", tags=["conversations"])
 

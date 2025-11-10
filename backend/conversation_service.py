@@ -7,14 +7,30 @@ import os
 import json
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
-import anthropic
 
-from conversation_models import (
-    Conversation,
-    Message,
-    ConversationAnalytics,
-    ConversationListFilters
-)
+# Try to import anthropic (optional for AI title generation)
+try:
+    import anthropic
+    ANTHROPIC_AVAILABLE = True
+except ImportError:
+    ANTHROPIC_AVAILABLE = False
+    print("⚠️ anthropic package not available - AI title generation will be disabled")
+
+# Handle Railway vs local imports
+try:
+    from conversation_models import (
+        Conversation,
+        Message,
+        ConversationAnalytics,
+        ConversationListFilters
+    )
+except ImportError:
+    from backend.conversation_models import (
+        Conversation,
+        Message,
+        ConversationAnalytics,
+        ConversationListFilters
+    )
 
 
 class ConversationService:
@@ -30,7 +46,10 @@ class ConversationService:
         self.vector_store = vector_store
         self.claude_api_key = os.getenv('ANTHROPIC_API_KEY') or os.getenv('CLAUDE_API_KEY')
 
-        if not self.claude_api_key:
+        if not ANTHROPIC_AVAILABLE:
+            print("⚠️ anthropic package not available - AI title generation disabled")
+            self.claude_client = None
+        elif not self.claude_api_key:
             print("⚠️ Warning: No Claude API key found. AI title generation will be disabled.")
             self.claude_client = None
         else:
