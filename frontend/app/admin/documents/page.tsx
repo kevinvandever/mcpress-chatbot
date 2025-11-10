@@ -140,9 +140,11 @@ export default function DocumentsManagement() {
     try {
       // Use the /documents/{filename}/metadata endpoint
       await apiClient.put(`${API_URL}/documents/${editingId}/metadata`, {
-        title: editingData.title,
-        author: editingData.author,
-        mc_press_url: editingData.mc_press_url,
+        filename: editingId,
+        title: editingData.title || '',
+        author: editingData.author || '',
+        category: null,
+        mc_press_url: editingData.mc_press_url || null,
       });
       await fetchDocuments();
       cancelEditing();
