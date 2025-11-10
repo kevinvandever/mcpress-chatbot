@@ -425,12 +425,33 @@ class PostgresVectorStore:
         # Only init if pool doesn't exist
         if not self.pool:
             await self.init_database()
-        
+
         async with self.pool.acquire() as conn:
             result = await conn.execute("DELETE FROM documents WHERE filename = $1", filename)
             deleted_count = int(result.split()[-1])
             logger.info(f"Deleted {deleted_count} chunks for {filename}")
-    
+
+    async def update_document_metadata(self, filename: str, title: str, author: str, category: str = None, mc_press_url: str = None):
+        """Update document metadata for all chunks of a specific filename"""
+        # Only init if pool doesn't exist
+        if not self.pool:
+            await self.init_database()
+
+        metadata = {
+            'title': title,
+            'author': author,
+            'category': category,
+            'mc_press_url': mc_press_url
+        }
+
+        async with self.pool.acquire() as conn:
+            await conn.execute("""
+                UPDATE documents
+                SET metadata = $2::jsonb
+                WHERE filename = $1
+            """, filename, json.dumps(metadata))
+            logger.info(f"Updated metadata for {filename}: {metadata}")
+
     async def get_document_count(self) -> int:
         """Get total number of document chunks"""
         # Only init if pool doesn't exist
