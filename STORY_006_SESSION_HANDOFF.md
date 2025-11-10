@@ -49,24 +49,34 @@
 - `frontend/app/code-analysis/upload/page.tsx` (check for auth guards)
 - Look for any other redirect logic in the app
 
-### Issue 2: Dashboard Still Shows 0 Documents
+### Issue 2: Dashboard Still Shows 0 Documents ✅ RESOLVED
 **Problem**: Admin dashboard shows 0 documents instead of 115
 
-**What We Fixed**: Updated `frontend/app/admin/dashboard/page.tsx` and `frontend/app/admin/documents/page.tsx` to use `apiClient` (commit 5b83197)
+**Resolution Date**: November 10, 2025
+**Fixed By**: Dexter (Dev Agent)
 
-**Status**: Fix deployed to Netlify but still showing 0 documents
+**Root Causes Identified**:
+1. `/admin/documents` endpoint returning empty array due to missing `subcategory` column
+2. Frontend seeing "success" response, never falling back to `/documents` endpoint
+3. Auto-select all rows bug (documents using missing `id` field instead of `filename`)
+4. PostgreSQL vector store missing `update_document_metadata` method
+5. `list_documents` query using incorrect aggregation (MIN vs latest metadata)
 
-**Possible Causes**:
-- Browser cache not cleared
-- Netlify deployment incomplete
-- API endpoint returning wrong data
-- Frontend parsing issue
+**Fixes Applied**:
+- **Commit 2b45372**: Bypassed broken `/admin/documents`, use `/documents` directly
+- **Commit 9f04fe7**: URL encode filenames with special characters (periods breaking URLs)
+- **Commit 1dae0ef**: Added missing `update_document_metadata` method to PostgresVectorStore
+- **Commit 609598b**: Fixed `list_documents` query to show updated metadata (attempted MAX aggregation)
+- **Commit 285a506**: HOTFIX - replaced MAX(jsonb) with CTE using DISTINCT ON
 
-**Next Steps**:
-1. Hard refresh dashboard page (Cmd+Shift+R)
-2. Check browser Network tab - is `/api/documents` being called?
-3. Check `/api/documents` response - does it have 115 documents?
-4. Check console for errors
+**Additional Improvements**:
+- Removed category column (not needed)
+- Added MC Press URL field for purchase links
+- Removed CSV import/export (one-by-one editing preferred)
+- Fixed all TypeScript errors
+- Cleaned up 211 lines of unused code
+
+**Status**: ✅ All 115 documents now display correctly, metadata updates persist properly
 
 ---
 
