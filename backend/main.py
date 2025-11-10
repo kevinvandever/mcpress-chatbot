@@ -260,13 +260,6 @@ app.add_middleware(
 # Include auth router
 app.include_router(auth_router)
 
-# Initialize and include conversation router (Story-011)
-print("🔄 Initializing conversation service...")
-conversation_service = ConversationService(vector_store)
-set_conversation_service(conversation_service)
-app.include_router(conversation_router)
-print("✅ Conversation history endpoints enabled at /api/conversations")
-
 # REMOVING ALL CUSTOM ENDPOINTS TO DEBUG
 # The app stops responding when we add ANY new code
 print("⚠️ All custom endpoints disabled for debugging")
@@ -365,6 +358,17 @@ if story11_available:
         print("✅ Story 011 migration endpoint enabled at /run-story11-conversation-migration")
     except Exception as e:
         print(f"⚠️ Could not enable Story 011 migration endpoint: {e}")
+
+# Initialize and include conversation router (Story-011)
+# Must be after vector_store is initialized
+try:
+    print("🔄 Initializing conversation service...")
+    conversation_service = ConversationService(vector_store)
+    set_conversation_service(conversation_service)
+    app.include_router(conversation_router)
+    print("✅ Conversation history endpoints enabled at /api/conversations")
+except Exception as e:
+    print(f"⚠️ Could not enable conversation service: {e}")
 
 # Set vector store for regenerate embeddings if available
 if regenerate_router:
