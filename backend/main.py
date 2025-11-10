@@ -17,7 +17,8 @@ if os.getenv("RAILWAY_ENVIRONMENT"):
         from backend.startup_check import check_storage
     check_storage()
 
-from fastapi import FastAPI, UploadFile, File, HTTPException, Query
+from fastapi import FastAPI, UploadFile, File, HTTPException, Query, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -885,11 +886,22 @@ async def update_document_metadata(filename: str, request: UpdateMetadataRequest
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/chat")
-async def chat(message: ChatMessage):
+async def chat(
+    message: ChatMessage,
+    credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False))
+):
     async def generate():
-        # TODO: Extract user_id from authentication when implemented
-        # For now, use "guest" as default user
+        # Get authenticated user_id, fallback to "guest" if not authenticated
         user_id = "guest"
+        if credentials:
+            try:
+                from auth_routes import get_current_user
+                # Manually call get_current_user with credentials
+                user = await get_current_user(credentials)
+                user_id = str(user.get("id", "guest"))
+                print(f"✅ Authenticated user: {user_id}")
+            except Exception as e:
+                print(f"⚠️ Could not authenticate user, using 'guest': {e}")
 
         async for chunk in chat_handler.stream_response(
             message.message,
