@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import AdminLayout from '@/components/AdminLayout';
 import apiClient from '../../../config/axios';
 import { API_URL } from '../../../config/api';
@@ -63,41 +63,8 @@ export default function DocumentsManagement() {
     try {
       setLoading(true);
 
-      const params = new URLSearchParams({
-        page: pagination.page.toString(),
-        per_page: pagination.perPage.toString(),
-        search: searchTerm,
-        category: categoryFilter,
-        sort_by: sortField,
-        sort_direction: sortDirection,
-      });
-
-      // Check if admin token exists before trying admin endpoint
-      const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
-
-      if (adminToken) {
-        // Try admin endpoint first if logged in
-        try {
-          const response = await apiClient.get(`${API_URL}/admin/documents?${params}`);
-          const data = response.data;
-          setDocuments(data.documents || []);
-          setPagination(prev => ({
-            ...prev,
-            total: data.total || 0,
-            totalPages: data.total_pages || 0,
-          }));
-          return;
-        } catch (adminErr: any) {
-          // Admin endpoint failed (404 or other error), fall back to regular endpoint
-          if (adminErr.response?.status === 404 || adminErr.response?.status === 401) {
-            console.log('Admin documents endpoint failed, falling back to documents endpoint');
-          } else {
-            throw adminErr;
-          }
-        }
-      }
-
-      // Fallback to regular documents endpoint (public, no auth required)
+      // TEMP FIX: Skip broken /admin/documents endpoint, use /documents directly
+      // TODO: Fix books table schema and re-enable /admin/documents
       const fallbackResponse = await apiClient.get(`${API_URL}/documents`);
       const data = fallbackResponse.data;
       const docs = data.documents || [];
