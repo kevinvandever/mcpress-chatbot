@@ -6,18 +6,14 @@ import apiClient from '../../../config/axios';
 import { API_URL } from '../../../config/api';
 
 interface Document {
-  id: number;
   filename: string;
   title: string;
   author?: string;
-  category: string;
-  subcategory?: string;
-  total_pages: number;
-  file_hash: string;
-  processed_at: string;
+  category?: string;
+  total_pages?: string | number;
+  uploaded_at?: string;
   mc_press_url?: string;
-  description?: string;
-  tags?: string[];
+  chunk_count?: number;
 }
 
 interface PaginationInfo {
@@ -29,13 +25,12 @@ interface PaginationInfo {
 
 export default function DocumentsManagement() {
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [editingData, setEditingData] = useState<Partial<Document>>({});
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
   const [sortField, setSortField] = useState<keyof Document>('title');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [pagination, setPagination] = useState<PaginationInfo>({
@@ -45,19 +40,13 @@ export default function DocumentsManagement() {
     totalPages: 0,
   });
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<number | 'bulk' | null>(null);
-  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | 'bulk' | null>(null);
   const [bulkAction, setBulkAction] = useState('');
   const [bulkValue, setBulkValue] = useState('');
 
-  const categories = [
-    'Programming', 'System Administration', 'Database',
-    'Business Intelligence', 'Development Tools', 'Other'
-  ];
-
   useEffect(() => {
     fetchDocuments();
-  }, [pagination.page, searchTerm, categoryFilter, sortField, sortDirection]);
+  }, [pagination.page, searchTerm, sortField, sortDirection]);
 
   const fetchDocuments = async () => {
     try {
@@ -75,11 +64,6 @@ export default function DocumentsManagement() {
         filteredDocs = filteredDocs.filter((doc: any) =>
           doc.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           doc.author?.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-      }
-      if (categoryFilter) {
-        filteredDocs = filteredDocs.filter((doc: any) =>
-          doc.category === categoryFilter
         );
       }
 
@@ -122,30 +106,26 @@ export default function DocumentsManagement() {
     if (selectedIds.size === documents.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(documents.map(doc => doc.id)));
+      setSelectedIds(new Set(documents.map(doc => doc.filename)));
     }
   };
 
-  const handleSelectOne = (id: number) => {
+  const handleSelectOne = (filename: string) => {
     const newSelected = new Set(selectedIds);
-    if (newSelected.has(id)) {
-      newSelected.delete(id);
+    if (newSelected.has(filename)) {
+      newSelected.delete(filename);
     } else {
-      newSelected.add(id);
+      newSelected.add(filename);
     }
     setSelectedIds(newSelected);
   };
 
   const startEditing = (doc: Document) => {
-    setEditingId(doc.id);
+    setEditingId(doc.filename);
     setEditingData({
       title: doc.title,
       author: doc.author,
-      category: doc.category,
-      subcategory: doc.subcategory,
       mc_press_url: doc.mc_press_url,
-      description: doc.description,
-      tags: doc.tags,
     });
   };
 
@@ -158,24 +138,14 @@ export default function DocumentsManagement() {
     if (!editingId) return;
 
     try {
-      try {
-        await apiClient.patch(`${API_URL}/admin/documents/${editingId}`, editingData);
-        await fetchDocuments();
-        cancelEditing();
-      } catch (adminErr: any) {
-        // Fallback to regular endpoint
-        if (adminErr.response?.status === 404) {
-          await apiClient.put(`${API_URL}/documents/${documents.find(d => d.id === editingId)?.filename}/metadata`, {
-            title: editingData.title,
-            author: editingData.author,
-            category: editingData.category,
-          });
-          await fetchDocuments();
-          cancelEditing();
-        } else {
-          throw adminErr;
-        }
-      }
+      // Use the /documents/{filename}/metadata endpoint
+      await apiClient.put(`${API_URL}/documents/${editingId}/metadata`, {
+        title: editingData.title,
+        author: editingData.author,
+        mc_press_url: editingData.mc_press_url,
+      });
+      await fetchDocuments();
+      cancelEditing();
     } catch (err) {
       setError('Error updating document');
       console.error('Update error:', err);
@@ -185,35 +155,16 @@ export default function DocumentsManagement() {
   const handleDelete = async () => {
     try {
       if (deleteTarget === 'bulk') {
-        // Bulk delete
-        try {
-          await apiClient.delete(`${API_URL}/admin/documents/bulk`, {
-            data: { ids: Array.from(selectedIds) },
-          });
-          setSelectedIds(new Set());
-          await fetchDocuments();
-        } catch (bulkErr: any) {
-          // If bulk endpoint doesn't exist, delete one by one
-          if (bulkErr.response?.status === 404) {
-            for (const id of selectedIds) {
-              const doc = documents.find(d => d.id === id);
-              if (doc) {
-                await apiClient.delete(`${API_URL}/documents/${doc.filename}`);
-              }
-            }
-            setSelectedIds(new Set());
-            await fetchDocuments();
-          } else {
-            throw bulkErr;
-          }
+        // Delete selected files one by one
+        for (const filename of selectedIds) {
+          await apiClient.delete(`${API_URL}/documents/${filename}`);
         }
-      } else if (typeof deleteTarget === 'number') {
+        setSelectedIds(new Set());
+        await fetchDocuments();
+      } else if (typeof deleteTarget === 'string') {
         // Single delete
-        const doc = documents.find(d => d.id === deleteTarget);
-        if (doc) {
-          await apiClient.delete(`${API_URL}/documents/${doc.filename}`);
-          await fetchDocuments();
-        }
+        await apiClient.delete(`${API_URL}/documents/${deleteTarget}`);
+        await fetchDocuments();
       }
     } catch (err) {
       setError('Error deleting documents');
@@ -228,101 +179,20 @@ export default function DocumentsManagement() {
     if (!bulkAction || selectedIds.size === 0) return;
 
     try {
-      try {
-        await apiClient.patch(`${API_URL}/admin/documents/bulk`, {
-          ids: Array.from(selectedIds),
-          action: bulkAction,
-          value: bulkValue,
-        });
-        setSelectedIds(new Set());
-        setBulkAction('');
-        setBulkValue('');
-        await fetchDocuments();
-      } catch (bulkErr: any) {
-        // If bulk endpoint doesn't exist, update one by one
-        if (bulkErr.response?.status === 404) {
-          for (const id of selectedIds) {
-            const doc = documents.find(d => d.id === id);
-            if (doc) {
-              const updateData: any = {};
-              if (bulkAction === 'category') updateData.category = bulkValue;
-              if (bulkAction === 'author') updateData.author = bulkValue;
+      // Update each document one by one
+      for (const filename of selectedIds) {
+        const updateData: any = {};
+        if (bulkAction === 'author') updateData.author = bulkValue;
 
-              await apiClient.put(`${API_URL}/documents/${doc.filename}/metadata`, updateData);
-            }
-          }
-          setSelectedIds(new Set());
-          setBulkAction('');
-          setBulkValue('');
-          await fetchDocuments();
-        } else {
-          throw bulkErr;
-        }
+        await apiClient.put(`${API_URL}/documents/${filename}/metadata`, updateData);
       }
+      setSelectedIds(new Set());
+      setBulkAction('');
+      setBulkValue('');
+      await fetchDocuments();
     } catch (err) {
       setError('Error performing bulk action');
       console.error('Bulk action error:', err);
-    }
-  };
-
-  const exportToCSV = async () => {
-    try {
-      try {
-        const response = await apiClient.get(`${API_URL}/admin/documents/export`, {
-          responseType: 'blob',
-        });
-        const blob = response.data;
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `documents_${new Date().toISOString().split('T')[0]}.csv`;
-        a.click();
-      } catch (exportErr: any) {
-        // Fallback: generate CSV client-side
-        if (exportErr.response?.status === 404) {
-          const allDocsResponse = await apiClient.get(`${API_URL}/documents`);
-          const data = allDocsResponse.data;
-          const docs = data.documents || [];
-
-          const csv = [
-            'id,filename,title,author,category,subcategory,total_pages,processed_at',
-            ...docs.map((doc: any) =>
-              `${doc.id},"${doc.filename}","${doc.title || ''}","${doc.author || ''}","${doc.category || ''}","${doc.subcategory || ''}",${doc.total_pages || 0},"${doc.processed_at || ''}"`
-            )
-          ].join('\n');
-
-          const blob = new Blob([csv], { type: 'text/csv' });
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `documents_${new Date().toISOString().split('T')[0]}.csv`;
-          a.click();
-        } else {
-          throw exportErr;
-        }
-      }
-    } catch (err) {
-      setError('Error exporting documents');
-      console.error('Export error:', err);
-    }
-  };
-
-  const handleImportCSV = async (file: File) => {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      await apiClient.post(`${API_URL}/admin/documents/import`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      await fetchDocuments();
-      setShowImportDialog(false);
-    } catch (err) {
-      setError('Error importing CSV');
-      console.error('Import error:', err);
     }
   };
 
@@ -334,59 +204,25 @@ export default function DocumentsManagement() {
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Documents Management</h2>
             <p className="mt-1 text-sm text-gray-600">
-              Manage document metadata and organization
+              Edit book titles, authors, and purchase links
             </p>
-          </div>
-          <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-            <div className="space-x-2">
-              <button
-                onClick={exportToCSV}
-                className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-              >
-                Export CSV
-              </button>
-              <button
-                onClick={() => setShowImportDialog(true)}
-                className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-              >
-                Import CSV
-              </button>
-            </div>
           </div>
         </div>
 
         {/* Filters */}
         <div className="bg-white shadow rounded-lg p-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div>
-              <label htmlFor="search" className="block text-sm font-medium text-gray-700">
-                Search
-              </label>
-              <input
-                type="text"
-                id="search"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                placeholder="Search by title or author..."
-              />
-            </div>
-            <div>
-              <label htmlFor="category" className="block text-sm font-medium text-gray-700">
-                Category
-              </label>
-              <select
-                id="category"
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              >
-                <option value="">All Categories</option>
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
+          <div>
+            <label htmlFor="search" className="block text-sm font-medium text-gray-700">
+              Search
+            </label>
+            <input
+              type="text"
+              id="search"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              placeholder="Search by title or author..."
+            />
           </div>
         </div>
 
@@ -404,7 +240,6 @@ export default function DocumentsManagement() {
                   className="rounded-md border-gray-300 text-sm"
                 >
                   <option value="">Select Action</option>
-                  <option value="category">Update Category</option>
                   <option value="author">Update Author</option>
                   <option value="delete">Delete Selected</option>
                 </select>
@@ -483,20 +318,8 @@ export default function DocumentsManagement() {
                     >
                       Author {sortField === 'author' && (sortDirection === 'asc' ? '↑' : '↓')}
                     </th>
-                    <th
-                      onClick={() => handleSort('category')}
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                    >
-                      Category {sortField === 'category' && (sortDirection === 'asc' ? '↑' : '↓')}
-                    </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Pages
-                    </th>
-                    <th
-                      onClick={() => handleSort('processed_at')}
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                    >
-                      Uploaded {sortField === 'processed_at' && (sortDirection === 'asc' ? '↑' : '↓')}
+                      MC Press URL
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
@@ -505,22 +328,22 @@ export default function DocumentsManagement() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {documents.map((doc) => (
-                    <tr key={doc.id} className="hover:bg-gray-50">
+                    <tr key={doc.filename} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <input
                           type="checkbox"
-                          checked={selectedIds.has(doc.id)}
-                          onChange={() => handleSelectOne(doc.id)}
+                          checked={selectedIds.has(doc.filename)}
+                          onChange={() => handleSelectOne(doc.filename)}
                           className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {editingId === doc.id ? (
+                      <td className="px-6 py-4">
+                        {editingId === doc.filename ? (
                           <input
                             type="text"
                             value={editingData.title || ''}
                             onChange={(e) => setEditingData({ ...editingData, title: e.target.value })}
-                            className="rounded-md border-gray-300 text-sm"
+                            className="w-full rounded-md border-gray-300 text-sm"
                           />
                         ) : (
                           <div>
@@ -529,43 +352,41 @@ export default function DocumentsManagement() {
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {editingId === doc.id ? (
+                      <td className="px-6 py-4">
+                        {editingId === doc.filename ? (
                           <input
                             type="text"
                             value={editingData.author || ''}
                             onChange={(e) => setEditingData({ ...editingData, author: e.target.value })}
-                            className="rounded-md border-gray-300 text-sm"
+                            className="w-full rounded-md border-gray-300 text-sm"
                           />
                         ) : (
                           <div className="text-sm text-gray-900">{doc.author || '-'}</div>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {editingId === doc.id ? (
-                          <select
-                            value={editingData.category || ''}
-                            onChange={(e) => setEditingData({ ...editingData, category: e.target.value })}
-                            className="rounded-md border-gray-300 text-sm"
-                          >
-                            {categories.map(cat => (
-                              <option key={cat} value={cat}>{cat}</option>
-                            ))}
-                          </select>
+                      <td className="px-6 py-4">
+                        {editingId === doc.filename ? (
+                          <input
+                            type="url"
+                            value={editingData.mc_press_url || ''}
+                            onChange={(e) => setEditingData({ ...editingData, mc_press_url: e.target.value })}
+                            placeholder="https://mcpress.link/..."
+                            className="w-full rounded-md border-gray-300 text-sm"
+                          />
                         ) : (
-                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                            {doc.category}
-                          </span>
+                          <div className="text-sm text-gray-900">
+                            {doc.mc_press_url ? (
+                              <a href={doc.mc_press_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                                Link
+                              </a>
+                            ) : (
+                              '-'
+                            )}
+                          </div>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {doc.total_pages || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(doc.processed_at).toLocaleDateString()}
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        {editingId === doc.id ? (
+                        {editingId === doc.filename ? (
                           <div className="space-x-2">
                             <button
                               onClick={saveEditing}
@@ -594,7 +415,7 @@ export default function DocumentsManagement() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setDeleteTarget(doc.id);
+                                setDeleteTarget(doc.filename);
                                 setShowDeleteDialog(true);
                               }}
                               className="text-red-600 hover:text-red-900"
@@ -700,38 +521,6 @@ export default function DocumentsManagement() {
           </div>
         )}
 
-        {/* Import CSV Dialog */}
-        {showImportDialog && (
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full">
-              <h3 className="text-lg font-medium text-gray-900">Import CSV</h3>
-              <p className="mt-2 text-sm text-gray-500">
-                Select a CSV file to import document metadata. The file should contain columns for filename, title, author, category, etc.
-              </p>
-              <div className="mt-4">
-                <input
-                  type="file"
-                  accept=".csv"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      handleImportCSV(file);
-                    }
-                  }}
-                  className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50"
-                />
-              </div>
-              <div className="mt-4 flex space-x-3">
-                <button
-                  onClick={() => setShowImportDialog(false)}
-                  className="flex-1 inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </AdminLayout>
   );
