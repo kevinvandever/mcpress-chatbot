@@ -39,16 +39,29 @@ try:
     from chat_handler import ChatHandler
     from backup_manager import backup_manager
     from auth_routes import router as auth_router
-    from conversation_routes import router as conversation_router, set_conversation_service
-    from conversation_service import ConversationService
 except ImportError:
     # Fall back to local development imports
     from backend.pdf_processor_full import PDFProcessorFull
     from backend.chat_handler import ChatHandler
     from backend.backup_manager import backup_manager
     from backend.auth_routes import router as auth_router
-    from backend.conversation_routes import router as conversation_router, set_conversation_service
-    from backend.conversation_service import ConversationService
+
+# Import conversation modules separately with better error handling
+conversation_router = None
+set_conversation_service = None
+ConversationService = None
+try:
+    from conversation_routes import router as conversation_router, set_conversation_service
+    from conversation_service import ConversationService
+    print("✅ Conversation modules imported (Railway style)")
+except ImportError:
+    try:
+        from backend.conversation_routes import router as conversation_router, set_conversation_service
+        from backend.conversation_service import ConversationService
+        print("✅ Conversation modules imported (local style)")
+    except ImportError as e:
+        print(f"⚠️ Could not import conversation modules: {e}")
+        conversation_router = None
 
 # Import the fixed admin documents router
 try:
@@ -362,20 +375,25 @@ if story11_available:
 
 # Initialize and include conversation router (Story-011)
 # Must be after vector_store is initialized
-try:
-    print("🔄 Initializing conversation service...")
-    conversation_service = ConversationService(vector_store)
-    set_conversation_service(conversation_service)
-    app.include_router(conversation_router)
-    print("✅ Conversation history endpoints enabled at /api/conversations")
+if conversation_router and ConversationService and set_conversation_service:
+    try:
+        print("🔄 Initializing conversation service...")
+        conversation_service = ConversationService(vector_store)
+        set_conversation_service(conversation_service)
+        app.include_router(conversation_router)
+        print("✅ Conversation history endpoints enabled at /api/conversations")
 
-    # Update existing chat_handler with conversation persistence
-    global chat_handler
-    chat_handler.conversation_service = conversation_service
-    print("✅ Chat handler updated with conversation persistence")
-except Exception as e:
-    print(f"⚠️ Could not enable conversation service: {e}")
-    print("⚠️ Chat handler will work WITHOUT conversation persistence")
+        # Update existing chat_handler with conversation persistence
+        global chat_handler
+        chat_handler.conversation_service = conversation_service
+        print("✅ Chat handler updated with conversation persistence")
+    except Exception as e:
+        print(f"⚠️ Could not enable conversation service: {e}")
+        import traceback
+        print(traceback.format_exc())
+        print("⚠️ Chat handler will work WITHOUT conversation persistence")
+else:
+    print("⚠️ Conversation modules not available - chat will work WITHOUT persistence")
 
 # Set vector store for regenerate embeddings if available
 if regenerate_router:
