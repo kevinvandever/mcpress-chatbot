@@ -382,14 +382,31 @@ class PostgresVectorStore:
             await self.init_database()
         
         async with self.pool.acquire() as conn:
+            # Use DISTINCT ON to get one row per filename with most recent metadata
             rows = await conn.fetch("""
-                SELECT filename, COUNT(*) as chunk_count,
-                       MAX(page_number) as total_pages,
-                       MIN(created_at) as uploaded_at,
-                       MAX(metadata) as metadata
-                FROM documents
-                GROUP BY filename
-                ORDER BY MIN(created_at) DESC
+                WITH doc_stats AS (
+                    SELECT filename,
+                           COUNT(*) as chunk_count,
+                           MAX(page_number) as total_pages,
+                           MIN(created_at) as uploaded_at
+                    FROM documents
+                    GROUP BY filename
+                ),
+                latest_metadata AS (
+                    SELECT DISTINCT ON (filename)
+                           filename,
+                           metadata
+                    FROM documents
+                    ORDER BY filename, id DESC
+                )
+                SELECT ds.filename,
+                       ds.chunk_count,
+                       ds.total_pages,
+                       ds.uploaded_at,
+                       lm.metadata
+                FROM doc_stats ds
+                JOIN latest_metadata lm ON ds.filename = lm.filename
+                ORDER BY ds.uploaded_at DESC
             """)
             
             documents = []
