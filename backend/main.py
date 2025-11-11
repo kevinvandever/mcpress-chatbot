@@ -375,6 +375,7 @@ if story11_available:
 
 # Initialize and include conversation router (Story-011)
 # Must be after vector_store is initialized
+conversation_service = None  # Will be set if initialization succeeds
 if conversation_router and ConversationService and set_conversation_service:
     try:
         print("🔄 Initializing conversation service...")
@@ -382,16 +383,13 @@ if conversation_router and ConversationService and set_conversation_service:
         set_conversation_service(conversation_service)
         app.include_router(conversation_router)
         print("✅ Conversation history endpoints enabled at /api/conversations")
-
-        # Update existing chat_handler with conversation persistence
-        global chat_handler
-        chat_handler.conversation_service = conversation_service
-        print("✅ Chat handler updated with conversation persistence")
+        # Note: chat_handler will be updated with conversation_service later (after it's created)
     except Exception as e:
         print(f"⚠️ Could not enable conversation service: {e}")
         import traceback
         print(traceback.format_exc())
         print("⚠️ Chat handler will work WITHOUT conversation persistence")
+        conversation_service = None
 else:
     print("⚠️ Conversation modules not available - chat will work WITHOUT persistence")
 
@@ -514,6 +512,14 @@ async def shutdown_event():
 # Initialize chat_handler without persistence first (works immediately)
 # Will be updated with conversation_service later if available
 chat_handler = ChatHandler(vector_store)
+
+# Update chat_handler with conversation_service if it was successfully initialized
+if conversation_service:
+    chat_handler.conversation_service = conversation_service
+    print("✅ Chat handler updated with conversation persistence")
+else:
+    print("ℹ️ Chat handler running WITHOUT conversation persistence")
+
 category_mapper = get_category_mapper()
 
 # Global upload progress tracking
