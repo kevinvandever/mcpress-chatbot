@@ -150,9 +150,10 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           message: userMessage,
-          conversation_id: 'default'
+          conversation_id: 'default',
+          user_id: 'guest'  // Match backend default for conversation history
         }),
       })
 
