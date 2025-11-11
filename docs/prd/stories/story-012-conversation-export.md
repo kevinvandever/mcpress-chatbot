@@ -714,10 +714,29 @@ None - Implementation completed without blocking issues.
 2. ✅ PDF generation uses HTML fallback (WeasyPrint requires system dependencies)
 3. ✅ Markdown export fully functional with YAML front matter
 4. ✅ Code block extraction and formatting working
-5. ✅ Database schema created for export tracking
+5. ✅ Database schema created for export tracking (conversation_exports table)
 6. ✅ Frontend UI integrated with conversation detail view
-7. ⏸️ Bulk export UI deferred (backend ready, needs separate frontend story)
-8. ⏸️ Export history page deferred to future enhancement
+7. ✅ Database migration executed on Railway via HTTP endpoint
+8. ✅ Guest user ID handling fixed - matches Story-011 pattern exactly
+9. ✅ Export service uses same user ID system as conversation history
+10. ⏸️ Bulk export UI deferred (backend ready, needs separate frontend story)
+11. ⏸️ Export history page deferred to future enhancement
+
+### Known Issues & Resolutions
+- **Issue**: Initial "conversation not found" error
+  - **Root Cause**: Export routes not using same guest user ID pattern as Story-011
+  - **Resolution**: Updated backend to accept user_id query parameter, frontend to use getOrCreateGuestId()
+  - **Status**: Fixed ✅
+
+### Testing Instructions
+1. Navigate to https://mc-press-chatbot.netlify.app
+2. Go to Conversations/History
+3. Open any conversation
+4. Click the export button (download icon) in the action bar
+5. Select PDF or Markdown format
+6. Optionally customize title and options
+7. Click "Export" - file should download immediately
+8. Verify exported file contains conversation with proper formatting
 
 ### File List
 **Backend:**
@@ -743,6 +762,10 @@ None - Implementation completed without blocking issues.
 - [2025-11-11] Built frontend export modal with format selection
 - [2025-11-11] Integrated export button into conversation detail view
 - [2025-11-11] Wrote and executed unit tests - all passing
+- [2025-11-11] Added HTTP endpoint for easy database migration (/run-story12-migration)
+- [2025-11-11] Fixed guest user ID handling to match Story-011 pattern
+- [2025-11-11] Database migration executed successfully on Railway
+- [2025-11-11] Fixed "conversation not found" error - now uses getOrCreateGuestId()
 
 ### Status
-**Ready for Review** - Core export functionality complete. Single conversation export to PDF/Markdown working. Bulk export backend ready, UI deferred to future story.
+**Ready to Test** - All implementation complete. Database migrated. User ID issue fixed. Export feature deployed and ready for end-to-end testing.

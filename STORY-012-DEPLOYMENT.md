@@ -1,6 +1,8 @@
 # Story-012: Conversation Export - Deployment Guide
 
-## Status: Ready for Review
+## Status: Ready to Test ✅
+
+**Latest Update:** User ID handling fixed - export now uses same guest user ID system as Story-011
 
 Story-012 implements conversation export functionality, allowing users to export conversations to PDF and Markdown formats.
 
@@ -27,7 +29,19 @@ Story-012 implements conversation export functionality, allowing users to export
 - Code block extraction tests
 - Filename sanitization tests
 
-## Deployment Steps
+## Deployment Status
+
+### ✅ Completed Steps
+
+1. **Backend Dependencies** - Installed (jinja2, pygments)
+2. **Database Migration** - Executed successfully via `/run-story12-migration`
+3. **Backend Deployment** - Live on Railway
+4. **Frontend Deployment** - Live on Netlify
+5. **Bug Fix** - Guest user ID handling fixed (matches Story-011)
+
+### 🧪 Ready for Testing
+
+## Original Deployment Steps
 
 ### 1. Backend Dependencies
 The following packages are already installed locally:
@@ -160,6 +174,20 @@ If issues occur:
 
 ---
 
+## Deployment History
+
+**2025-11-11 17:00** - Initial implementation completed
+**2025-11-11 17:15** - Database migration executed via HTTP endpoint
+**2025-11-11 17:30** - Fixed guest user ID handling to match Story-011
+**2025-11-11 17:35** - All deployments complete, ready for testing
+
+---
+
 **Implementation completed by:** Dexter (Dev Agent)
 **Date:** 2025-11-11
-**Status:** Ready for Review ✅
+**Status:** Ready to Test ✅
+
+**Final Commits:**
+- `4125838` - Initial Story-012 implementation
+- `06b971b` - Added HTTP migration endpoint
+- `92677b3` - Fixed guest user ID handling
