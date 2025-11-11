@@ -4,6 +4,7 @@
  */
 
 import { API_URL } from '../config/api'
+import { getOrCreateGuestId } from '@/utils/guestAuth'
 
 export interface ExportOptions {
   custom_title?: string
@@ -38,13 +39,17 @@ export async function exportConversation(
 ): Promise<Blob> {
   const token = localStorage.getItem('auth_token')
 
+  // Get user ID using the same method as Story-011
+  const userId = getOrCreateGuestId()
+
   const requestBody: ExportRequest = {
     conversation_id: conversationId,
     format,
     options,
   }
 
-  const response = await fetch(`${API_URL}/api/conversations/${conversationId}/export`, {
+  // Send user_id as query parameter (matches Story-011 pattern)
+  const response = await fetch(`${API_URL}/api/conversations/${conversationId}/export?user_id=${userId}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

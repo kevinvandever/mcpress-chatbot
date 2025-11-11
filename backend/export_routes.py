@@ -61,7 +61,8 @@ async def get_user_id(
 async def export_conversation(
     conversation_id: str,
     request: ExportRequest,
-    user_id: str = Depends(get_user_id)
+    user_id: Optional[str] = None,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
 ):
     """
     Export a single conversation to PDF or Markdown
@@ -72,6 +73,10 @@ async def export_conversation(
     """
     try:
         export_service = get_export_service()
+
+        # Get user_id from query param or JWT (matches Story-011 pattern)
+        if not user_id:
+            user_id = await get_user_id(credentials)
 
         # Validate format
         if request.format not in ['pdf', 'markdown']:
