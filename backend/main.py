@@ -531,6 +531,7 @@ executor = ThreadPoolExecutor(max_workers=3)
 class ChatMessage(BaseModel):
     message: str
     conversation_id: str = "default"
+    user_id: str = "guest"  # Default to guest if not provided
 
 class ProcessingStatus(BaseModel):
     status: str
@@ -915,17 +916,22 @@ async def chat(
     credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False))
 ):
     async def generate():
-        # Get authenticated user_id, fallback to "guest" if not authenticated
-        user_id = "guest"
+        # Use user_id from request body (sent by frontend via guestAuth)
+        # Falls back to JWT auth if needed, then to "guest" as last resort
+        user_id = message.user_id if message.user_id else "guest"
+
+        # Override with JWT auth if credentials provided (admin users)
         if credentials:
             try:
                 from auth_routes import get_current_user
                 # Manually call get_current_user with credentials
                 user = await get_current_user(credentials)
-                user_id = str(user.get("id", "guest"))
-                print(f"✅ Authenticated user: {user_id}")
+                user_id = str(user.get("id", user_id))  # Use JWT user_id if available
+                print(f"✅ Authenticated user (JWT): {user_id}")
             except Exception as e:
-                print(f"⚠️ Could not authenticate user, using 'guest': {e}")
+                print(f"⚠️ Could not authenticate via JWT, using request user_id: {user_id}")
+        else:
+            print(f"✅ Using user_id from request: {user_id}")
 
         async for chunk in chat_handler.stream_response(
             message.message,
