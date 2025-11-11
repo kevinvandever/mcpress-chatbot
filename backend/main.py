@@ -1372,6 +1372,64 @@ async def run_story4_migration():
         "reason": "The old endpoint causes connection timeouts"
     }
 
+@app.get("/run-story12-migration")
+async def run_story12_migration():
+    """Run Story-012 export table migration"""
+    try:
+        if not hasattr(vector_store, 'pool') or not vector_store.pool:
+            return {"error": "Database not available"}
+
+        async with vector_store.pool.acquire() as conn:
+            results = []
+
+            # Create conversation_exports table
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS conversation_exports (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    conversation_id TEXT NOT NULL,
+                    format TEXT NOT NULL,
+                    filename TEXT NOT NULL,
+                    file_size INTEGER,
+                    options JSONB,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            results.append("✅ Created conversation_exports table")
+
+            # Create indexes
+            await conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_exports_user
+                ON conversation_exports(user_id, created_at DESC)
+            """)
+            results.append("✅ Created idx_exports_user index")
+
+            await conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_exports_conversation
+                ON conversation_exports(conversation_id)
+            """)
+            results.append("✅ Created idx_exports_conversation index")
+
+            # Get count
+            count = await conn.fetchval("""
+                SELECT COUNT(*) FROM conversation_exports
+            """)
+
+            return {
+                "success": True,
+                "results": results,
+                "export_count": count,
+                "message": "Story-012 migration completed successfully"
+            }
+
+    except Exception as e:
+        import traceback
+        return {
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+
 # The old implementation is commented out to prevent timeouts
 # It was creating new connections instead of using the pool
 async def OLD_run_story4_migration_DO_NOT_USE():
