@@ -8,28 +8,7 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import BookLink from './BookLink'
 import CompactSources from './CompactSources'
 import { API_URL } from '../config/api'
-
-// Helper function to get user ID (matches conversationService.ts logic)
-function getUserId(): string {
-  if (typeof window === 'undefined') return 'guest'
-
-  // Try to get user ID from localStorage
-  const userId = localStorage.getItem('userId')
-  if (userId) return userId
-
-  // Try to decode from JWT token
-  const token = localStorage.getItem('adminToken')
-  if (token) {
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]))
-      return payload.sub || payload.id || 'guest'
-    } catch {
-      return 'guest'
-    }
-  }
-
-  return 'guest'
-}
+import { getOrCreateGuestId } from '../utils/guestAuth'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -175,7 +154,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
         body: JSON.stringify({
           message: userMessage,
           conversation_id: 'default',
-          user_id: getUserId()  // Use same user_id as conversation history
+          user_id: getOrCreateGuestId()  // Use same user_id as conversation history
         }),
       })
 

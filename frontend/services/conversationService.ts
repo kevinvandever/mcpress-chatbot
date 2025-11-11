@@ -1,4 +1,5 @@
 import { API_URL } from '@/config/api'
+import { getOrCreateGuestId } from '@/utils/guestAuth'
 
 // Types matching backend models
 export interface Conversation {
@@ -62,27 +63,8 @@ function getAuthToken(): string | null {
   return localStorage.getItem('adminToken')
 }
 
-// Get current user ID from localStorage or JWT
-function getUserId(): string {
-  if (typeof window === 'undefined') return 'guest'
-
-  // Try to get user ID from localStorage
-  const userId = localStorage.getItem('userId')
-  if (userId) return userId
-
-  // Try to decode from JWT token
-  const token = getAuthToken()
-  if (token) {
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]))
-      return payload.sub || payload.id || 'guest'
-    } catch {
-      return 'guest'
-    }
-  }
-
-  return 'guest'
-}
+// Note: Using getOrCreateGuestId() from guestAuth.ts for user ID
+// This ensures consistent user ID across chat and history features
 
 // Build fetch options with auth
 function buildFetchOptions(method: string = 'GET', body?: any): RequestInit {
@@ -116,7 +98,7 @@ export async function listConversations(
   page: number = 1,
   per_page: number = 20
 ): Promise<ConversationListResponse> {
-  const userId = getUserId()
+  const userId = getOrCreateGuestId()
 
   const params = new URLSearchParams({
     user_id: userId,
@@ -156,7 +138,7 @@ export async function listConversations(
  * Get a single conversation with all messages
  */
 export async function getConversation(conversationId: string): Promise<ConversationDetailResponse> {
-  const userId = getUserId()
+  const userId = getOrCreateGuestId()
 
   const response = await fetch(
     `${API_URL}/api/conversations/${conversationId}?user_id=${userId}`,
@@ -178,7 +160,7 @@ export async function searchConversations(
   page: number = 1,
   per_page: number = 20
 ): Promise<ConversationListResponse> {
-  const userId = getUserId()
+  const userId = getOrCreateGuestId()
 
   const params = new URLSearchParams({
     user_id: userId,
@@ -206,7 +188,7 @@ export async function updateConversation(
   conversationId: string,
   updates: Partial<Pick<Conversation, 'title' | 'tags' | 'is_favorite' | 'is_archived'>>
 ): Promise<Conversation> {
-  const userId = getUserId()
+  const userId = getOrCreateGuestId()
 
   const response = await fetch(
     `${API_URL}/api/conversations/${conversationId}?user_id=${userId}`,
@@ -224,7 +206,7 @@ export async function updateConversation(
  * Toggle favorite status
  */
 export async function toggleFavorite(conversationId: string): Promise<Conversation> {
-  const userId = getUserId()
+  const userId = getOrCreateGuestId()
 
   const response = await fetch(
     `${API_URL}/api/conversations/${conversationId}/favorite?user_id=${userId}`,
@@ -242,7 +224,7 @@ export async function toggleFavorite(conversationId: string): Promise<Conversati
  * Toggle archive status
  */
 export async function toggleArchive(conversationId: string): Promise<Conversation> {
-  const userId = getUserId()
+  const userId = getOrCreateGuestId()
 
   const response = await fetch(
     `${API_URL}/api/conversations/${conversationId}/archive?user_id=${userId}`,
@@ -260,7 +242,7 @@ export async function toggleArchive(conversationId: string): Promise<Conversatio
  * Delete conversation
  */
 export async function deleteConversation(conversationId: string): Promise<void> {
-  const userId = getUserId()
+  const userId = getOrCreateGuestId()
 
   const response = await fetch(
     `${API_URL}/api/conversations/${conversationId}?user_id=${userId}`,
@@ -276,7 +258,7 @@ export async function deleteConversation(conversationId: string): Promise<void> 
  * Bulk archive conversations
  */
 export async function bulkArchive(conversationIds: string[]): Promise<{ success: boolean; updated: number }> {
-  const userId = getUserId()
+  const userId = getOrCreateGuestId()
 
   const response = await fetch(
     `${API_URL}/api/conversations/bulk/archive?user_id=${userId}`,
@@ -294,7 +276,7 @@ export async function bulkArchive(conversationIds: string[]): Promise<{ success:
  * Bulk delete conversations
  */
 export async function bulkDelete(conversationIds: string[]): Promise<{ success: boolean; deleted: number }> {
-  const userId = getUserId()
+  const userId = getOrCreateGuestId()
 
   const response = await fetch(
     `${API_URL}/api/conversations/bulk/delete?user_id=${userId}`,
@@ -315,7 +297,7 @@ export async function bulkTag(
   conversationIds: string[],
   tags: string[]
 ): Promise<{ success: boolean; updated: number }> {
-  const userId = getUserId()
+  const userId = getOrCreateGuestId()
 
   const response = await fetch(
     `${API_URL}/api/conversations/bulk/tag?user_id=${userId}`,
@@ -333,7 +315,7 @@ export async function bulkTag(
  * Get conversation statistics
  */
 export async function getConversationStats(): Promise<ConversationStats> {
-  const userId = getUserId()
+  const userId = getOrCreateGuestId()
 
   const response = await fetch(
     `${API_URL}/api/conversations/stats?user_id=${userId}`,
