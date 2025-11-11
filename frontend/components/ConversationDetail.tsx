@@ -7,6 +7,7 @@ import {
   deleteConversation,
 } from '@/services/conversationService'
 import type { Conversation, Message } from '@/services/conversationService'
+import ExportModal from './ExportModal'
 
 interface ConversationDetailProps {
   conversationId: string
@@ -28,6 +29,7 @@ export default function ConversationDetail({
   const [isEditing, setIsEditing] = useState(false)
   const [editedTitle, setEditedTitle] = useState('')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showExportModal, setShowExportModal] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -213,6 +215,16 @@ export default function ConversationDetail({
           {/* Actions */}
           <div className="flex items-center gap-2 ml-4">
             <button
+              onClick={() => setShowExportModal(true)}
+              className="p-2 text-gray-400 hover:text-blue-600 rounded-lg transition-colors"
+              title="Export conversation"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+            </button>
+
+            <button
               onClick={handleToggleFavorite}
               className={`p-2 rounded-lg transition-colors ${
                 conversation.is_favorite
@@ -276,6 +288,15 @@ export default function ConversationDetail({
         ))}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Export Modal */}
+      {showExportModal && (
+        <ExportModal
+          conversationId={conversationId}
+          conversationTitle={conversation.title}
+          onClose={() => setShowExportModal(false)}
+        />
+      )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (

@@ -393,6 +393,41 @@ if conversation_router and ConversationService and set_conversation_service:
 else:
     print("⚠️ Conversation modules not available - chat will work WITHOUT persistence")
 
+# Story-012: Conversation Export System
+try:
+    try:
+        from export_routes import router as export_router, set_export_service
+        from export_service import ConversationExportService
+    except ImportError:
+        from backend.export_routes import router as export_router, set_export_service
+        from backend.export_service import ConversationExportService
+
+    EXPORT_AVAILABLE = True
+    print("📦 Story-012: Export module loaded")
+except ImportError as e:
+    print(f"⚠️  Story-012 export system not available: {e}")
+    EXPORT_AVAILABLE = False
+    export_router = None
+    set_export_service = None
+    ConversationExportService = None
+
+# Initialize export service if conversation service is available
+if EXPORT_AVAILABLE and conversation_service:
+    try:
+        print("🔄 Initializing export service...")
+        export_service = ConversationExportService(conversation_service, vector_store)
+        set_export_service(export_service)
+        app.include_router(export_router)
+        print("✅ Export endpoints enabled at /api/conversations/{id}/export")
+    except Exception as e:
+        print(f"⚠️ Could not enable export service: {e}")
+        import traceback
+        print(traceback.format_exc())
+elif EXPORT_AVAILABLE and not conversation_service:
+    print("⚠️ Export service requires conversation service - skipping")
+elif not EXPORT_AVAILABLE:
+    print("⚠️ Export modules not available")
+
 # Set vector store for regenerate embeddings if available
 if regenerate_router:
     try:
