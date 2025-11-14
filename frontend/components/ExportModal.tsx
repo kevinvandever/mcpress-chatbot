@@ -23,7 +23,6 @@ export default function ExportModal({
 }: ExportModalProps) {
   const [format, setFormat] = useState<'pdf' | 'markdown'>('pdf')
   const [includeTimestamps, setIncludeTimestamps] = useState(true)
-  const [includeToc, setIncludeToc] = useState(false)
   const [customTitle, setCustomTitle] = useState('')
   const [isExporting, setIsExporting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -35,7 +34,6 @@ export default function ExportModal({
     try {
       const options: ExportOptions = {
         include_timestamps: includeTimestamps,
-        include_toc: includeToc,
         ...(customTitle && { custom_title: customTitle }),
       }
 
@@ -170,19 +168,6 @@ export default function ExportModal({
                 disabled={isExporting}
               />
               <span className="text-sm text-gray-700">Include message timestamps</span>
-            </label>
-
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={includeToc}
-                onChange={(e) => setIncludeToc(e.target.checked)}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                disabled={isExporting}
-              />
-              <span className="text-sm text-gray-700">
-                Include table of contents (PDF only)
-              </span>
             </label>
           </div>
 
