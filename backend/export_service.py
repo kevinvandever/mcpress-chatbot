@@ -59,12 +59,12 @@ class ConversationExportService:
         # Generate export based on format
         if format == 'pdf':
             file_data = await self.pdf.generate(export_data, options)
-            filename = f"{self._sanitize_filename(conversation['title'])}.pdf"
+            filename = f"{self._sanitize_filename(conversation.title)}.pdf"
             mime_type = 'application/pdf'
 
         elif format == 'markdown':
             file_data = await self.markdown.generate(export_data, options)
-            filename = f"{self._sanitize_filename(conversation['title'])}.md"
+            filename = f"{self._sanitize_filename(conversation.title)}.md"
             mime_type = 'text/markdown'
 
         else:
@@ -123,21 +123,21 @@ class ConversationExportService:
 
     def _prepare_export_data(
         self,
-        conversation: dict,
-        messages: List[dict],
+        conversation,  # Conversation Pydantic model
+        messages: List,  # List of Message Pydantic models
         options: ExportOptions
     ) -> ExportData:
         """Prepare conversation data for export"""
 
         return ExportData(
-            title=options.custom_title or conversation.get('title', 'Conversation'),
+            title=options.custom_title or conversation.title,
             subtitle=options.subtitle,
             metadata={
-                'created_at': conversation.get('created_at'),
-                'updated_at': conversation.get('updated_at'),
+                'created_at': conversation.created_at,
+                'updated_at': conversation.updated_at,
                 'message_count': len(messages),
-                'tags': conversation.get('tags', []),
-                'summary': conversation.get('summary')
+                'tags': conversation.tags or [],
+                'summary': conversation.summary
             },
             messages=[
                 self._format_message(msg, options)
@@ -149,16 +149,16 @@ class ConversationExportService:
 
     def _format_message(
         self,
-        message: dict,
+        message,  # Message Pydantic model
         options: ExportOptions
     ) -> FormattedMessage:
         """Format message for export"""
 
         # Extract code blocks
-        code_blocks = self._extract_code_blocks(message.get('content', ''))
+        code_blocks = self._extract_code_blocks(message.content or '')
 
         # Extract book references from metadata
-        metadata = message.get('metadata', {})
+        metadata = message.metadata or {}
         book_refs_data = metadata.get('book_references', [])
 
         book_refs = []
@@ -170,11 +170,11 @@ class ConversationExportService:
                 ))
 
         return FormattedMessage(
-            role=message.get('role', 'user'),
-            content=message.get('content', ''),
+            role=message.role,
+            content=message.content,
             code_blocks=code_blocks,
             book_references=book_refs,
-            timestamp=message.get('created_at') if options.include_timestamps else None
+            timestamp=message.created_at if options.include_timestamps else None
         )
 
     def _extract_code_blocks(self, content: str) -> List[CodeBlock]:
