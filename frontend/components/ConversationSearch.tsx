@@ -100,41 +100,58 @@ export default function ConversationSearch({
       {/* Filter Panel */}
       {showFilters && (
         <div className="bg-gray-50 rounded-lg p-4 space-y-4 border border-gray-200">
-          {/* Status Filters */}
+          {/* Archive Status - Mutually Exclusive Chips */}
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-2">Status</label>
-            <div className="space-y-2">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={localFilters.is_favorite || false}
-                  onChange={(e) => handleFilterChange('is_favorite', e.target.checked || undefined)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="ml-2 text-sm text-gray-700">Favorites only</span>
-              </label>
-
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={localFilters.is_archived === false}
-                  onChange={(e) => handleFilterChange('is_archived', e.target.checked ? false : undefined)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="ml-2 text-sm text-gray-700">Hide archived</span>
-              </label>
-
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={localFilters.is_archived === true}
-                  onChange={(e) => handleFilterChange('is_archived', e.target.checked ? true : undefined)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="ml-2 text-sm text-gray-700">Archived only</span>
-              </label>
+            <label className="block text-xs font-medium text-gray-700 mb-2">Archive Status</label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleFilterChange('is_archived', undefined)}
+                className={`px-3 py-1.5 text-sm rounded-md border transition-colors ${
+                  localFilters.is_archived === undefined
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => handleFilterChange('is_archived', false)}
+                className={`px-3 py-1.5 text-sm rounded-md border transition-colors ${
+                  localFilters.is_archived === false
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                Active
+              </button>
+              <button
+                onClick={() => handleFilterChange('is_archived', true)}
+                className={`px-3 py-1.5 text-sm rounded-md border transition-colors ${
+                  localFilters.is_archived === true
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                Archived
+              </button>
             </div>
           </div>
+
+          {/* Favorites Filter - Independent */}
+          <div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={localFilters.is_favorite || false}
+                onChange={(e) => handleFilterChange('is_favorite', e.target.checked || undefined)}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-700">⭐ Favorites only</span>
+            </label>
+          </div>
+
+          {/* Divider */}
+          <div className="border-t border-gray-300"></div>
 
           {/* Date Range */}
           <div>
