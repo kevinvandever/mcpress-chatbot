@@ -116,6 +116,12 @@ export default function ConversationDetail({
 
   const formatTimestamp = (dateString: string) => {
     const date = new Date(dateString)
+
+    // Handle invalid dates gracefully
+    if (isNaN(date.getTime())) {
+      return 'Unknown date'
+    }
+
     return date.toLocaleString('en-US', {
       month: 'short',
       day: 'numeric',

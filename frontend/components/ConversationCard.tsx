@@ -14,10 +14,21 @@ export default function ConversationCard({
 }: ConversationCardProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
+
+    // Handle invalid dates gracefully
+    if (isNaN(date.getTime())) {
+      return 'Unknown date'
+    }
+
     const now = new Date()
     const diffInMs = now.getTime() - date.getTime()
     const diffInHours = diffInMs / (1000 * 60 * 60)
     const diffInDays = diffInMs / (1000 * 60 * 60 * 24)
+
+    // Handle future dates or negative differences
+    if (diffInMs < 0) {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    }
 
     if (diffInHours < 24) {
       if (diffInHours < 1) {
