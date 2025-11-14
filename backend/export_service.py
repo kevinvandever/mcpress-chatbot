@@ -59,8 +59,13 @@ class ConversationExportService:
         # Generate export based on format
         if format == 'pdf':
             file_data = await self.pdf.generate(export_data, options)
-            filename = f"{self._sanitize_filename(conversation.title)}.pdf"
-            mime_type = 'application/pdf'
+            # Check if PDF generator is in fallback mode (HTML output)
+            if not self.pdf.use_weasyprint:
+                filename = f"{self._sanitize_filename(conversation.title)}.html"
+                mime_type = 'text/html'
+            else:
+                filename = f"{self._sanitize_filename(conversation.title)}.pdf"
+                mime_type = 'application/pdf'
 
         elif format == 'markdown':
             file_data = await self.markdown.generate(export_data, options)

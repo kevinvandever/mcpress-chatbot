@@ -110,7 +110,7 @@ export default function ExportModal({
                   />
                 </svg>
                 <div className="font-medium">PDF</div>
-                <div className="text-xs text-gray-500">Professional document</div>
+                <div className="text-xs text-gray-500">Styled HTML document</div>
               </button>
 
               <button
@@ -197,6 +197,11 @@ export default function ExportModal({
             <p className="text-xs text-blue-600">
               Exports include all messages with syntax highlighting for code blocks and book
               references.
+              {format === 'pdf' && (
+                <span className="block mt-1">
+                  <strong>Note:</strong> PDF exports are currently provided as styled HTML files that can be opened in any browser and printed to PDF.
+                </span>
+              )}
             </p>
           </div>
         </div>
