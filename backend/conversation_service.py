@@ -185,9 +185,9 @@ class ConversationService:
             WHERE c.user_id = $1
             AND (
                 c.title ILIKE $2
-                OR c.summary ILIKE $2
-                OR m.content ILIKE $2
-                OR $3 = ANY(c.tags)
+                OR COALESCE(c.summary, '') ILIKE $2
+                OR COALESCE(m.content, '') ILIKE $2
+                OR (c.tags IS NOT NULL AND $3 = ANY(c.tags))
             )
             ORDER BY c.last_message_at DESC
             LIMIT $4 OFFSET $5
@@ -205,9 +205,9 @@ class ConversationService:
                 WHERE c.user_id = $1
                 AND (
                     c.title ILIKE $2
-                    OR c.summary ILIKE $2
-                    OR m.content ILIKE $2
-                    OR $3 = ANY(c.tags)
+                    OR COALESCE(c.summary, '') ILIKE $2
+                    OR COALESCE(m.content, '') ILIKE $2
+                    OR (c.tags IS NOT NULL AND $3 = ANY(c.tags))
                 )
             """
             total = await conn.fetchval(count_query, user_id, pattern, query)
