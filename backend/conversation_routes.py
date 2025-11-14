@@ -71,6 +71,48 @@ async def create_conversation(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/search", response_model=ConversationListResponse)
+async def search_conversations(
+    user_id: str = Query(..., description="User ID"),
+    query: str = Query(..., description="Search query"),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+    service = Depends(get_conversation_service)
+):
+    """Search conversations by title, content, or tags"""
+    print(f"🔍 [ROUTE] Search endpoint called: user_id={user_id}, query={query}, page={page}, per_page={per_page}")
+    try:
+        conversations, total = await service.search_conversations(
+            user_id=user_id,
+            query=query,
+            page=page,
+            per_page=per_page
+        )
+
+        total_pages = (total + per_page - 1) // per_page
+
+        print(f"🔍 [ROUTE] Search completed: found {len(conversations)} conversations, total={total}")
+
+        # Return empty results if no conversations found (not an error)
+        return ConversationListResponse(
+            conversations=conversations,
+            total=total or 0,
+            page=page,
+            per_page=per_page,
+            total_pages=total_pages
+        )
+    except ValueError as e:
+        # Conversation not found or access denied
+        print(f"🔍 [ROUTE] Search ValueError: {str(e)}")
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        # Log the actual error for debugging
+        print(f"🔍 [ROUTE] Search error: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+
+
 @router.get("", response_model=ConversationListResponse)
 async def list_conversations(
     user_id: str = Query(..., description="User ID"),
@@ -214,46 +256,6 @@ async def add_message(
         return message
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-# Search Endpoint
-
-@router.get("/search", response_model=ConversationListResponse)
-async def search_conversations(
-    user_id: str = Query(..., description="User ID"),
-    query: str = Query(..., description="Search query"),
-    page: int = Query(1, ge=1),
-    per_page: int = Query(20, ge=1, le=100),
-    service = Depends(get_conversation_service)
-):
-    """Search conversations by title, content, or tags"""
-    try:
-        conversations, total = await service.search_conversations(
-            user_id=user_id,
-            query=query,
-            page=page,
-            per_page=per_page
-        )
-
-        total_pages = (total + per_page - 1) // per_page
-
-        # Return empty results if no conversations found (not an error)
-        return ConversationListResponse(
-            conversations=conversations,
-            total=total or 0,
-            page=page,
-            per_page=per_page,
-            total_pages=total_pages
-        )
-    except ValueError as e:
-        # Conversation not found or access denied
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        # Log the actual error for debugging
-        print(f"Search error: {type(e).__name__}: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
 
 
 # Quick Action Endpoints

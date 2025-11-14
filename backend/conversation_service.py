@@ -176,6 +176,7 @@ class ConversationService:
         per_page: int = 20
     ) -> Tuple[List[Conversation], int]:
         """Full-text search across conversations and messages"""
+        print(f"🔍 [SERVICE] Search called: user_id={user_id}, query={query}, page={page}, per_page={per_page}")
 
         offset = (page - 1) * per_page
 
@@ -195,26 +196,39 @@ class ConversationService:
 
         pattern = f"%{query}%"
 
-        async with self.vector_store.pool.acquire() as conn:
-            rows = await conn.fetch(search_query, user_id, pattern, query, per_page, offset)
+        try:
+            print(f"🔍 [SERVICE] Acquiring DB connection (pool exists: {self.vector_store.pool is not None})")
+            async with self.vector_store.pool.acquire() as conn:
+                print(f"🔍 [SERVICE] Connection acquired, executing search query")
+                rows = await conn.fetch(search_query, user_id, pattern, query, per_page, offset)
+                print(f"🔍 [SERVICE] Search query executed, found {len(rows)} rows")
 
-            # Get total count
-            count_query = """
-                SELECT COUNT(DISTINCT c.id) FROM conversations c
-                LEFT JOIN messages m ON c.id = m.conversation_id
-                WHERE c.user_id = $1
-                AND (
-                    c.title ILIKE $2
-                    OR COALESCE(c.summary, '') ILIKE $2
-                    OR COALESCE(m.content, '') ILIKE $2
-                    OR (c.tags IS NOT NULL AND $3 = ANY(c.tags))
-                )
-            """
-            total = await conn.fetchval(count_query, user_id, pattern, query)
+                # Get total count
+                count_query = """
+                    SELECT COUNT(DISTINCT c.id) FROM conversations c
+                    LEFT JOIN messages m ON c.id = m.conversation_id
+                    WHERE c.user_id = $1
+                    AND (
+                        c.title ILIKE $2
+                        OR COALESCE(c.summary, '') ILIKE $2
+                        OR COALESCE(m.content, '') ILIKE $2
+                        OR (c.tags IS NOT NULL AND $3 = ANY(c.tags))
+                    )
+                """
+                print(f"🔍 [SERVICE] Executing count query")
+                total = await conn.fetchval(count_query, user_id, pattern, query)
+                print(f"🔍 [SERVICE] Count query executed, total={total}")
 
-        conversations = [self._row_to_conversation(row) for row in rows]
+            conversations = [self._row_to_conversation(row) for row in rows]
+            print(f"🔍 [SERVICE] Converted {len(conversations)} conversations, returning")
 
-        return conversations, total
+            return conversations, total
+
+        except Exception as e:
+            print(f"🔍 [SERVICE ERROR] Exception in search_conversations: {type(e).__name__}: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise
 
     async def get_conversation_with_messages(
         self,
