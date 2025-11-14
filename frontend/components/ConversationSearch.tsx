@@ -185,8 +185,9 @@ export default function ConversationSearch({
               <button
                 onClick={() => {
                   const today = new Date().toISOString().split('T')[0]
-                  handleFilterChange('date_from', today)
-                  handleFilterChange('date_to', today)
+                  const newFilters = { ...localFilters, date_from: today, date_to: today }
+                  setLocalFilters(newFilters)
+                  onFilterChange(newFilters)
                 }}
                 className="px-3 py-1 text-xs bg-white border border-gray-300 rounded-md hover:bg-gray-50"
               >
@@ -196,8 +197,14 @@ export default function ConversationSearch({
                 onClick={() => {
                   const weekAgo = new Date()
                   weekAgo.setDate(weekAgo.getDate() - 7)
-                  handleFilterChange('date_from', weekAgo.toISOString().split('T')[0])
-                  handleFilterChange('date_to', undefined)
+                  const today = new Date().toISOString().split('T')[0]
+                  const newFilters = {
+                    ...localFilters,
+                    date_from: weekAgo.toISOString().split('T')[0],
+                    date_to: today
+                  }
+                  setLocalFilters(newFilters)
+                  onFilterChange(newFilters)
                 }}
                 className="px-3 py-1 text-xs bg-white border border-gray-300 rounded-md hover:bg-gray-50"
               >
@@ -207,8 +214,14 @@ export default function ConversationSearch({
                 onClick={() => {
                   const monthAgo = new Date()
                   monthAgo.setMonth(monthAgo.getMonth() - 1)
-                  handleFilterChange('date_from', monthAgo.toISOString().split('T')[0])
-                  handleFilterChange('date_to', undefined)
+                  const today = new Date().toISOString().split('T')[0]
+                  const newFilters = {
+                    ...localFilters,
+                    date_from: monthAgo.toISOString().split('T')[0],
+                    date_to: today
+                  }
+                  setLocalFilters(newFilters)
+                  onFilterChange(newFilters)
                 }}
                 className="px-3 py-1 text-xs bg-white border border-gray-300 rounded-md hover:bg-gray-50"
               >
