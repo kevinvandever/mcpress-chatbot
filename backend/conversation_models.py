@@ -24,8 +24,17 @@ class Conversation(BaseModel):
 
     class Config:
         json_encoders = {
-            datetime: lambda v: v.isoformat()
+            datetime: lambda v: v.isoformat() if v else None
         }
+
+    def dict(self, *args, **kwargs):
+        """Override dict to ensure datetime serialization"""
+        d = super().dict(*args, **kwargs)
+        # Ensure dates are ISO strings
+        for field in ['created_at', 'updated_at', 'last_message_at']:
+            if field in d and isinstance(d[field], datetime):
+                d[field] = d[field].isoformat()
+        return d
 
 
 class Message(BaseModel):
@@ -40,8 +49,15 @@ class Message(BaseModel):
 
     class Config:
         json_encoders = {
-            datetime: lambda v: v.isoformat()
+            datetime: lambda v: v.isoformat() if v else None
         }
+
+    def dict(self, *args, **kwargs):
+        """Override dict to ensure datetime serialization"""
+        d = super().dict(*args, **kwargs)
+        if 'created_at' in d and isinstance(d['created_at'], datetime):
+            d['created_at'] = d['created_at'].isoformat()
+        return d
 
 
 class ConversationAnalytics(BaseModel):

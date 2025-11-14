@@ -133,12 +133,14 @@ class ConversationService:
                 param_index += len(filters.tags)
 
             if filters.date_from:
-                query_conditions.append(f"created_at >= ${param_index}")
+                # Convert date string to start of day timestamp
+                query_conditions.append(f"DATE(created_at) >= ${param_index}::date")
                 params.append(filters.date_from)
                 param_index += 1
 
             if filters.date_to:
-                query_conditions.append(f"created_at <= ${param_index}")
+                # Convert date string to end of day timestamp
+                query_conditions.append(f"DATE(created_at) <= ${param_index}::date")
                 params.append(filters.date_to)
                 param_index += 1
 
