@@ -586,9 +586,33 @@ class BatchUploadProgress(BaseModel):
 def read_root():
     return {
         "message": "MC Press Chatbot API is running",
-        "version": "2024-09-24-v4-debug",  # Changed to verify deployment
+        "version": "2024-09-24-v4-story12-fix",  # Changed to verify deployment
         "timestamp": str(datetime.now())
     }
+
+@app.get("/export/status")
+def export_status():
+    """Check export service status and PDF generator mode"""
+    try:
+        if EXPORT_AVAILABLE and 'export_service' in globals():
+            pdf_gen = export_service.pdf
+            return {
+                "export_available": True,
+                "weasyprint_available": pdf_gen.use_weasyprint,
+                "pdf_mode": "PDF" if pdf_gen.use_weasyprint else "HTML",
+                "expected_extension": ".pdf" if pdf_gen.use_weasyprint else ".html",
+                "version": "story12-fix-deployed"
+            }
+        else:
+            return {
+                "export_available": False,
+                "message": "Export service not initialized"
+            }
+    except Exception as e:
+        return {
+            "error": str(e),
+            "export_available": False
+        }
 
 @app.get("/ping")
 def simple_ping():
