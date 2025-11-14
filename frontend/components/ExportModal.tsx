@@ -47,7 +47,8 @@ export default function ExportModal({
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '')
         .substring(0, 50)
-      const extension = format === 'pdf' ? 'pdf' : 'md'
+      // PDF exports are HTML files due to WeasyPrint unavailability
+      const extension = format === 'pdf' ? 'html' : 'md'
       const filename = `${titleSlug}.${extension}`
 
       downloadBlob(blob, filename)
