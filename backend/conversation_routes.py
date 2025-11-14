@@ -237,15 +237,23 @@ async def search_conversations(
 
         total_pages = (total + per_page - 1) // per_page
 
+        # Return empty results if no conversations found (not an error)
         return ConversationListResponse(
             conversations=conversations,
-            total=total,
+            total=total or 0,
             page=page,
             per_page=per_page,
             total_pages=total_pages
         )
+    except ValueError as e:
+        # Conversation not found or access denied
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # Log the actual error for debugging
+        print(f"Search error: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
 
 
 # Quick Action Endpoints
@@ -254,15 +262,21 @@ async def search_conversations(
 async def toggle_favorite(
     conversation_id: str,
     user_id: str = Query(..., description="User ID"),
-    is_favorite: bool = Query(..., description="Favorite status"),
     service = Depends(get_conversation_service)
 ):
-    """Toggle conversation favorite status"""
+    """Toggle conversation favorite status (flip current value)"""
     try:
+        # Get current conversation to read current favorite status
+        conv, _ = await service.get_conversation_with_messages(conversation_id, user_id)
+
+        # Flip the favorite status
+        new_value = not conv.is_favorite
+
+        # Update with new value
         conversation = await service.update_conversation(
             conversation_id=conversation_id,
             user_id=user_id,
-            updates={'is_favorite': is_favorite}
+            updates={'is_favorite': new_value}
         )
         return {"status": "success", "is_favorite": conversation.is_favorite}
     except ValueError as e:
@@ -275,15 +289,21 @@ async def toggle_favorite(
 async def toggle_archive(
     conversation_id: str,
     user_id: str = Query(..., description="User ID"),
-    is_archived: bool = Query(..., description="Archive status"),
     service = Depends(get_conversation_service)
 ):
-    """Toggle conversation archive status"""
+    """Toggle conversation archive status (flip current value)"""
     try:
+        # Get current conversation to read current archive status
+        conv, _ = await service.get_conversation_with_messages(conversation_id, user_id)
+
+        # Flip the archive status
+        new_value = not conv.is_archived
+
+        # Update with new value
         conversation = await service.update_conversation(
             conversation_id=conversation_id,
             user_id=user_id,
-            updates={'is_archived': is_archived}
+            updates={'is_archived': new_value}
         )
         return {"status": "success", "is_archived": conversation.is_archived}
     except ValueError as e:
