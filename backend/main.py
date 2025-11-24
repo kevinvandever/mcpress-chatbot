@@ -415,6 +415,27 @@ if test_003_available:
     except Exception as e:
         print(f"⚠️ Could not enable Test 003 endpoint: {e}")
 
+# AuthorService Test Endpoint
+try:
+    try:
+        from author_service_test_endpoint import author_service_test_router
+        author_service_test_available = True
+    except ImportError:
+        from backend.author_service_test_endpoint import author_service_test_router
+        author_service_test_available = True
+    print("✅ AuthorService test endpoint loaded")
+except Exception as e:
+    print(f"⚠️ AuthorService test endpoint not available: {e}")
+    author_service_test_router = None
+    author_service_test_available = False
+
+if author_service_test_available:
+    try:
+        app.include_router(author_service_test_router)
+        print("✅ AuthorService test endpoint enabled at /test-author-service/*")
+    except Exception as e:
+        print(f"⚠️ Could not enable AuthorService test endpoint: {e}")
+
 # Initialize and include conversation router (Story-011)
 # Must be after vector_store is initialized
 conversation_service = None  # Will be set if initialization succeeds

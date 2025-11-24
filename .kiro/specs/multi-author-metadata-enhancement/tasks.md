@@ -11,7 +11,7 @@
   - **Property 2: Author deduplication**
   - **Validates: Requirements 1.2**
 
-- [ ] 2. Implement AuthorService for author management
+- [x] 2. Implement AuthorService for author management
   - Write get_or_create_author() method with name deduplication
   - Write update_author() method for updating author details
   - Write get_author_by_id() method for retrieval
@@ -19,11 +19,11 @@
   - Write get_authors_for_document() method to fetch ordered authors
   - _Requirements: 1.2, 3.1, 3.2, 5.2, 5.3, 5.4_
 
-- [ ] 2.1 Write property test for author deduplication
+- [x] 2.1 Write property test for author deduplication
   - **Property 2: Author deduplication**
   - **Validates: Requirements 1.2**
 
-- [ ] 2.2 Write property test for get or create behavior
+- [x] 2.2 Write property test for get or create behavior
   - **Property 14: Create or reuse author on add**
   - **Validates: Requirements 5.3, 5.4**
 
