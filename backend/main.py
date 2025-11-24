@@ -373,6 +373,48 @@ if story11_available:
     except Exception as e:
         print(f"⚠️ Could not enable Story 011 migration endpoint: {e}")
 
+# Migration 003: Multi-Author Metadata Enhancement
+try:
+    try:
+        from migration_003_endpoint import migration_003_router
+        migration_003_available = True
+    except ImportError:
+        from backend.migration_003_endpoint import migration_003_router
+        migration_003_available = True
+    print("✅ Migration 003 endpoint loaded")
+except Exception as e:
+    print(f"⚠️ Migration 003 endpoint not available: {e}")
+    migration_003_router = None
+    migration_003_available = False
+
+if migration_003_available:
+    try:
+        app.include_router(migration_003_router)
+        print("✅ Migration 003 endpoint enabled at /migration-003/*")
+    except Exception as e:
+        print(f"⚠️ Could not enable Migration 003 endpoint: {e}")
+
+# Test 003: Property-based tests for Migration 003
+try:
+    try:
+        from test_003_endpoint import test_003_router
+        test_003_available = True
+    except ImportError:
+        from backend.test_003_endpoint import test_003_router
+        test_003_available = True
+    print("✅ Test 003 endpoint loaded")
+except Exception as e:
+    print(f"⚠️ Test 003 endpoint not available: {e}")
+    test_003_router = None
+    test_003_available = False
+
+if test_003_available:
+    try:
+        app.include_router(test_003_router)
+        print("✅ Test 003 endpoint enabled at /test-003/*")
+    except Exception as e:
+        print(f"⚠️ Could not enable Test 003 endpoint: {e}")
+
 # Initialize and include conversation router (Story-011)
 # Must be after vector_store is initialized
 conversation_service = None  # Will be set if initialization succeeds

@@ -1,13 +1,13 @@
 # Implementation Plan
 
-- [ ] 1. Create database schema for multi-author support
+- [x] 1. Create database schema for multi-author support
   - Create authors table with id, name, site_url, timestamps
   - Create document_authors junction table with book_id, author_id, author_order
   - Add document_type and article_url columns to books table (mc_press_url already exists)
   - Create indexes on authors.name, document_authors foreign keys
   - _Requirements: 1.1, 1.2, 2.1, 2.2, 2.3, 3.1_
 
-- [ ] 1.1 Write property test for author table constraints
+- [x] 1.1 Write property test for author table constraints
   - **Property 2: Author deduplication**
   - **Validates: Requirements 1.2**
 
