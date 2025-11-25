@@ -44,9 +44,10 @@ def generate_test_doc_filename():
 
 async def create_test_document(conn, filename: str, title: str, doc_type: str = 'book') -> int:
     """Create a test document and return its ID"""
+    # Note: Using minimal required fields that exist in production schema
     doc_id = await conn.fetchval("""
-        INSERT INTO books (filename, title, document_type, total_pages, processed_at)
-        VALUES ($1, $2, $3, 100, NOW())
+        INSERT INTO books (filename, title, document_type, processed_at)
+        VALUES ($1, $2, $3, NOW())
         RETURNING id
     """, filename, title, doc_type)
     return doc_id
