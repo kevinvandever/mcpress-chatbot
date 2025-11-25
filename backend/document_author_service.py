@@ -43,6 +43,11 @@ class DocumentAuthorService:
             max_size=10,
             command_timeout=60
         )
+    
+    async def _ensure_pool(self):
+        """Ensure connection pool is initialized (lazy initialization)"""
+        if not self.pool:
+            await self.init_database()
 
     async def close(self):
         """Close database connection pool"""
@@ -72,6 +77,8 @@ class DocumentAuthorService:
             
         Validates: Requirements 1.1, 1.4
         """
+        await self._ensure_pool()
+        
         async with self.pool.acquire() as conn:
             # Verify document exists
             doc_exists = await conn.fetchval("""
@@ -138,6 +145,8 @@ class DocumentAuthorService:
             
         Validates: Requirements 1.5, 5.7
         """
+        await self._ensure_pool()
+        
         async with self.pool.acquire() as conn:
             # Check if association exists
             association_exists = await conn.fetchval("""
@@ -190,6 +199,8 @@ class DocumentAuthorService:
             
         Validates: Requirements 1.3
         """
+        await self._ensure_pool()
+        
         async with self.pool.acquire() as conn:
             # Verify document exists
             doc_exists = await conn.fetchval("""
@@ -247,6 +258,8 @@ class DocumentAuthorService:
             
         Validates: Requirements 8.1
         """
+        await self._ensure_pool()
+        
         async with self.pool.acquire() as conn:
             # Build query with optional pagination
             query = """
@@ -305,6 +318,8 @@ class DocumentAuthorService:
         Returns:
             Number of authors associated with the document
         """
+        await self._ensure_pool()
+        
         async with self.pool.acquire() as conn:
             count = await conn.fetchval("""
                 SELECT COUNT(*) FROM document_authors WHERE book_id = $1
@@ -332,6 +347,8 @@ class DocumentAuthorService:
             
         Validates: Requirements 1.5
         """
+        await self._ensure_pool()
+        
         async with self.pool.acquire() as conn:
             # Check if association still exists (should not)
             association_exists = await conn.fetchval("""

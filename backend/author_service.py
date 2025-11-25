@@ -44,6 +44,11 @@ class AuthorService:
             max_size=10,
             command_timeout=60
         )
+    
+    async def _ensure_pool(self):
+        """Ensure connection pool is initialized (lazy initialization)"""
+        if not self.pool:
+            await self.init_database()
 
     async def close(self):
         """Close database connection pool"""
@@ -71,6 +76,8 @@ class AuthorService:
             
         Validates: Requirements 1.2, 5.3, 5.4
         """
+        await self._ensure_pool()
+        
         if not name or not name.strip():
             raise ValueError("Author name cannot be empty")
         
@@ -116,6 +123,8 @@ class AuthorService:
             
         Validates: Requirements 3.1, 3.2, 5.6
         """
+        await self._ensure_pool()
+        
         if not author_id:
             raise ValueError("Author ID is required")
         
@@ -175,6 +184,8 @@ class AuthorService:
             
         Validates: Requirements 3.1, 3.3, 8.3
         """
+        await self._ensure_pool()
+        
         async with self.pool.acquire() as conn:
             row = await conn.fetchrow("""
                 SELECT 
@@ -221,6 +232,8 @@ class AuthorService:
             
         Validates: Requirements 5.2, 8.1
         """
+        await self._ensure_pool()
+        
         if not query or not query.strip():
             return []
         
@@ -268,6 +281,8 @@ class AuthorService:
             
         Validates: Requirements 1.3, 3.4
         """
+        await self._ensure_pool()
+        
         async with self.pool.acquire() as conn:
             rows = await conn.fetch("""
                 SELECT 

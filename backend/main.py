@@ -688,19 +688,17 @@ async def startup_event():
             print(f"⚠️  Could not initialize code upload system: {e}")
     
     # Initialize Author Services (Task 6)
+    # Note: Services initialize lazily on first use to avoid blocking startup
     global author_service, doc_author_service
     if author_routes_available:
         try:
             database_url = os.getenv('DATABASE_URL')
             if database_url:
+                print("🔄 Setting up author services (lazy initialization)...")
                 author_service = AuthorService(database_url)
                 doc_author_service = DocumentAuthorService(database_url)
                 
-                # Initialize databases
-                await author_service.init_database()
-                await doc_author_service.init_database()
-                
-                # Set services in routes
+                # Set services in routes (they'll initialize on first use)
                 set_author_services(author_service, doc_author_service)
                 
                 # Include routers
