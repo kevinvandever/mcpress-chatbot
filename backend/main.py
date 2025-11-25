@@ -478,6 +478,58 @@ if data_migration_003_available:
     except Exception as e:
         print(f"⚠️ Could not enable Data Migration 003 endpoint: {e}")
 
+# Author Management API Routes
+author_service = None
+doc_author_service = None
+author_routes_available = False
+
+try:
+    try:
+        from author_routes import author_router, set_author_services
+        from author_service import AuthorService
+        from document_author_service import DocumentAuthorService
+        author_routes_available = True
+    except ImportError:
+        from backend.author_routes import author_router, set_author_services
+        from backend.author_service import AuthorService
+        from backend.document_author_service import DocumentAuthorService
+        author_routes_available = True
+    print("✅ Author routes loaded")
+except Exception as e:
+    print(f"⚠️ Author routes not available: {e}")
+    author_router = None
+    author_routes_available = False
+
+# Document-Author Relationship API Routes
+document_author_routes_available = False
+try:
+    try:
+        from document_author_routes import document_author_router, set_document_author_services
+        document_author_routes_available = True
+    except ImportError:
+        from backend.document_author_routes import document_author_router, set_document_author_services
+        document_author_routes_available = True
+    print("✅ Document-author routes loaded")
+except Exception as e:
+    print(f"⚠️ Document-author routes not available: {e}")
+    document_author_router = None
+    document_author_routes_available = False
+
+# Task 6 Test Endpoint
+test_task_6_available = False
+try:
+    try:
+        from test_document_author_endpoint import test_task_6_router
+        test_task_6_available = True
+    except ImportError:
+        from backend.test_document_author_endpoint import test_task_6_router
+        test_task_6_available = True
+    print("✅ Task 6 test endpoint loaded")
+except Exception as e:
+    print(f"⚠️ Task 6 test endpoint not available: {e}")
+    test_task_6_router = None
+    test_task_6_available = False
+
 # Initialize and include conversation router (Story-011)
 # Must be after vector_store is initialized
 conversation_service = None  # Will be set if initialization succeeds
@@ -634,6 +686,43 @@ async def startup_event():
             print(f"✅ Code Upload System ready (Story-006) - Storage: {storage_dir}")
         except Exception as e:
             print(f"⚠️  Could not initialize code upload system: {e}")
+    
+    # Initialize Author Services (Task 6)
+    global author_service, doc_author_service
+    if author_routes_available:
+        try:
+            database_url = os.getenv('DATABASE_URL')
+            if database_url:
+                author_service = AuthorService(database_url)
+                doc_author_service = DocumentAuthorService(database_url)
+                
+                # Initialize databases
+                await author_service.init_database()
+                await doc_author_service.init_database()
+                
+                # Set services in routes
+                set_author_services(author_service, doc_author_service)
+                
+                # Include routers
+                app.include_router(author_router)
+                print("✅ Author management endpoints enabled at /api/authors/*")
+                
+                # Include document-author routes if available
+                if document_author_routes_available:
+                    set_document_author_services(author_service, doc_author_service, vector_store)
+                    app.include_router(document_author_router)
+                    print("✅ Document-author relationship endpoints enabled at /api/documents/*")
+                
+                # Include test endpoint if available
+                if test_task_6_available:
+                    app.include_router(test_task_6_router)
+                    print("✅ Task 6 test endpoints enabled at /test-task-6/*")
+            else:
+                print("⚠️ DATABASE_URL not set - author routes disabled")
+        except Exception as e:
+            print(f"⚠️ Could not enable author routes: {e}")
+            import traceback
+            print(traceback.format_exc())
 
 # Shutdown event handler
 @app.on_event("shutdown")

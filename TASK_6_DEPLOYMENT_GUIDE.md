@@ -27,7 +27,9 @@ Task 6 implements the document-author relationship API endpoints that allow:
 git add backend/document_author_routes.py
 git add backend/test_document_author_endpoint.py
 git add backend/test_document_author_routes.py
+git add backend/main.py
 git add TASK_6_DEPLOYMENT_GUIDE.md
+git add TASK_6_FIX_RAILWAY_INIT.md
 
 # Commit changes
 git commit -m "Task 6: Implement document-author relationship API endpoints
@@ -39,6 +41,7 @@ git commit -m "Task 6: Implement document-author relationship API endpoints
 - Include document_type in responses
 - Add property-based tests for multiple author association
 - Add property-based tests for document type in responses
+- Fix Railway initialization by moving service init to startup event
 - Validates Requirements 1.1, 1.3, 1.4, 1.5, 2.4, 5.1, 5.3, 5.4, 5.7"
 
 # Push to trigger Railway deployment
@@ -58,7 +61,7 @@ Once deployed, you can access these test endpoints:
 
 #### 1. Run All Property Tests
 ```bash
-curl https://your-railway-url.up.railway.app/test-task-6/run-property-tests
+curl https://mcpress-chatbot-production.up.railway.app/test-task-6/run-property-tests
 ```
 
 This runs:
@@ -101,7 +104,7 @@ Expected output:
 
 #### 2. Test Duplicate Prevention
 ```bash
-curl https://your-railway-url.up.railway.app/test-task-6/test-duplicate-prevention
+curl https://mcpress-chatbot-production.up.railway.app/test-task-6/test-duplicate-prevention
 ```
 
 Tests that adding the same author twice to a document is prevented.
@@ -120,7 +123,7 @@ Expected output:
 
 #### 3. Test Last Author Prevention
 ```bash
-curl https://your-railway-url.up.railway.app/test-task-6/test-last-author-prevention
+curl https://mcpress-chatbot-production.up.railway.app/test-task-6/test-last-author-prevention
 ```
 
 Tests that documents must have at least one author.
@@ -138,7 +141,7 @@ Expected output:
 
 #### 4. Cleanup Test Data
 ```bash
-curl https://your-railway-url.up.railway.app/test-task-6/cleanup
+curl https://mcpress-chatbot-production.up.railway.app/test-task-6/cleanup
 ```
 
 Cleans up any test data left over from testing.
