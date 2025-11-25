@@ -17,11 +17,13 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Import the service
+# Import the services
 try:
     from author_service import AuthorService
+    from document_author_service import DocumentAuthorService
 except ImportError:
     from backend.author_service import AuthorService
+    from backend.document_author_service import DocumentAuthorService
 
 DATABASE_URL = os.getenv('DATABASE_URL')
 
@@ -268,6 +270,229 @@ async def test_get_or_create_behavior_property(author_name, first_url, second_ur
         finally:
             await conn.close()
         
+    finally:
+        await service.close()
+        await cleanup_test_data()
+
+
+# Feature: multi-author-metadata-enhancement, Property 15: Author updates propagate
+@pytest.mark.asyncio
+@given(
+    author_name=author_names,
+    initial_url=optional_urls,
+    updated_name=author_names,
+    updated_url=optional_urls,
+    num_documents=st.integers(min_value=1, max_value=5)
+)
+@settings(
+    max_examples=100,
+    deadline=None,
+    suppress_health_check=[HealthCheck.function_scoped_fixture]
+)
+async def test_author_updates_propagate_property(author_name, initial_url, updated_name, updated_url, num_documents):
+    """
+    Property 15: Author updates propagate
+    
+    For any author associated with multiple documents, when updating the author's
+    information, all documents should reflect the updated information.
+    
+    Validates: Requirements 5.6
+    
+    Test strategy:
+    1. Create an author with initial information
+    2. Associate the author with multiple documents
+    3. Update the author's name and/or URL
+    4. Retrieve the author information from each document
+    5. Verify all documents reflect the updated author information
+    """
+    # Ensure tables exist
+    await ensure_tables_exist()
+    
+    # Clean up any existing test data
+    await cleanup_test_data()
+    
+    # Create services
+    author_service = AuthorService(DATABASE_URL)
+    await author_service.init_database()
+    
+    doc_author_service = DocumentAuthorService(DATABASE_URL)
+    await doc_author_service.init_database()
+    
+    conn = await asyncpg.connect(DATABASE_URL)
+    
+    try:
+        # Step 1: Create an author with initial information
+        author_id = await author_service.get_or_create_author(author_name, initial_url)
+        
+        # Step 2: Create test documents and associate them with the author
+        document_ids = []
+        for i in range(num_documents):
+            # Create a test document in the books table
+            doc_id = await conn.fetchval("""
+                INSERT INTO books (filename, title, total_pages, processed_at)
+                VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+                RETURNING id
+            """, f"TEST_doc_{i}.pdf", f"TEST Document {i}", 100)
+            document_ids.append(doc_id)
+            
+            # Associate the author with the document
+            await doc_author_service.add_author_to_document(doc_id, author_id, order=0)
+        
+        # Verify initial state
+        initial_author = await author_service.get_author_by_id(author_id)
+        assert initial_author['name'] == author_name
+        assert initial_author['site_url'] == initial_url
+        
+        # Step 3: Update the author's information
+        await author_service.update_author(author_id, name=updated_name, site_url=updated_url)
+        
+        # Step 4 & 5: Retrieve author information from each document and verify updates
+        for doc_id in document_ids:
+            # Get authors for this document
+            authors = await author_service.get_authors_for_document(doc_id)
+            
+            # Property: The document should have the author with updated information
+            assert len(authors) >= 1, f"Document {doc_id} should have at least one author"
+            
+            # Find our test author in the list
+            test_author = None
+            for author in authors:
+                if author['id'] == author_id:
+                    test_author = author
+                    break
+            
+            assert test_author is not None, (
+                f"Author {author_id} should be associated with document {doc_id}"
+            )
+            
+            # Verify the author information is updated
+            assert test_author['name'] == updated_name, (
+                f"Author name should be updated to '{updated_name}' for document {doc_id}, "
+                f"but got '{test_author['name']}'"
+            )
+            assert test_author['site_url'] == updated_url, (
+                f"Author site_url should be updated to '{updated_url}' for document {doc_id}, "
+                f"but got '{test_author['site_url']}'"
+            )
+        
+        # Also verify by retrieving the author directly
+        updated_author = await author_service.get_author_by_id(author_id)
+        assert updated_author['name'] == updated_name, (
+            f"Author name should be updated to '{updated_name}'"
+        )
+        assert updated_author['site_url'] == updated_url, (
+            f"Author site_url should be updated to '{updated_url}'"
+        )
+        
+        # Verify document count is correct
+        assert updated_author['document_count'] == num_documents, (
+            f"Author should be associated with {num_documents} documents, "
+            f"but document_count is {updated_author['document_count']}"
+        )
+        
+    finally:
+        # Clean up test documents
+        for doc_id in document_ids:
+            try:
+                await conn.execute("DELETE FROM books WHERE id = $1", doc_id)
+            except:
+                pass
+        
+        await conn.close()
+        await author_service.close()
+        await doc_author_service.close()
+        await cleanup_test_data()
+
+
+# Feature: multi-author-metadata-enhancement, Property 10: URL validation
+@pytest.mark.asyncio
+@given(
+    author_name=author_names,
+    url=st.one_of(
+        # Valid URLs
+        st.builds(
+            lambda scheme, domain, tld, path: f"{scheme}://{domain}.{tld}{path}",
+            scheme=st.sampled_from(['http', 'https']),
+            domain=st.text(alphabet=st.characters(whitelist_categories=('Ll', 'Nd'), whitelist_characters='-'), min_size=1, max_size=63).filter(lambda s: s and not s.startswith('-') and not s.endswith('-')),
+            tld=st.sampled_from(['com', 'org', 'net', 'edu', 'io', 'co', 'uk', 'de']),
+            path=st.one_of(
+                st.just(''),
+                st.builds(lambda p: f"/{p}", p=st.text(alphabet=st.characters(whitelist_categories=('Ll', 'Nd'), whitelist_characters='/-_'), min_size=0, max_size=50))
+            )
+        ),
+        # Invalid URLs - various malformed formats
+        st.text(alphabet=st.characters(blacklist_characters=':/'), min_size=1, max_size=50),  # No protocol
+        st.builds(lambda s: f"ftp://{s}.com", s=st.text(alphabet='abcdefghijklmnopqrstuvwxyz', min_size=3, max_size=20)),  # Wrong protocol
+        st.builds(lambda s: f"http://{s}", s=st.text(alphabet='!@#$%^&*()', min_size=1, max_size=10)),  # Invalid characters
+        st.just(''),  # Empty string
+        st.just('   '),  # Whitespace only
+        st.just('not-a-url'),  # Plain text
+        st.just('www.example.com'),  # Missing protocol
+    )
+)
+@settings(
+    max_examples=100,
+    deadline=None,
+    suppress_health_check=[HealthCheck.function_scoped_fixture]
+)
+async def test_url_validation_property(author_name, url):
+    """
+    Property 10: URL validation
+    
+    For any author site URL provided, invalid URL formats should be rejected
+    while valid URLs are accepted.
+    
+    Validates: Requirements 3.2
+    
+    Test strategy:
+    1. Generate random valid and invalid URLs
+    2. Attempt to create author with each URL
+    3. Valid URLs (http:// or https://) should be accepted
+    4. Invalid URLs should raise ValueError
+    """
+    # Ensure tables exist
+    await ensure_tables_exist()
+    
+    # Clean up any existing test data
+    await cleanup_test_data()
+    
+    # Create service
+    service = AuthorService(DATABASE_URL)
+    await service.init_database()
+    
+    try:
+        # Determine if URL is valid based on our validation rules
+        is_valid = False
+        if url and url.strip():
+            url_stripped = url.strip()
+            # Valid URLs must start with http:// or https:// and have proper format
+            if url_stripped.startswith(('http://', 'https://')):
+                # Check for basic domain structure
+                import re
+                url_pattern = re.compile(
+                    r'^https?://'
+                    r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'
+                    r'localhost|'
+                    r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
+                    r'(?::\d+)?'
+                    r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+                is_valid = bool(url_pattern.match(url_stripped))
+        
+        # Test the property
+        if is_valid:
+            # Valid URL should be accepted
+            author_id = await service.get_or_create_author(author_name, url)
+            assert author_id is not None, f"Valid URL should be accepted: {url}"
+            
+            # Verify the author was created with the URL
+            author = await service.get_author_by_id(author_id)
+            assert author is not None
+            assert author['site_url'] == url.strip()
+        else:
+            # Invalid URL should raise ValueError
+            with pytest.raises(ValueError, match="Invalid URL format"):
+                await service.get_or_create_author(author_name, url)
+    
     finally:
         await service.close()
         await cleanup_test_data()

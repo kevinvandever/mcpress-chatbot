@@ -122,6 +122,97 @@ author_names = st.text(
 # Property-Based Tests
 # =====================================================
 
+# Feature: multi-author-metadata-enhancement, Property 1: Multiple author association
+@pytest.mark.asyncio
+@given(
+    book_filename=book_filenames,
+    author_names_list=st.lists(
+        author_names,
+        min_size=1,
+        max_size=10,
+        unique=True  # Ensure all author names are unique
+    )
+)
+@settings(
+    max_examples=100,
+    deadline=None,
+    suppress_health_check=[HealthCheck.function_scoped_fixture]
+)
+async def test_multiple_author_association(book_filename, author_names_list):
+    """
+    Property 1: Multiple author association
+    
+    For any document and any list of authors, when associating those authors with 
+    the document, all authors should be retrievable from the document in the same order.
+    
+    Validates: Requirements 1.1, 1.3
+    
+    Test strategy:
+    1. Generate a random list of unique author names
+    2. Create a test document
+    3. Create authors and associate them with the document in order
+    4. Retrieve the authors for the document
+    5. Verify all authors are present
+    6. Verify the order matches the original order
+    """
+    await ensure_tables_exist()
+    await cleanup_test_data()
+    
+    doc_service = DocumentAuthorService(DATABASE_URL)
+    author_service = AuthorService(DATABASE_URL)
+    await doc_service.init_database()
+    await author_service.init_database()
+    
+    conn = await asyncpg.connect(DATABASE_URL)
+    
+    try:
+        # Create test book
+        book_id = await create_test_book(conn, book_filename, "Test Book")
+        
+        # Create authors and associate them with the document in order
+        expected_author_ids = []
+        for order, author_name in enumerate(author_names_list):
+            author_id = await create_test_author(author_service, author_name)
+            await doc_service.add_author_to_document(book_id, author_id, order)
+            expected_author_ids.append(author_id)
+        
+        # Retrieve authors for the document
+        retrieved_authors = await author_service.get_authors_for_document(book_id)
+        
+        # Property: All authors should be retrievable
+        assert len(retrieved_authors) == len(author_names_list), (
+            f"Expected {len(author_names_list)} authors, "
+            f"but retrieved {len(retrieved_authors)}"
+        )
+        
+        # Property: Authors should be in the same order
+        retrieved_author_ids = [author['id'] for author in retrieved_authors]
+        assert retrieved_author_ids == expected_author_ids, (
+            f"Author order mismatch: expected {expected_author_ids}, "
+            f"got {retrieved_author_ids}"
+        )
+        
+        # Verify each author's order field matches
+        for i, author in enumerate(retrieved_authors):
+            assert author['order'] == i, (
+                f"Author at position {i} has incorrect order field: "
+                f"expected {i}, got {author['order']}"
+            )
+        
+        # Verify author names match
+        retrieved_names = [author['name'] for author in retrieved_authors]
+        assert retrieved_names == author_names_list, (
+            f"Author names mismatch: expected {author_names_list}, "
+            f"got {retrieved_names}"
+        )
+        
+    finally:
+        await conn.close()
+        await doc_service.close()
+        await author_service.close()
+        await cleanup_test_data()
+
+
 # Feature: multi-author-metadata-enhancement, Property 3: No duplicate author associations
 @pytest.mark.asyncio
 @given(
