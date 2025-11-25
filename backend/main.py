@@ -457,6 +457,27 @@ if document_author_service_test_available:
     except Exception as e:
         print(f"⚠️ Could not enable DocumentAuthorService test endpoint: {e}")
 
+# Data Migration 003 Endpoint
+try:
+    try:
+        from data_migration_003_endpoint import data_migration_003_router
+        data_migration_003_available = True
+    except ImportError:
+        from backend.data_migration_003_endpoint import data_migration_003_router
+        data_migration_003_available = True
+    print("✅ Data Migration 003 endpoint loaded")
+except Exception as e:
+    print(f"⚠️ Data Migration 003 endpoint not available: {e}")
+    data_migration_003_router = None
+    data_migration_003_available = False
+
+if data_migration_003_available:
+    try:
+        app.include_router(data_migration_003_router)
+        print("✅ Data Migration 003 endpoint enabled at /data-migration-003/*")
+    except Exception as e:
+        print(f"⚠️ Could not enable Data Migration 003 endpoint: {e}")
+
 # Initialize and include conversation router (Story-011)
 # Must be after vector_store is initialized
 conversation_service = None  # Will be set if initialization succeeds
