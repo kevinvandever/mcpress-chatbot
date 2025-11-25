@@ -38,9 +38,10 @@ def generate_test_author_name():
 
 async def create_test_book(conn, filename: str, title: str) -> int:
     """Helper to create a test book"""
+    # Insert minimal book record - only required fields
     book_id = await conn.fetchval("""
-        INSERT INTO books (filename, title, total_pages, document_type)
-        VALUES ($1, $2, 100, 'book')
+        INSERT INTO books (filename, title, document_type)
+        VALUES ($1, $2, 'book')
         RETURNING id
     """, filename, title)
     return book_id
