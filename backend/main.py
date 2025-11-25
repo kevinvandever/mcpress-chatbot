@@ -436,6 +436,27 @@ if author_service_test_available:
     except Exception as e:
         print(f"⚠️ Could not enable AuthorService test endpoint: {e}")
 
+# DocumentAuthorService Test Endpoint
+try:
+    try:
+        from document_author_service_test_endpoint import document_author_service_test_router
+        document_author_service_test_available = True
+    except ImportError:
+        from backend.document_author_service_test_endpoint import document_author_service_test_router
+        document_author_service_test_available = True
+    print("✅ DocumentAuthorService test endpoint loaded")
+except Exception as e:
+    print(f"⚠️ DocumentAuthorService test endpoint not available: {e}")
+    document_author_service_test_router = None
+    document_author_service_test_available = False
+
+if document_author_service_test_available:
+    try:
+        app.include_router(document_author_service_test_router)
+        print("✅ DocumentAuthorService test endpoint enabled at /test-document-author-service/*")
+    except Exception as e:
+        print(f"⚠️ Could not enable DocumentAuthorService test endpoint: {e}")
+
 # Initialize and include conversation router (Story-011)
 # Must be after vector_store is initialized
 conversation_service = None  # Will be set if initialization succeeds
