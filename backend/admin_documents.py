@@ -39,9 +39,18 @@ def get_book_manager():
         except:
             return None
 
+class AuthorInfo(BaseModel):
+    """Author information for document"""
+    id: Optional[int] = None
+    name: str
+    site_url: Optional[str] = None
+    order: int = 0
+
 class DocumentUpdate(BaseModel):
     title: Optional[str] = None
-    author: Optional[str] = None
+    authors: Optional[List[AuthorInfo]] = None  # Multi-author support
+    document_type: Optional[str] = None  # 'book' or 'article'
+    article_url: Optional[str] = None
     category: Optional[str] = None
     subcategory: Optional[str] = None
     mc_press_url: Optional[str] = None
@@ -67,16 +76,16 @@ async def list_documents(
     sort_direction: str = Query("asc", description="Sort direction (asc/desc)"),
     current_admin = Depends(get_current_admin)
 ):
-    """List all documents with pagination, filtering, and sorting"""
+    """List all documents with pagination, filtering, and sorting - includes authors array"""
     try:
         # Get connection to books table
         conn = await get_vector_store()._get_connection()
         try:
-            # Fetch from books table with proper ID
+            # Fetch from books table with document_type
             query = """
-                SELECT id, filename, title, author, category, subcategory,
+                SELECT id, filename, title, category, subcategory,
                        total_pages, file_hash, processed_at, mc_press_url,
-                       description, tags, year
+                       description, tags, year, document_type, article_url
                 FROM books
                 ORDER BY id DESC
             """
@@ -87,20 +96,44 @@ async def list_documents(
 
                 documents = []
                 for row in rows:
+                    book_id = row[0]
+                    
+                    # Get authors for this document from document_authors table
+                    await cursor.execute("""
+                        SELECT a.id, a.name, a.site_url, da.author_order
+                        FROM authors a
+                        INNER JOIN document_authors da ON a.id = da.author_id
+                        WHERE da.book_id = %s
+                        ORDER BY da.author_order
+                    """, (book_id,))
+                    
+                    author_rows = await cursor.fetchall()
+                    authors = [
+                        {
+                            'id': author_row[0],
+                            'name': author_row[1],
+                            'site_url': author_row[2],
+                            'order': author_row[3]
+                        }
+                        for author_row in author_rows
+                    ]
+                    
                     documents.append({
-                        'id': row[0],
+                        'id': book_id,
                         'filename': row[1],
                         'title': row[2] or row[1].replace('.pdf', ''),
-                        'author': row[3],
-                        'category': row[4],
-                        'subcategory': row[5],
-                        'total_pages': row[6] or 0,
-                        'file_hash': row[7],
-                        'processed_at': row[8].isoformat() if row[8] else None,
-                        'mc_press_url': row[9],
-                        'description': row[10],
-                        'tags': row[11] or [],
-                        'year': row[12]
+                        'authors': authors,  # Multi-author array
+                        'category': row[3],
+                        'subcategory': row[4],
+                        'total_pages': row[5] or 0,
+                        'file_hash': row[6],
+                        'processed_at': row[7].isoformat() if row[7] else None,
+                        'mc_press_url': row[8],
+                        'description': row[9],
+                        'tags': row[10] or [],
+                        'year': row[11],
+                        'document_type': row[12] or 'book',
+                        'article_url': row[13]
                     })
         finally:
             await conn.close()
@@ -154,37 +187,96 @@ async def update_document(
     update_data: DocumentUpdate,
     current_admin = Depends(get_current_admin)
 ):
-    """Update a single document's metadata"""
+    """Update a single document's metadata - supports multi-author and document_type"""
     try:
-        # Get document by ID
-        all_docs = await get_vector_store().list_documents()
-        documents = all_docs.get('documents', [])
-
-        doc = None
-        for d in documents:
-            if d.get('id') == document_id:
-                doc = d
-                break
-
-        if not doc:
-            raise HTTPException(status_code=404, detail="Document not found")
-
-        # Update metadata in database
+        # Import author services
+        try:
+            from author_service import AuthorService
+            from document_author_service import DocumentAuthorService
+        except ImportError:
+            from backend.author_service import AuthorService
+            from backend.document_author_service import DocumentAuthorService
+        
+        # Get document by ID to verify it exists
         conn = await get_vector_store()._get_connection()
         try:
+            async with conn.cursor() as cursor:
+                await cursor.execute("""
+                    SELECT id, title, category, document_type, article_url, mc_press_url
+                    FROM books WHERE id = %s
+                """, (document_id,))
+                
+                row = await cursor.fetchone()
+                if not row:
+                    raise HTTPException(status_code=404, detail="Document not found")
+                
+                doc = {
+                    'id': row[0],
+                    'title': row[1],
+                    'category': row[2],
+                    'document_type': row[3],
+                    'article_url': row[4],
+                    'mc_press_url': row[5]
+                }
+
+            # Update basic metadata fields
             update_fields = []
             values = []
+            history_entries = []
 
             if update_data.title is not None:
                 update_fields.append("title = %s")
                 values.append(update_data.title)
-            if update_data.author is not None:
-                update_fields.append("author = %s")
-                values.append(update_data.author)
+                history_entries.append(('title', doc.get('title'), update_data.title))
+                
             if update_data.category is not None:
                 update_fields.append("category = %s")
                 values.append(update_data.category)
+                history_entries.append(('category', doc.get('category'), update_data.category))
+            
+            if update_data.subcategory is not None:
+                update_fields.append("subcategory = %s")
+                values.append(update_data.subcategory)
+                history_entries.append(('subcategory', None, update_data.subcategory))
+            
+            if update_data.description is not None:
+                update_fields.append("description = %s")
+                values.append(update_data.description)
+                history_entries.append(('description', None, update_data.description))
+            
+            if update_data.tags is not None:
+                update_fields.append("tags = %s")
+                values.append(update_data.tags)
+                history_entries.append(('tags', None, str(update_data.tags)))
+            
+            if update_data.year is not None:
+                update_fields.append("year = %s")
+                values.append(update_data.year)
+                history_entries.append(('year', None, str(update_data.year)))
+            
+            # Validate and update document_type
+            if update_data.document_type is not None:
+                if update_data.document_type not in ['book', 'article']:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Invalid document_type: {update_data.document_type}. Must be 'book' or 'article'"
+                    )
+                update_fields.append("document_type = %s")
+                values.append(update_data.document_type)
+                history_entries.append(('document_type', doc.get('document_type'), update_data.document_type))
+            
+            # Update type-specific URL fields
+            if update_data.article_url is not None:
+                update_fields.append("article_url = %s")
+                values.append(update_data.article_url)
+                history_entries.append(('article_url', doc.get('article_url'), update_data.article_url))
+            
+            if update_data.mc_press_url is not None:
+                update_fields.append("mc_press_url = %s")
+                values.append(update_data.mc_press_url)
+                history_entries.append(('mc_press_url', doc.get('mc_press_url'), update_data.mc_press_url))
 
+            # Execute basic field updates
             if update_fields:
                 values.append(document_id)
                 query = f"UPDATE books SET {', '.join(update_fields)} WHERE id = %s"
@@ -193,23 +285,110 @@ async def update_document(
                     await cursor.execute(query, values)
                     await conn.commit()
 
-                # Add to metadata history
+            # Handle authors array update
+            if update_data.authors is not None:
+                database_url = os.getenv('DATABASE_URL')
+                author_service = AuthorService(database_url)
+                doc_author_service = DocumentAuthorService(database_url)
+                
+                await author_service.init_database()
+                await doc_author_service.init_database()
+                
+                try:
+                    # Get current authors
+                    async with conn.cursor() as cursor:
+                        await cursor.execute("""
+                            SELECT a.id, a.name
+                            FROM authors a
+                            INNER JOIN document_authors da ON a.id = da.author_id
+                            WHERE da.book_id = %s
+                            ORDER BY da.author_order
+                        """, (document_id,))
+                        
+                        current_authors = await cursor.fetchall()
+                        old_author_names = [row[1] for row in current_authors]
+                    
+                    # Remove all current authors (except we need to keep at least one)
+                    # So we'll add new ones first, then remove old ones
+                    new_author_ids = []
+                    
+                    for author_info in update_data.authors:
+                        # Get or create author
+                        author_id = await author_service.get_or_create_author(
+                            name=author_info.name,
+                            site_url=author_info.site_url
+                        )
+                        new_author_ids.append(author_id)
+                    
+                    # Remove old associations
+                    for author_row in current_authors:
+                        old_author_id = author_row[0]
+                        if old_author_id not in new_author_ids:
+                            try:
+                                await doc_author_service.remove_author_from_document(
+                                    book_id=document_id,
+                                    author_id=old_author_id
+                                )
+                            except ValueError:
+                                # Can't remove last author - that's ok, we're adding new ones
+                                pass
+                    
+                    # Add new associations
+                    for order, author_info in enumerate(update_data.authors):
+                        author_id = new_author_ids[order]
+                        try:
+                            await doc_author_service.add_author_to_document(
+                                book_id=document_id,
+                                author_id=author_id,
+                                order=order
+                            )
+                        except ValueError as e:
+                            # Already exists - just update order
+                            if "already associated" in str(e):
+                                pass
+                            else:
+                                raise
+                    
+                    # Reorder to match the provided order
+                    await doc_author_service.reorder_authors(
+                        book_id=document_id,
+                        author_ids=new_author_ids
+                    )
+                    
+                    # Log author changes to history
+                    new_author_names = [a.name for a in update_data.authors]
+                    history_entries.append((
+                        'authors',
+                        '|'.join(old_author_names),
+                        '|'.join(new_author_names)
+                    ))
+                    
+                finally:
+                    await author_service.close()
+                    await doc_author_service.close()
+
+            # Add all changes to metadata history
+            if history_entries:
                 async with conn.cursor() as cursor:
-                    for field, value in zip(update_fields, values[:-1]):
-                        field_name = field.split(' = ')[0]
+                    for field_name, old_value, new_value in history_entries:
                         await cursor.execute(
                             """INSERT INTO metadata_history
                                (book_id, field_name, old_value, new_value, changed_by, changed_at)
                                VALUES (%s, %s, %s, %s, %s, NOW())""",
-                            (document_id, field_name, doc.get(field_name), value, current_admin["email"])
+                            (document_id, field_name, str(old_value) if old_value else None, 
+                             str(new_value), current_admin["email"])
                         )
                     await conn.commit()
 
             return {"message": "Document updated successfully", "id": document_id}
         finally:
             await conn.close()
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Error updating document: {str(e)}")
+        import traceback
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.patch("/bulk")

@@ -92,13 +92,13 @@
   - **Property 7: Document type in responses**
   - **Validates: Requirements 2.4**
 
-- [ ] 7. Integrate author services into main.py
+- [x] 7. Integrate author services into main.py
   - Initialize AuthorService and DocumentAuthorService in main.py
   - Register author_router and document_author_router
   - Set service instances for route handlers
   - _Requirements: All backend endpoints_
 
-- [ ] 8. Update admin documents endpoints for multi-author support
+- [x] 8. Update admin documents endpoints for multi-author support
   - Modify list_documents endpoint to include authors array from document_authors table
   - Modify update_document endpoint to handle authors array
   - Update document model to include document_type field
@@ -106,11 +106,11 @@
   - Update metadata_history to track author changes
   - _Requirements: 2.1, 2.2, 2.3, 5.1, 5.5, 5.6_
 
-- [ ]* 8.1 Write property test for document type validation
+- [x] 8.1 Write property test for document type validation
   - **Property 5: Document type validation**
   - **Validates: Requirements 2.1**
 
-- [ ]* 8.2 Write property test for type-specific URL fields
+- [x] 8.2 Write property test for type-specific URL fields
   - **Property 6: Type-specific URL fields**
   - **Validates: Requirements 2.2, 2.3**
 
@@ -130,15 +130,15 @@
   - Handle missing author metadata with default or prompt
   - _Requirements: 6.1, 6.2, 6.3, 6.5_
 
-- [ ]* 10.1 Write property test for batch upload author creation
+- [ ] 10.1 Write property test for batch upload author creation
   - **Property 17: Batch upload creates authors**
   - **Validates: Requirements 6.1**
 
-- [ ]* 10.2 Write property test for multi-author parsing
+- [ ] 10.2 Write property test for multi-author parsing
   - **Property 18: Parse multiple authors**
   - **Validates: Requirements 6.2**
 
-- [ ]* 10.3 Write property test for batch deduplication
+- [ ] 10.3 Write property test for batch deduplication
   - **Property 19: Batch upload deduplicates authors**
   - **Validates: Requirements 6.5**
 
@@ -151,15 +151,15 @@
   - Format multiple authors as "Author1|Author2|Author3"
   - _Requirements: 7.1, 7.2, 7.3_
 
-- [ ]* 11.1 Write property test for CSV multi-author export
+- [ ] 11.1 Write property test for CSV multi-author export
   - **Property 20: CSV export includes all authors**
   - **Validates: Requirements 7.1**
 
-- [ ]* 11.2 Write property test for CSV field inclusion
+- [ ] 11.2 Write property test for CSV field inclusion
   - **Property 21: CSV export includes all URL fields**
   - **Validates: Requirements 7.2**
 
-- [ ]* 11.3 Write property test for CSV formatting
+- [ ] 11.3 Write property test for CSV formatting
   - **Property 22: CSV multi-author formatting**
   - **Validates: Requirements 7.3**
 
