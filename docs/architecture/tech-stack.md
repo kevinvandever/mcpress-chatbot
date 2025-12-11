@@ -1,14 +1,31 @@
-# PDF Chatbot Technology Stack
+# MC Press Chatbot Technology Stack
 
 ## Project Overview
-PDF Chatbot is a full-stack AI-powered application that enables users to upload PDF documents and interact with them through natural language queries. The system processes PDFs, creates vector embeddings, and provides contextual responses using OpenAI's GPT models.
+MC Press Chatbot is a full-stack AI-powered application that enables users to upload PDF documents and interact with them through natural language queries. The system processes PDFs, creates vector embeddings, and provides contextual responses using OpenAI's GPT models.
 
 ## Architecture Pattern
-**Microservices Architecture** with containerized deployment:
-- **Frontend**: Next.js SPA serving the user interface
-- **Backend**: FastAPI REST API handling PDF processing and chat logic
-- **Database**: ChromaDB for vector storage and document management
-- **AI Service**: OpenAI API for language model capabilities
+**Cloud-Native Microservices** with managed hosting:
+- **Frontend**: Next.js SPA on Netlify (static site with API proxying)
+- **Backend**: FastAPI REST API on Railway (Python async framework)
+- **Database**: PostgreSQL with pgvector on Railway (vector similarity search)
+- **AI Service**: OpenAI API (GPT-4o-mini for chat responses)
+
+### Deployment Topology
+```
+┌─────────────────┐         ┌──────────────────┐         ┌─────────────┐
+│   Netlify       │         │   Railway        │         │  OpenAI     │
+│   (Frontend)    │────────▶│   (Backend)      │────────▶│  API        │
+│                 │  HTTPS  │                  │  HTTPS  │             │
+│  Next.js App    │  Proxy  │  FastAPI         │         │  GPT-4o     │
+│  Static Assets  │         │  Python 3.8+     │         │             │
+└─────────────────┘         └────────┬─────────┘         └─────────────┘
+                                     │
+                            ┌────────▼─────────┐
+                            │  PostgreSQL      │
+                            │  + pgvector      │
+                            │  (Railway DB)    │
+                            └──────────────────┘
+```
 
 ## Core Technologies
 
@@ -24,9 +41,9 @@ PDF Chatbot is a full-stack AI-powered application that enables users to upload 
 - **HTTP Client**: Native Fetch API
   - Built-in browser fetch for API calls
   - Axios 1.6.2 for advanced request handling
-- **File Upload**: React Dropzone 14.2.3
+- **File Upload**: React Dropzone 14.3.8
   - Drag-and-drop file upload interface
-  - File type validation
+  - PDF and code file support
 - **Markdown Rendering**: React Markdown 9.0.1
   - GitHub Flavored Markdown (GFM) support
   - Syntax highlighting for code blocks
@@ -63,19 +80,19 @@ PDF Chatbot is a full-stack AI-powered application that enables users to upload 
   - Overlap strategies for better context
   - Multiple splitting algorithms
 
-### Vector Database & AI
-- **Vector Store**: ChromaDB 0.4.0+
-  - Local vector database
-  - Semantic search capabilities
-  - Persistent storage
-- **Embeddings**: Sentence Transformers 2.2.0+
-  - all-MiniLM-L6-v2 model for text embeddings
-  - Multilingual support
+### Database & Vector Search
+- **Database**: PostgreSQL with pgvector extension
+  - Railway managed PostgreSQL database
+  - Native vector similarity search using cosine distance
+  - Async database operations with asyncpg
+- **Embeddings**: Sentence Transformers 2.2.2+
+  - all-MiniLM-L6-v2 model (384-dimensional embeddings)
+  - In-process embedding generation
   - Optimized for semantic similarity
 - **Language Model**: OpenAI API 1.3.0+
-  - GPT-4 Turbo for chat responses
+  - GPT-4o-mini for chat responses
   - Streaming response support
-  - Function calling capabilities
+  - Configurable temperature and token limits
 - **Prompt Engineering**: Custom prompt templates
   - Context-aware response generation
   - Source citation integration
@@ -89,11 +106,11 @@ PDF Chatbot is a full-stack AI-powered application that enables users to upload 
 3. **Processing**: PDF text/image extraction with PyMuPDF
 4. **Chunking**: Text segmentation with LangChain splitters
 5. **Embedding**: Vector generation with Sentence Transformers
-6. **Storage**: ChromaDB persistence with metadata
+6. **Storage**: PostgreSQL with pgvector and metadata
 
 ### Chat Processing Pipeline
 1. **Query**: User message from frontend
-2. **Retrieval**: Semantic search in ChromaDB
+2. **Retrieval**: Semantic search in PostgreSQL (pgvector cosine similarity)
 3. **Context**: Relevant document chunks assembly
 4. **Generation**: OpenAI API call with context
 5. **Streaming**: Real-time response delivery
@@ -107,7 +124,7 @@ PDF Chatbot is a full-stack AI-powered application that enables users to upload 
 - **File Handling**: aiofiles 23.2.0+ for async file operations
 - **Data Validation**: Pydantic 2.5.0+ and Pydantic Settings 2.1.0+
 - **HTTP Client**: python-multipart 0.0.6+ for file uploads
-- **Testing**: pytest (implied, not in requirements)
+- **Authentication**: JWT (PyJWT 2.8.0+) + bcrypt (4.0.1+) for admin security
 
 ### Frontend Development
 - **Package Manager**: npm with package-lock.json
@@ -118,51 +135,59 @@ PDF Chatbot is a full-stack AI-powered application that enables users to upload 
 
 ## Infrastructure & Deployment
 
-### Containerization
-- **Docker**: Multi-stage builds for frontend and backend
-- **Docker Compose**: Orchestration for local development
-- **Base Images**: 
-  - Frontend: Node.js Alpine
-  - Backend: Python 3.8+ slim
-
-### Database Storage
-- **Vector Database**: ChromaDB with SQLite backend
-- **File Storage**: Local filesystem with uploads directory
-- **Persistence**: Volume mounts for data continuity
+### Production Hosting
+- **Frontend**: Netlify
+  - Static site hosting with CDN
+  - API proxy to Railway backend
+  - Automatic deploys from Git
+- **Backend**: Railway
+  - Managed Python hosting
+  - PostgreSQL database with pgvector
+  - Persistent volume storage for uploads
+- **Database**: Railway PostgreSQL
+  - Managed PostgreSQL with pgvector extension
+  - Automatic backups and scaling
 
 ### Environment Configuration
-- **Backend Port**: 8000 (development), 8001 (production)
-- **Frontend Port**: 3000 (development)
-- **CORS**: Configured for localhost development
-- **API Keys**: Environment variable management
+- **Frontend URL**: Netlify CDN
+- **Backend API**: Railway app URL
+- **Database**: Railway PostgreSQL connection string
+- **File Storage**: Railway persistent volume
+- **API Keys**: Environment variables in Railway dashboard
 
 ## Performance Characteristics
 
 ### Processing Performance
 - **PDF Processing**: ~1-2 seconds per MB
 - **Embedding Generation**: ~500ms per document chunk
-- **Vector Search**: <100ms for similarity queries
-- **Chat Response**: 1-3 seconds (depends on OpenAI API)
+- **Vector Search**: Fast pgvector similarity queries with cosine distance
+- **Chat Response**: 1-3 seconds (streaming from OpenAI API)
 
 ### Scalability Considerations
 - **File Size Limit**: 50MB per PDF (configurable)
-- **Memory Usage**: ~100MB base + 50MB per processed document
-- **Concurrent Users**: Limited by OpenAI API rate limits
-- **Storage**: Local filesystem (can be migrated to cloud)
+- **Concurrent Users**: Scales with Railway resources and OpenAI API limits
+- **Storage**: Railway persistent volumes with PostgreSQL
+- **Database**: Managed PostgreSQL scales with Railway plans
 
 ## Security Features
 
+### Authentication & Authorization
+- **Admin Authentication**: JWT tokens with bcrypt password hashing
+- **Session Management**: Database-backed sessions with 24-hour expiration
+- **Rate Limiting**: 5 failed login attempts per IP, 15-minute lockout
+- **Password Policy**: 12+ characters with complexity requirements
+
 ### Input Validation
-- **File Type**: PDF-only uploads
-- **File Size**: Configurable limits
+- **File Type**: PDF and code file validation
+- **File Size**: Configurable limits (50MB default)
 - **Content Validation**: Pydantic models for API requests
-- **CORS**: Restricted to localhost in development
+- **CORS**: Configured for production domains
 
 ### Data Protection
-- **API Keys**: Environment variable storage
-- **File Isolation**: Uploads directory separation
-- **No Persistence**: Sensitive data not logged
-- **Local Processing**: No external data transmission except OpenAI API
+- **API Keys**: Environment variable storage in Railway
+- **Database Security**: Managed PostgreSQL with encrypted connections
+- **Token Security**: SHA256 hashed tokens in database
+- **Audit Trail**: Last login tracking and session management
 
 ## Monitoring & Observability
 
@@ -173,47 +198,40 @@ PDF Chatbot is a full-stack AI-powered application that enables users to upload 
 
 ### Health Checks
 - **API Health**: `/health` endpoint
-- **Database Status**: ChromaDB connection validation
+- **Database Status**: PostgreSQL connection validation
 - **Service Dependencies**: OpenAI API availability
 
 ## Development Workflow
 
-### Local Development
-```bash
-# Backend
-cd backend
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
-
-# Frontend
-cd frontend
-npm install
-npm run dev
-```
-
-### Docker Development
-```bash
-docker-compose up --build
-```
+### Production Development
+All development and testing occurs directly in Railway production environment:
+- **Backend**: Railway deployment triggers from Git push
+- **Frontend**: Netlify deployment triggers from Git push
+- **Database**: Railway managed PostgreSQL
 
 ### Testing Strategy
-- **Unit Tests**: Individual component testing
+- **Production Testing**: All testing performed in Railway environment
 - **Integration Tests**: API endpoint testing
-- **E2E Tests**: Full workflow validation
+- **Manual QA**: Feature validation in production
 
-## Future Considerations
+## Recent Architecture Evolution
 
-### Planned Enhancements
-- **Authentication**: User management system
-- **Cloud Storage**: AWS S3 or similar for document storage
-- **Batch Processing**: Multiple document handling
-- **Advanced OCR**: Better image text extraction
-- **Analytics**: Usage metrics and performance monitoring
+### Completed Migrations
+- ✅ **ChromaDB → PostgreSQL pgvector**: Migrated from local ChromaDB to Railway PostgreSQL with pgvector extension for production scalability
+- ✅ **Supabase → Railway**: Consolidated hosting from Supabase to Railway for simplified infrastructure
+- ✅ **Storage Optimization**: Resolved 500MB Railway storage constraints with persistent volumes
+- ✅ **JWT Authentication**: Implemented admin authentication with JWT tokens and bcrypt
 
-### Technology Migrations
-- **Database**: PostgreSQL for production scalability
-- **Vector Store**: Pinecone or Weaviate for cloud deployment
-- **Deployment**: Kubernetes for container orchestration
-- **Monitoring**: Prometheus and Grafana for observability
+### Current Features
+- **Conversation History**: Persistent chat history with PostgreSQL storage (STORY-011)
+- **Conversation Export**: PDF and Markdown export functionality (STORY-012 in progress)
+- **Code File Upload**: Support for uploading and querying code files (.py, .js, .ts, etc.)
+- **Admin Dashboard**: Document management interface for content administrators
 
-This technology stack provides a robust foundation for AI-powered document processing with room for scalability and enhancement.
+### Future Considerations
+- **User Authentication**: Expand beyond admin-only to end-user authentication
+- **Analytics Dashboard**: Usage metrics and performance monitoring
+- **Advanced Export**: Custom branding and formatting options
+- **Rate Limiting Enhancement**: Move from in-memory to PostgreSQL-backed rate limiting
+
+This technology stack provides a robust, cloud-native foundation for AI-powered document processing with proven scalability in production.

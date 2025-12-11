@@ -1,0 +1,4 @@
+# file: /Users/kevinvandever/kev-dev/mcpress-chatbot/backend/document_author_service.py
+# hypothesis_version: 6.148.2
+
+['DATABASE_URL', 'association_removed', 'author_id', 'author_order', 'author_still_exists', 'category', 'document_type', 'filename', 'id', 'processed_at', 'subcategory', 'title', 'total_pages']
