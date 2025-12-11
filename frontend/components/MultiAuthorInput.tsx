@@ -8,7 +8,7 @@ import { API_URL } from '../config/api'
 // Types and Interfaces
 // =====================================================
 
-interface Author {
+export interface Author {
   id?: number
   name: string
   site_url?: string

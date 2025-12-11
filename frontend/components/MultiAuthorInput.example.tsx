@@ -92,11 +92,20 @@ export default function MultiAuthorInputExample() {
   )
 }
 
+// Import the Author type from MultiAuthorInput
+import type { Author } from './MultiAuthorInput'
+
 // Example of how to use in a form context
 export function DocumentEditFormExample() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    title: string
+    document_type: 'book' | 'article'
+    authors: Author[]
+    mc_press_url: string
+    article_url: string
+  }>({
     title: 'Sample Document',
-    document_type: 'book' as 'book' | 'article',
+    document_type: 'book',
     authors: [
       { id: 1, name: 'John Doe', site_url: 'https://johndoe.com', order: 0 }
     ],
