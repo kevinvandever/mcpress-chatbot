@@ -37,3 +37,8 @@ pytesseract>=0.3.10
 
 # Text Processing
 langchain-text-splitters>=0.0.1
+
+# Testing
+hypothesis>=6.92.0
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
