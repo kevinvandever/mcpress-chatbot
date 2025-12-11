@@ -249,20 +249,37 @@ async def get_author_documents(
 @author_router.get("/", response_model=List[AuthorResponse])
 async def list_authors(
     limit: int = Query(50, ge=1, le=1000, description="Maximum results"),
-    offset: int = Query(0, ge=0, description="Results offset for pagination")
+    offset: int = Query(0, ge=0, description="Results offset for pagination"),
+    sort_by: str = Query("name", description="Sort field: 'name' or 'document_count'"),
+    sort_direction: str = Query("asc", description="Sort direction: 'asc' or 'desc'"),
+    exclude_empty: bool = Query(False, description="Exclude authors with zero documents")
 ):
     """
-    List all authors with pagination
+    List all authors with pagination, sorting, and filtering
     
-    Returns authors ordered by name.
+    Supports sorting by name or document count, and filtering out authors
+    with no associated documents.
+    
+    **Validates:** Requirements 8.4, 8.5
     """
     if not _author_service:
         raise HTTPException(status_code=503, detail="Author service not initialized")
     
+    # Validate sort parameters
+    if sort_by not in ["name", "document_count"]:
+        raise HTTPException(status_code=400, detail="sort_by must be 'name' or 'document_count'")
+    
+    if sort_direction not in ["asc", "desc"]:
+        raise HTTPException(status_code=400, detail="sort_direction must be 'asc' or 'desc'")
+    
     try:
-        # Use search with empty query to get all authors
-        # This is a simple implementation - could be optimized with a dedicated method
-        authors = await _author_service.search_authors("", limit=limit)
+        authors = await _author_service.list_authors_with_sorting(
+            limit=limit,
+            offset=offset,
+            sort_by=sort_by,
+            sort_direction=sort_direction,
+            exclude_empty=exclude_empty
+        )
         
         return [
             AuthorResponse(

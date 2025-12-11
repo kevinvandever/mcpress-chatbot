@@ -200,6 +200,7 @@ import sys
 from datetime import datetime
 from fastapi import BackgroundTasks
 from fastapi.responses import HTMLResponse
+import re
 
 # Global status tracking for uploads
 upload_status = {
@@ -530,6 +531,26 @@ except Exception as e:
     test_task_6_router = None
     test_task_6_available = False
 
+# Excel Import API Routes (Task 12)
+excel_import_routes_available = False
+excel_import_router = None
+excel_import_service = None
+
+try:
+    try:
+        from excel_import_routes import router as excel_import_router, set_excel_service
+        from excel_import_service import ExcelImportService
+        excel_import_routes_available = True
+    except ImportError:
+        from backend.excel_import_routes import router as excel_import_router, set_excel_service
+        from backend.excel_import_service import ExcelImportService
+        excel_import_routes_available = True
+    print("✅ Excel import routes loaded")
+except Exception as e:
+    print(f"⚠️ Excel import routes not available: {e}")
+    excel_import_router = None
+    excel_import_routes_available = False
+
 # Initialize and include conversation router (Story-011)
 # Must be after vector_store is initialized
 conversation_service = None  # Will be set if initialization succeeds
@@ -715,6 +736,20 @@ async def startup_event():
                 if test_task_6_available:
                     app.include_router(test_task_6_router)
                     print("✅ Task 6 test endpoints enabled at /test-task-6/*")
+                
+                # Initialize Excel Import Service (Task 12)
+                if excel_import_routes_available and author_service:
+                    try:
+                        excel_import_service = ExcelImportService(author_service, database_url)
+                        set_excel_service(excel_import_service)
+                        app.include_router(excel_import_router)
+                        print("✅ Excel import endpoints enabled at /api/excel/*")
+                    except Exception as e:
+                        print(f"⚠️ Could not enable Excel import routes: {e}")
+                        import traceback
+                        print(traceback.format_exc())
+                elif excel_import_routes_available and not author_service:
+                    print("⚠️ Excel import service requires author service - skipping")
             else:
                 print("⚠️ DATABASE_URL not set - author routes disabled")
         except Exception as e:
@@ -727,6 +762,14 @@ async def startup_event():
 async def shutdown_event():
     """Graceful shutdown for background services"""
     print("🛑 Shutting down services...")
+
+    # Excel Import Service: Close database connections
+    if excel_import_service:
+        try:
+            await excel_import_service.close()
+            print("✅ Excel import service shutdown complete")
+        except Exception as e:
+            print(f"⚠️  Error during Excel import service shutdown: {e}")
 
     # Story-006: Shutdown code upload system
     if CODE_UPLOAD_AVAILABLE:
@@ -877,6 +920,59 @@ async def upload_pdf(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+def parse_authors(author_string: str) -> List[str]:
+    """
+    Parse multiple authors from a string with various delimiters.
+    
+    Supports:
+    - Semicolon separation: "John Doe; Jane Smith"
+    - Comma separation: "John Doe, Jane Smith"
+    - "and" separation: "John Doe and Jane Smith"
+    - Complex format: "John Doe, Jane Smith, and Bob Wilson"
+    
+    Args:
+        author_string: String containing one or more author names
+        
+    Returns:
+        List of individual author names (trimmed)
+        
+    Validates: Requirements 6.2
+    """
+    if not author_string:
+        return []
+    
+    author_string = author_string.strip()
+    if not author_string:
+        return []
+    
+    # Handle semicolon separation first (highest priority)
+    if ";" in author_string:
+        return [author.strip() for author in author_string.split(";") if author.strip()]
+    
+    # Handle "and" separation with comma support
+    if " and " in author_string:
+        # Handle "A, B, and C" format
+        if "," in author_string:
+            parts = author_string.split(",")
+            authors = []
+            for i, part in enumerate(parts):
+                part = part.strip()
+                if i == len(parts) - 1 and part.startswith("and "):
+                    part = part[4:]  # Remove "and "
+                if part:
+                    authors.append(part)
+            return authors
+        else:
+            # Simple "A and B" format
+            return [author.strip() for author in author_string.split(" and ") if author.strip()]
+    
+    # Handle comma separation
+    if "," in author_string:
+        return [author.strip() for author in author_string.split(",") if author.strip()]
+    
+    # Single author
+    return [author_string.strip()]
+
 async def process_single_pdf(file_content: bytes, filename: str, batch_id: str, file_index: int, total_files: int):
     """Process a single PDF file as part of a batch"""
     try:
@@ -914,11 +1010,11 @@ async def process_single_pdf(file_content: bytes, filename: str, batch_id: str, 
         chunks_count = len(extracted_content["chunks"])
         print(f"Adding {chunks_count} chunks to vector store for {filename}")
         
-        # Check if author metadata is missing
-        author = extracted_content.get("author")
-        needs_author = author is None or author == ""
+        # Multi-author parsing and processing
+        author_metadata = extracted_content.get("author")
+        needs_author = author_metadata is None or author_metadata == ""
         
-        print(f"📝 Batch upload status for {filename}: Author = '{author}', Needs author = {needs_author}")
+        print(f"📝 Batch upload status for {filename}: Author metadata = '{author_metadata}', Needs author = {needs_author}")
         
         if needs_author:
             # Store temporarily and mark as needing metadata
@@ -946,14 +1042,37 @@ async def process_single_pdf(file_content: bytes, filename: str, batch_id: str, 
             print(f"📋 File {filename} needs author metadata - stored in temp_storage")
             return "needs_metadata"
         
+        # Parse multiple authors from metadata
+        parsed_authors = parse_authors(author_metadata)
+        print(f"📝 Parsed {len(parsed_authors)} authors from '{author_metadata}': {parsed_authors}")
+        
+        # Determine document type (default to 'book')
+        document_type = extracted_content.get("document_type", "book")
+        
         try:
+            # Create or get author records using AuthorService
+            author_ids = []
+            if author_service:
+                for author_name in parsed_authors:
+                    author_name = author_name.strip()
+                    if author_name:
+                        try:
+                            author_id = await author_service.get_or_create_author(author_name)
+                            author_ids.append(author_id)
+                            print(f"✅ Created/found author '{author_name}' with ID {author_id}")
+                        except Exception as e:
+                            print(f"⚠️ Error creating author '{author_name}': {e}")
+                            # Continue with other authors
+            
+            # Add to vector store with enhanced metadata
             await vector_store.add_documents(
                 documents=extracted_content["chunks"],
                 metadata={
                     "filename": filename,
                     "title": title,
                     "category": category,
-                    "author": author,
+                    "author": "; ".join(parsed_authors),  # Legacy field for compatibility
+                    "document_type": document_type,
                     "total_pages": extracted_content["total_pages"],
                     "has_images": len(extracted_content["images"]) > 0,
                     "has_code": len(extracted_content["code_blocks"]) > 0,
@@ -962,8 +1081,21 @@ async def process_single_pdf(file_content: bytes, filename: str, batch_id: str, 
                 }
             )
             print(f"Successfully added all {chunks_count} chunks for {filename}")
+            
+            # Create document-author associations if services are available
+            if doc_author_service and author_ids:
+                try:
+                    # Get the document ID from vector store (we'll need to modify this)
+                    # For now, we'll use a placeholder approach
+                    # TODO: Modify vector store to return document ID or implement book creation
+                    print(f"📝 Would create document-author associations for {len(author_ids)} authors")
+                    # This will be implemented when we have proper book table integration
+                except Exception as e:
+                    print(f"⚠️ Error creating document-author associations: {e}")
+                    # Continue - the document is still added to vector store
+            
         except Exception as e:
-            print(f"Error adding chunks to vector store for {filename}: {str(e)}")
+            print(f"Error processing document {filename}: {str(e)}")
             raise
         
         # Update progress: completed
@@ -1118,6 +1250,23 @@ async def complete_upload_with_metadata(request: CompleteUploadRequest):
         extracted_content = stored_data["extracted_content"]
         category = stored_data["category"]
         
+        # Parse multiple authors from provided author string
+        parsed_authors = parse_authors(request.author)
+        print(f"📝 Complete upload: Parsed {len(parsed_authors)} authors from '{request.author}': {parsed_authors}")
+        
+        # Create or get author records using AuthorService
+        author_ids = []
+        if author_service:
+            for author_name in parsed_authors:
+                author_name = author_name.strip()
+                if author_name:
+                    try:
+                        author_id = await author_service.get_or_create_author(author_name)
+                        author_ids.append(author_id)
+                        print(f"✅ Created/found author '{author_name}' with ID {author_id}")
+                    except Exception as e:
+                        print(f"⚠️ Error creating author '{author_name}': {e}")
+        
         # Add to vector store with provided author and URL
         await vector_store.add_documents(
             documents=extracted_content["chunks"],
@@ -1128,7 +1277,8 @@ async def complete_upload_with_metadata(request: CompleteUploadRequest):
                 "has_code": len(extracted_content["code_blocks"]) > 0,
                 "category": category,
                 "title": request.filename.replace('.pdf', ''),
-                "author": request.author,
+                "author": "; ".join(parsed_authors),  # Legacy field for compatibility
+                "document_type": "book",  # Default for manual uploads
                 "mc_press_url": request.mc_press_url
             }
         )

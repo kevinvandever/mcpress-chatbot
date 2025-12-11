@@ -20,7 +20,10 @@ interface FileStatus {
     code_blocks_found: number
     total_pages: number
     category: string
+    authors?: string[]
+    document_type?: string
   }
+  extraction_details?: string
 }
 
 interface BatchProgress {
@@ -35,6 +38,8 @@ interface BatchProgress {
     successful: number
     failed: number
     total: number
+    total_authors_created?: number
+    total_authors_updated?: number
   }
 }
 
@@ -309,6 +314,9 @@ export default function BatchUpload({ onUploadComplete }: BatchUploadProps) {
               <p className="text-sm font-medium text-blue-800">
                 Currently processing: {batchProgress.current_file}
               </p>
+              <p className="text-xs text-blue-600 mt-1">
+                Extracting content, parsing authors, and creating document associations...
+              </p>
             </div>
           )}
 
@@ -318,13 +326,31 @@ export default function BatchUpload({ onUploadComplete }: BatchUploadProps) {
               <div key={filename} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                 <div className="flex items-center gap-2 flex-1">
                   <span>{getFileStatusIcon(fileStatus.status)}</span>
-                  <span className={`text-sm ${getFileStatusColor(fileStatus.status)} truncate`}>
-                    {filename}
-                  </span>
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <span className={`text-sm ${getFileStatusColor(fileStatus.status)} truncate`}>
+                      {filename}
+                    </span>
+                    {/* Show parsed authors for completed files */}
+                    {fileStatus.status === 'completed' && fileStatus.stats?.authors && fileStatus.stats.authors.length > 0 && (
+                      <span className="text-xs text-gray-500 truncate">
+                        👤 {fileStatus.stats.authors.join(', ')} ({fileStatus.stats.authors.length} author{fileStatus.stats.authors.length !== 1 ? 's' : ''})
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   {fileStatus.status === 'completed' && fileStatus.stats && (
                     <div className="flex items-center gap-2 text-xs text-gray-600">
+                      {/* Document type badge */}
+                      {fileStatus.stats.document_type && (
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          fileStatus.stats.document_type === 'book' 
+                            ? 'bg-blue-100 text-blue-800' 
+                            : 'bg-green-100 text-green-800'
+                        }`}>
+                          {fileStatus.stats.document_type}
+                        </span>
+                      )}
                       <span className="bg-gray-200 px-2 py-1 rounded">
                         {fileStatus.stats.category}
                       </span>
@@ -342,7 +368,14 @@ export default function BatchUpload({ onUploadComplete }: BatchUploadProps) {
                     <span className="text-xs text-red-600">{fileStatus.message}</span>
                   )}
                   {fileStatus.status === 'needs_metadata' && (
-                    <span className="text-xs text-yellow-600">Needs author</span>
+                    <div className="flex flex-col items-end">
+                      <span className="text-xs text-yellow-600">Needs author</span>
+                      {fileStatus.extraction_details && (
+                        <span className="text-xs text-gray-400 max-w-48 truncate">
+                          {fileStatus.extraction_details}
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -353,7 +386,7 @@ export default function BatchUpload({ onUploadComplete }: BatchUploadProps) {
           {batchProgress.status === 'completed' && batchProgress.summary && (
             <div className="mt-4 p-4 bg-green-50 rounded-lg">
               <h4 className="font-semibold text-green-800 mb-2">Upload Complete!</h4>
-              <div className="grid grid-cols-3 gap-4 text-sm">
+              <div className="grid grid-cols-3 gap-4 text-sm mb-4">
                 <div className="text-center">
                   <p className="text-green-600 font-semibold text-lg">
                     {batchProgress.summary.successful}
@@ -373,6 +406,32 @@ export default function BatchUpload({ onUploadComplete }: BatchUploadProps) {
                   <p className="text-gray-600">Total</p>
                 </div>
               </div>
+              
+              {/* Author Summary */}
+              {(batchProgress.summary.total_authors_created || batchProgress.summary.total_authors_updated) && (
+                <div className="border-t border-green-200 pt-3 mb-4">
+                  <h5 className="font-medium text-green-700 mb-2">Author Processing</h5>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    {batchProgress.summary.total_authors_created && (
+                      <div className="text-center">
+                        <p className="text-blue-600 font-semibold">
+                          {batchProgress.summary.total_authors_created}
+                        </p>
+                        <p className="text-gray-600">Authors Created</p>
+                      </div>
+                    )}
+                    {batchProgress.summary.total_authors_updated && (
+                      <div className="text-center">
+                        <p className="text-purple-600 font-semibold">
+                          {batchProgress.summary.total_authors_updated}
+                        </p>
+                        <p className="text-gray-600">Authors Updated</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              
               <button
                 onClick={handleReset}
                 className="mt-4 w-full bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"

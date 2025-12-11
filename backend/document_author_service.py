@@ -326,6 +326,22 @@ class DocumentAuthorService:
             """, book_id)
             return count
 
+    async def clear_document_authors(self, book_id: int) -> None:
+        """
+        Remove all author associations for a document.
+        
+        Used during CSV import to replace existing authors with new ones.
+        
+        Args:
+            book_id: ID of document (book)
+        """
+        await self._ensure_pool()
+        
+        async with self.pool.acquire() as conn:
+            await conn.execute("""
+                DELETE FROM document_authors WHERE book_id = $1
+            """, book_id)
+
     async def verify_cascade_deletion(
         self,
         author_id: int,

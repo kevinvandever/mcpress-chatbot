@@ -10,11 +10,41 @@ const config: Config = {
     extend: {
       colors: {
         // MC Press Brand Colors (using CSS variables)
-        'mc-blue': 'var(--mc-blue)',
-        'mc-green': 'var(--mc-green)',
-        'mc-orange': 'var(--mc-orange)',
-        'mc-red': 'var(--mc-red)',
-        'mc-gray': 'var(--mc-gray)',
+        'mc-blue': {
+          DEFAULT: 'var(--mc-blue)',
+          light: 'var(--mc-blue-light)',
+          lighter: 'var(--mc-blue-lighter)',
+          dark: 'var(--mc-blue-dark)',
+          darker: 'var(--mc-blue-darker)',
+        },
+        'mc-green': {
+          DEFAULT: 'var(--mc-green)',
+          light: 'var(--mc-green-light)',
+          lighter: 'var(--mc-green-lighter)',
+          dark: 'var(--mc-green-dark)',
+          darker: 'var(--mc-green-darker)',
+        },
+        'mc-orange': {
+          DEFAULT: 'var(--mc-orange)',
+          light: 'var(--mc-orange-light)',
+          lighter: 'var(--mc-orange-lighter)',
+          dark: 'var(--mc-orange-dark)',
+          darker: 'var(--mc-orange-darker)',
+        },
+        'mc-red': {
+          DEFAULT: 'var(--mc-red)',
+          light: 'var(--mc-red-light)',
+          lighter: 'var(--mc-red-lighter)',
+          dark: 'var(--mc-red-dark)',
+          darker: 'var(--mc-red-darker)',
+        },
+        'mc-gray': {
+          DEFAULT: 'var(--mc-gray)',
+          light: 'var(--mc-gray-light)',
+          lighter: 'var(--mc-gray-lighter)',
+          dark: 'var(--mc-gray-dark)',
+          darker: 'var(--mc-gray-darker)',
+        },
 
         // Semantic colors
         primary: 'var(--color-primary)',

@@ -306,6 +306,69 @@ class AuthorService:
                 for row in rows
             ]
 
+    async def list_authors_with_sorting(
+        self,
+        limit: int = 50,
+        offset: int = 0,
+        sort_by: str = "name",
+        sort_direction: str = "asc",
+        exclude_empty: bool = False
+    ) -> List[Dict[str, Any]]:
+        """
+        List authors with pagination, sorting, and filtering.
+        
+        Args:
+            limit: Maximum number of results to return
+            offset: Number of results to skip for pagination
+            sort_by: Field to sort by ('name' or 'document_count')
+            sort_direction: Sort direction ('asc' or 'desc')
+            exclude_empty: If True, exclude authors with zero documents
+            
+        Returns:
+            List of author dictionaries with id, name, site_url, document_count
+            
+        Validates: Requirements 8.4, 8.5
+        """
+        await self._ensure_pool()
+        
+        # Build ORDER BY clause
+        if sort_by == "document_count":
+            order_clause = f"document_count {sort_direction.upper()}, a.name ASC"
+        else:  # sort_by == "name"
+            order_clause = f"a.name {sort_direction.upper()}"
+        
+        # Build WHERE clause for filtering
+        where_clause = ""
+        if exclude_empty:
+            where_clause = "HAVING COUNT(da.book_id) > 0"
+        
+        async with self.pool.acquire() as conn:
+            query = f"""
+                SELECT 
+                    a.id,
+                    a.name,
+                    a.site_url,
+                    COUNT(da.book_id) as document_count
+                FROM authors a
+                LEFT JOIN document_authors da ON a.id = da.author_id
+                GROUP BY a.id, a.name, a.site_url
+                {where_clause}
+                ORDER BY {order_clause}
+                LIMIT $1 OFFSET $2
+            """
+            
+            rows = await conn.fetch(query, limit, offset)
+            
+            return [
+                {
+                    'id': row['id'],
+                    'name': row['name'],
+                    'site_url': row['site_url'],
+                    'document_count': row['document_count']
+                }
+                for row in rows
+            ]
+
     def _validate_url(self, url: str) -> str:
         """
         Validate URL format.

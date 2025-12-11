@@ -2,63 +2,104 @@
 
 import { useState, useEffect } from 'react'
 import axios from 'axios'
+import MultiAuthorInput from './MultiAuthorInput'
+import DocumentTypeSelector, { DocumentType } from './DocumentTypeSelector'
 import { API_URL } from '../config/api'
+
+interface Author {
+  id?: number
+  name: string
+  site_url?: string
+  order: number
+}
+
+interface Document {
+  id?: number
+  filename: string
+  title?: string
+  authors?: Author[]
+  author?: string // Legacy field
+  mc_press_url?: string
+  article_url?: string
+  document_type?: 'book' | 'article'
+}
 
 interface MetadataEditDialogProps {
   isOpen: boolean
   onClose: () => void
   onSuccess: () => void
-  filename: string
-  currentTitle: string
-  currentAuthor: string
-  currentUrl?: string
+  document: Document
 }
 
 export default function MetadataEditDialog({
   isOpen,
   onClose,
   onSuccess,
-  filename,
-  currentTitle,
-  currentAuthor,
-  currentUrl
+  document
 }: MetadataEditDialogProps) {
   const [title, setTitle] = useState('')
-  const [author, setAuthor] = useState('')
+  const [authors, setAuthors] = useState<Author[]>([])
+  const [documentType, setDocumentType] = useState<DocumentType>('book')
   const [mcPressUrl, setMcPressUrl] = useState('')
+  const [articleUrl, setArticleUrl] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (isOpen) {
-      setTitle(currentTitle)
-      setAuthor(currentAuthor)
-      setMcPressUrl(currentUrl || '')
+    if (isOpen && document) {
+      setTitle(document.title || document.filename.replace('.pdf', ''))
+      
+      // Handle authors - convert from legacy format if needed
+      if (document.authors && document.authors.length > 0) {
+        setAuthors(document.authors)
+      } else if (document.author) {
+        // Convert legacy single author to new format
+        setAuthors([{
+          name: document.author,
+          order: 0
+        }])
+      } else {
+        // Default to at least one empty author
+        setAuthors([{
+          name: '',
+          order: 0
+        }])
+      }
+      
+      setDocumentType(document.document_type || 'book')
+      setMcPressUrl(document.mc_press_url || '')
+      setArticleUrl(document.article_url || '')
       setError('')
     }
-  }, [isOpen, currentTitle, currentAuthor, currentUrl])
+  }, [isOpen, document])
 
-  const validateUrl = (url: string): boolean => {
-    if (!url.trim()) return true // Empty URL is valid (optional field)
-    
-    try {
-      const urlObj = new URL(url)
-      return urlObj.protocol === 'http:' || urlObj.protocol === 'https:'
-    } catch {
-      return false
-    }
+  const handleDocumentTypeChange = (data: {
+    documentType: DocumentType
+    mcPressUrl?: string
+    articleUrl?: string
+  }) => {
+    setDocumentType(data.documentType)
+    setMcPressUrl(data.mcPressUrl || '')
+    setArticleUrl(data.articleUrl || '')
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault()
     
-    if (!title.trim() || !author.trim()) {
-      setError('Both title and author are required')
+    if (!title.trim()) {
+      setError('Title is required')
       return
     }
 
-    if (mcPressUrl.trim() && !validateUrl(mcPressUrl.trim())) {
-      setError('Please enter a valid URL (must start with http:// or https://)')
+    if (authors.length === 0 || !authors.some(author => author.name.trim())) {
+      setError('At least one author is required')
+      return
+    }
+
+    // Validate that all authors have names
+    const invalidAuthors = authors.filter(author => !author.name.trim())
+    if (invalidAuthors.length > 0) {
+      setError('All authors must have names')
       return
     }
 
@@ -66,12 +107,73 @@ export default function MetadataEditDialog({
     setError('')
 
     try {
-      await axios.put(`${API_URL}/documents/${encodeURIComponent(filename)}/metadata`, {
-        filename: filename,
+      const documentId = document.id
+
+      if (!documentId) {
+        throw new Error('Document ID is required')
+      }
+
+      // Update basic document metadata using admin endpoint (for title, type, URLs)
+      await axios.patch(`${API_URL}/api/admin/documents/${documentId}`, {
         title: title.trim(),
-        author: author.trim(),
-        mc_press_url: mcPressUrl.trim() || null
+        document_type: documentType,
+        mc_press_url: documentType === 'book' ? (mcPressUrl.trim() || null) : null,
+        article_url: documentType === 'article' ? (articleUrl.trim() || null) : null
       })
+
+      // Get current document authors to compare
+      const currentDocResponse = await axios.get(`${API_URL}/api/documents/${documentId}`)
+      const currentAuthors = currentDocResponse.data.authors || []
+
+      // Filter out empty authors
+      const validAuthors = authors.filter(author => author.name.trim())
+
+      // Add new authors using document-author relationship endpoint
+      const newAuthorIds: number[] = []
+      for (let i = 0; i < validAuthors.length; i++) {
+        const author = validAuthors[i]
+        try {
+          const response = await axios.post(`${API_URL}/api/documents/${documentId}/authors`, {
+            author_name: author.name.trim(),
+            author_site_url: author.site_url?.trim() || null,
+            order: i
+          })
+          newAuthorIds.push(response.data.author_id)
+        } catch (error: any) {
+          // If author already exists, we'll handle reordering later
+          if (error.response?.status === 409) {
+            // Find existing author ID
+            const existingAuthor = currentAuthors.find((ca: any) => ca.name === author.name.trim())
+            if (existingAuthor) {
+              newAuthorIds.push(existingAuthor.id)
+            }
+          } else {
+            throw error
+          }
+        }
+      }
+
+      // Remove authors that are no longer in the list
+      for (const currentAuthor of currentAuthors) {
+        const stillExists = validAuthors.some(author => 
+          author.name.trim() === currentAuthor.name
+        )
+        if (!stillExists) {
+          try {
+            await axios.delete(`${API_URL}/api/documents/${documentId}/authors/${currentAuthor.id}`)
+          } catch (error: any) {
+            // Ignore errors for removing authors (might be last author)
+            console.warn('Could not remove author:', error.response?.data?.detail)
+          }
+        }
+      }
+
+      // Reorder authors using PUT /api/documents/{document_id}/authors/order
+      if (newAuthorIds.length > 0) {
+        await axios.put(`${API_URL}/api/documents/${documentId}/authors/order`, {
+          author_ids: newAuthorIds
+        })
+      }
 
       onSuccess()
       onClose()
@@ -116,14 +218,14 @@ export default function MetadataEditDialog({
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="p-6">
+        <form onSubmit={handleSubmit} className="p-6 max-h-[70vh] overflow-y-auto">
           {/* Filename display */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               File
             </label>
             <div className="p-2 bg-gray-50 rounded border text-sm text-gray-600 truncate">
-              {filename}
+              {document.filename}
             </div>
           </div>
 
@@ -143,39 +245,28 @@ export default function MetadataEditDialog({
             />
           </div>
 
-          {/* Author input */}
-          <div className="mb-4">
-            <label htmlFor="author" className="block text-sm font-medium text-gray-700 mb-1">
-              Author(s) *
-            </label>
-            <input
-              type="text"
-              id="author"
-              value={author}
-              onChange={(e) => setAuthor(e.target.value)}
+          {/* Document Type Selector */}
+          <div className="mb-6">
+            <DocumentTypeSelector
+              documentType={documentType}
+              mcPressUrl={mcPressUrl}
+              articleUrl={articleUrl}
+              onChange={handleDocumentTypeChange}
               disabled={isSubmitting}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-              placeholder="Enter author name(s), separate multiple with commas"
             />
           </div>
 
-          {/* MC Press URL input */}
+          {/* Multi-Author Input */}
           <div className="mb-6">
-            <label htmlFor="mcPressUrl" className="block text-sm font-medium text-gray-700 mb-1">
-              MC Press URL
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Authors *
             </label>
-            <input
-              type="url"
-              id="mcPressUrl"
-              value={mcPressUrl}
-              onChange={(e) => setMcPressUrl(e.target.value)}
+            <MultiAuthorInput
+              authors={authors}
+              onChange={setAuthors}
               disabled={isSubmitting}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-              placeholder="https://www.mc-press.com/product/book-name"
+              placeholder="Search for authors or add new ones..."
             />
-            <p className="mt-1 text-xs text-gray-500">
-              Optional: Link to this book on the MC Press website
-            </p>
           </div>
 
           {/* Error message */}
@@ -197,7 +288,7 @@ export default function MetadataEditDialog({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting || !title.trim() || !author.trim()}
+              disabled={isSubmitting || !title.trim() || authors.length === 0 || !authors.some(author => author.name.trim())}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isSubmitting && (

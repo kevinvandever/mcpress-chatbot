@@ -71,6 +71,7 @@ async def list_documents(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     search: str = Query("", description="Search in title and author"),
+    author: str = Query("", description="Filter by exact author name"),
     category: str = Query("", description="Filter by category"),
     sort_by: str = Query("title", description="Sort field"),
     sort_direction: str = Query("asc", description="Sort direction (asc/desc)"),
@@ -81,17 +82,36 @@ async def list_documents(
         # Get connection to books table
         conn = await get_vector_store()._get_connection()
         try:
-            # Fetch from books table with document_type
-            query = """
-                SELECT id, filename, title, category, subcategory,
-                       total_pages, file_hash, processed_at, mc_press_url,
-                       description, tags, year, document_type, article_url
-                FROM books
-                ORDER BY id DESC
+            # Build query with optional author filtering
+            base_query = """
+                SELECT DISTINCT b.id, b.filename, b.title, b.category, b.subcategory,
+                       b.total_pages, b.file_hash, b.processed_at, b.mc_press_url,
+                       b.description, b.tags, b.year, b.document_type, b.article_url
+                FROM books b
             """
+            
+            # Add author join if filtering by author or searching
+            if author or search:
+                base_query += """
+                    LEFT JOIN document_authors da ON b.id = da.book_id
+                    LEFT JOIN authors a ON da.author_id = a.id
+                """
+            
+            # Add WHERE clause for author filtering
+            where_conditions = []
+            query_params = []
+            
+            if author:
+                where_conditions.append("a.name = %s")
+                query_params.append(author)
+            
+            if where_conditions:
+                base_query += " WHERE " + " AND ".join(where_conditions)
+            
+            base_query += " ORDER BY b.id DESC"
 
             async with conn.cursor() as cursor:
-                await cursor.execute(query)
+                await cursor.execute(base_query, query_params)
                 rows = await cursor.fetchall()
 
                 documents = []
@@ -138,14 +158,25 @@ async def list_documents(
         finally:
             await conn.close()
 
-        # Apply search filter
+        # Apply search filter (search in title and author names)
         if search:
             search_lower = search.lower()
-            documents = [
-                doc for doc in documents
-                if ((doc.get('title') or '').lower().find(search_lower) >= 0 or
-                    (doc.get('author') or '').lower().find(search_lower) >= 0)
-            ]
+            filtered_documents = []
+            for doc in documents:
+                # Search in title
+                title_match = (doc.get('title') or '').lower().find(search_lower) >= 0
+                
+                # Search in author names
+                author_match = False
+                for author in doc.get('authors', []):
+                    if (author.get('name') or '').lower().find(search_lower) >= 0:
+                        author_match = True
+                        break
+                
+                if title_match or author_match:
+                    filtered_documents.append(doc)
+            
+            documents = filtered_documents
 
         # Apply category filter
         if category:
@@ -466,14 +497,143 @@ async def bulk_delete_documents(
 async def export_documents_csv(
     current_admin = Depends(get_current_admin)
 ):
-    """Export all documents to CSV"""
+    """Export all documents to CSV with multi-author support"""
     try:
-        # Get all documents from books table
-        conn = await get_vector_store()._get_connection()
+        # Import author services
+        try:
+            from author_service import AuthorService
+        except ImportError:
+            from backend.author_service import AuthorService
+        
+        # Initialize author service
+        database_url = os.getenv('DATABASE_URL')
+        author_service = AuthorService(database_url)
+        await author_service.init_database()
+        
+        try:
+            # Get all documents from books table with new fields
+            conn = await get_vector_store()._get_connection()
+            try:
+                query = """
+                    SELECT id, filename, title, category, subcategory,
+                           year, tags, description, mc_press_url, total_pages, processed_at,
+                           document_type, article_url
+                    FROM books
+                    ORDER BY id DESC
+                """
+
+                async with conn.cursor() as cursor:
+                    await cursor.execute(query)
+                    rows = await cursor.fetchall()
+
+                    documents = []
+                    for row in rows:
+                        doc_id = row[0]
+                        
+                        # Get authors for this document
+                        authors = await author_service.get_authors_for_document(doc_id)
+                        
+                        # Format authors and URLs as pipe-delimited strings
+                        author_names = [author['name'] for author in authors]
+                        author_urls = [author.get('site_url', '') or '' for author in authors]
+                        
+                        documents.append({
+                            'id': doc_id,
+                            'filename': row[1],
+                            'title': row[2] or row[1].replace('.pdf', ''),
+                            'authors': '|'.join(author_names),
+                            'author_site_urls': '|'.join(author_urls),
+                            'category': row[3],
+                            'subcategory': row[4],
+                            'year': row[5],
+                            'tags': row[6] or [],
+                            'description': row[7],
+                            'mc_press_url': row[8] or '',
+                            'total_pages': row[9] or 0,
+                            'processed_at': row[10].isoformat() if row[10] else None,
+                            'document_type': row[11] or 'book',
+                            'article_url': row[12] or ''
+                        })
+            finally:
+                await conn.close()
+
+            # Create CSV in memory
+            output = io.StringIO()
+            writer = csv.writer(output)
+
+            # Write header with new multi-author fields
+            writer.writerow([
+                'id', 'filename', 'title', 'authors', 'author_site_urls', 'category', 'subcategory',
+                'year', 'tags', 'description', 'document_type', 'mc_press_url', 'article_url', 
+                'total_pages', 'processed_at'
+            ])
+
+            # Write data
+            for doc in documents:
+                writer.writerow([
+                    doc.get('id', ''),
+                    doc.get('filename', ''),
+                    doc.get('title', ''),
+                    doc.get('authors', ''),
+                    doc.get('author_site_urls', ''),
+                    doc.get('category', ''),
+                    doc.get('subcategory', ''),
+                    doc.get('year', ''),
+                    ','.join(doc.get('tags', [])) if isinstance(doc.get('tags'), list) else '',
+                    doc.get('description', ''),
+                    doc.get('document_type', 'book'),
+                    doc.get('mc_press_url', ''),
+                    doc.get('article_url', ''),
+                    doc.get('total_pages', 0),
+                    doc.get('processed_at', '')
+                ])
+
+            # Return as downloadable file
+            output.seek(0)
+            return StreamingResponse(
+                io.BytesIO(output.getvalue().encode()),
+                media_type="text/csv",
+                headers={
+                    "Content-Disposition": f"attachment; filename=documents_{datetime.now().strftime('%Y%m%d')}.csv"
+                }
+            )
+        finally:
+            await author_service.close()
+            
+    except Exception as e:
+        print(f"Error exporting documents: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+async def export_documents_csv_updated(vector_store=None, author_service=None):
+    """
+    Export documents to CSV with multi-author support (testable version)
+    
+    This function is used for testing and can accept services as parameters.
+    """
+    try:
+        # Use provided services or get defaults
+        if vector_store is None:
+            vector_store = get_vector_store()
+        
+        if author_service is None:
+            # Import and initialize author service
+            try:
+                from author_service import AuthorService
+            except ImportError:
+                from backend.author_service import AuthorService
+            
+            database_url = os.getenv('DATABASE_URL')
+            author_service = AuthorService(database_url)
+            await author_service.init_database()
+        
+        # Get all documents from books table with new fields
+        conn = await vector_store._get_connection()
         try:
             query = """
-                SELECT id, filename, title, author, category, subcategory,
-                       year, tags, description, mc_press_url, total_pages, processed_at
+                SELECT id, filename, title, category, subcategory,
+                       year, tags, description, mc_press_url, total_pages, processed_at,
+                       document_type, article_url
                 FROM books
                 ORDER BY id DESC
             """
@@ -484,19 +644,31 @@ async def export_documents_csv(
 
                 documents = []
                 for row in rows:
+                    doc_id = row[0]
+                    
+                    # Get authors for this document
+                    authors = await author_service.get_authors_for_document(doc_id)
+                    
+                    # Format authors and URLs as pipe-delimited strings
+                    author_names = [author['name'] for author in authors]
+                    author_urls = [author.get('site_url', '') or '' for author in authors]
+                    
                     documents.append({
-                        'id': row[0],
+                        'id': doc_id,
                         'filename': row[1],
                         'title': row[2] or row[1].replace('.pdf', ''),
-                        'author': row[3],
-                        'category': row[4],
-                        'subcategory': row[5],
-                        'year': row[6],
-                        'tags': row[7] or [],
-                        'description': row[8],
-                        'mc_press_url': row[9],
-                        'total_pages': row[10] or 0,
-                        'processed_at': row[11].isoformat() if row[11] else None
+                        'authors': '|'.join(author_names),
+                        'author_site_urls': '|'.join(author_urls),
+                        'category': row[3],
+                        'subcategory': row[4],
+                        'year': row[5],
+                        'tags': row[6] or [],
+                        'description': row[7],
+                        'mc_press_url': row[8] or '',
+                        'total_pages': row[9] or 0,
+                        'processed_at': row[10].isoformat() if row[10] else None,
+                        'document_type': row[11] or 'book',
+                        'article_url': row[12] or ''
                     })
         finally:
             await conn.close()
@@ -505,10 +677,11 @@ async def export_documents_csv(
         output = io.StringIO()
         writer = csv.writer(output)
 
-        # Write header
+        # Write header with new multi-author fields
         writer.writerow([
-            'id', 'filename', 'title', 'author', 'category', 'subcategory',
-            'year', 'tags', 'description', 'mc_press_url', 'total_pages', 'processed_at'
+            'id', 'filename', 'title', 'authors', 'author_site_urls', 'category', 'subcategory',
+            'year', 'tags', 'description', 'document_type', 'mc_press_url', 'article_url', 
+            'total_pages', 'processed_at'
         ])
 
         # Write data
@@ -517,91 +690,486 @@ async def export_documents_csv(
                 doc.get('id', ''),
                 doc.get('filename', ''),
                 doc.get('title', ''),
-                doc.get('author', ''),
+                doc.get('authors', ''),
+                doc.get('author_site_urls', ''),
                 doc.get('category', ''),
                 doc.get('subcategory', ''),
                 doc.get('year', ''),
                 ','.join(doc.get('tags', [])) if isinstance(doc.get('tags'), list) else '',
                 doc.get('description', ''),
+                doc.get('document_type', 'book'),
                 doc.get('mc_press_url', ''),
+                doc.get('article_url', ''),
                 doc.get('total_pages', 0),
                 doc.get('processed_at', '')
             ])
 
         # Return as downloadable file
         output.seek(0)
-        return StreamingResponse(
-            io.BytesIO(output.getvalue().encode()),
-            media_type="text/csv",
-            headers={
-                "Content-Disposition": f"attachment; filename=documents_{datetime.now().strftime('%Y%m%d')}.csv"
-            }
-        )
+        
+        # Create a mock response object for testing
+        class MockResponse:
+            def __init__(self, content):
+                self.body = content.encode('utf-8')
+                self.media_type = "text/csv"
+                self.headers = {
+                    "Content-Disposition": f"attachment; filename=documents_{datetime.now().strftime('%Y%m%d')}.csv"
+                }
+        
+        return MockResponse(output.getvalue())
+        
     except Exception as e:
         print(f"Error exporting documents: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.post("/import")
 async def import_documents_csv(
     file: UploadFile = File(...),
     current_admin = Depends(get_current_admin)
 ):
-    """Import document metadata from CSV"""
+    """Import document metadata from CSV with multi-author support"""
     try:
         # Read CSV file
         content = await file.read()
         csv_file = io.StringIO(content.decode('utf-8'))
         reader = csv.DictReader(csv_file)
 
+        # Initialize author services
+        try:
+            from author_service import AuthorService
+            from document_author_service import DocumentAuthorService
+        except ImportError:
+            from backend.author_service import AuthorService
+            from backend.document_author_service import DocumentAuthorService
+        
+        database_url = os.getenv('DATABASE_URL')
+        author_service = AuthorService(database_url)
+        document_author_service = DocumentAuthorService(database_url)
+        
+        await author_service.init_database()
+        await document_author_service.init_database()
+
         conn = await get_vector_store()._get_connection()
         try:
             updated = 0
+            authors_created = 0
+            authors_updated = 0
             errors = []
 
-            for row in reader:
+            for row_num, row in enumerate(reader, start=2):  # Start at 2 for header row
                 try:
                     # Find document by filename
                     filename = row.get('filename')
                     if not filename:
                         continue
 
-                    # Update metadata
+                    # Get document ID
+                    async with conn.cursor() as cursor:
+                        await cursor.execute("SELECT id FROM books WHERE filename = %s", (filename,))
+                        result = await cursor.fetchone()
+                        if not result:
+                            errors.append(f"Row {row_num}: Document not found: {filename}")
+                            continue
+                        
+                        doc_id = result[0]
+
+                    # Update basic metadata
                     update_fields = []
                     values = []
 
                     if row.get('title'):
                         update_fields.append("title = %s")
                         values.append(row['title'])
-                    if row.get('author'):
-                        update_fields.append("author = %s")
-                        values.append(row['author'])
                     if row.get('category'):
                         update_fields.append("category = %s")
                         values.append(row['category'])
+                    if row.get('subcategory'):
+                        update_fields.append("subcategory = %s")
+                        values.append(row['subcategory'])
+                    if row.get('year'):
+                        update_fields.append("year = %s")
+                        values.append(row['year'])
+                    if row.get('description'):
+                        update_fields.append("description = %s")
+                        values.append(row['description'])
+                    
+                    # Handle document_type field
+                    if row.get('document_type'):
+                        document_type = row['document_type'].lower()
+                        if document_type in ['book', 'article']:
+                            update_fields.append("document_type = %s")
+                            values.append(document_type)
+                    
+                    # Handle URL fields
+                    if row.get('mc_press_url'):
+                        update_fields.append("mc_press_url = %s")
+                        values.append(row['mc_press_url'])
+                    
+                    if row.get('article_url'):
+                        update_fields.append("article_url = %s")
+                        values.append(row['article_url'])
 
+                    # Update document metadata if there are changes
                     if update_fields:
-                        values.append(filename)
-                        query = f"UPDATE books SET {', '.join(update_fields)} WHERE filename = %s"
+                        values.append(doc_id)
+                        query = f"UPDATE books SET {', '.join(update_fields)} WHERE id = %s"
 
                         async with conn.cursor() as cursor:
                             await cursor.execute(query, values)
-                            if cursor.rowcount > 0:
-                                updated += 1
+
+                    # Handle multi-author data
+                    authors_field = row.get('authors', '')
+                    author_urls_field = row.get('author_site_urls', '')
+                    
+                    if authors_field:
+                        # Parse pipe-delimited authors
+                        author_names = [name.strip() for name in authors_field.split('|') if name.strip()]
+                        author_urls = [url.strip() for url in author_urls_field.split('|')] if author_urls_field else []
+                        
+                        # Pad author_urls list to match author_names length
+                        while len(author_urls) < len(author_names):
+                            author_urls.append('')
+                        
+                        # Clear existing authors for this document
+                        await document_author_service.clear_document_authors(doc_id)
+                        
+                        # Create/update authors and associate with document
+                        for order, (author_name, author_url) in enumerate(zip(author_names, author_urls)):
+                            if not author_name:
+                                continue
+                                
+                            # Clean up URL (empty string if not valid)
+                            site_url = author_url if author_url and author_url.startswith(('http://', 'https://')) else None
+                            
+                            # Get or create author
+                            author_id = await author_service.get_or_create_author(author_name, site_url)
+                            
+                            # Track if this was a new author or update
+                            existing_author = await author_service.get_author_by_id(author_id)
+                            if existing_author:
+                                if existing_author.get('site_url') != site_url and site_url:
+                                    await author_service.update_author(author_id, author_name, site_url)
+                                    authors_updated += 1
+                            else:
+                                authors_created += 1
+                            
+                            # Associate author with document
+                            await document_author_service.add_author_to_document(doc_id, author_id, order)
+                    
+                    updated += 1
 
                 except Exception as row_error:
-                    errors.append(f"Row {filename}: {str(row_error)}")
+                    errors.append(f"Row {row_num} ({filename}): {str(row_error)}")
 
             await conn.commit()
 
             return {
-                "message": f"Import completed. Updated {updated} documents.",
+                "message": f"Import completed. Updated {updated} documents, created {authors_created} authors, updated {authors_updated} authors.",
                 "updated": updated,
+                "authors_created": authors_created,
+                "authors_updated": authors_updated,
                 "errors": errors if errors else None
             }
         finally:
             await conn.close()
     except Exception as e:
         print(f"Error importing CSV: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+async def import_documents_csv_updated(
+    csv_content: str,
+    vector_store=None,
+    author_service=None,
+    document_author_service=None
+):
+    """
+    Import document metadata from CSV with multi-author support (testable version)
+    
+    This function is used for testing and can accept services as parameters.
+    
+    Args:
+        csv_content: CSV content as string
+        vector_store: Vector store instance (optional)
+        author_service: Author service instance (optional)
+        document_author_service: Document author service instance (optional)
+    
+    Returns:
+        Dictionary with import results
+    """
+    try:
+        # Use provided services or get defaults
+        if vector_store is None:
+            vector_store = get_vector_store()
+        
+        if author_service is None:
+            # Import and initialize author service
+            try:
+                from author_service import AuthorService
+            except ImportError:
+                from backend.author_service import AuthorService
+            
+            database_url = os.getenv('DATABASE_URL')
+            author_service = AuthorService(database_url)
+            await author_service.init_database()
+        
+        if document_author_service is None:
+            # Import and initialize document author service
+            try:
+                from document_author_service import DocumentAuthorService
+            except ImportError:
+                from backend.document_author_service import DocumentAuthorService
+            
+            database_url = os.getenv('DATABASE_URL')
+            document_author_service = DocumentAuthorService(database_url)
+            await document_author_service.init_database()
+
+        # Parse CSV content
+        csv_file = io.StringIO(csv_content)
+        reader = csv.DictReader(csv_file)
+
+        conn = await vector_store._get_connection()
+        try:
+            updated = 0
+            authors_created = 0
+            authors_updated = 0
+            errors = []
+
+            for row_num, row in enumerate(reader, start=2):  # Start at 2 for header row
+                try:
+                    # Find document by filename
+                    filename = row.get('filename')
+                    if not filename:
+                        continue
+
+                    # Get document ID
+                    async with conn.cursor() as cursor:
+                        await cursor.execute("SELECT id FROM books WHERE filename = %s", (filename,))
+                        result = await cursor.fetchone()
+                        if not result:
+                            errors.append(f"Row {row_num}: Document not found: {filename}")
+                            continue
+                        
+                        doc_id = result[0]
+
+                    # Update basic metadata
+                    update_fields = []
+                    values = []
+
+                    if row.get('title'):
+                        update_fields.append("title = %s")
+                        values.append(row['title'])
+                    if row.get('category'):
+                        update_fields.append("category = %s")
+                        values.append(row['category'])
+                    if row.get('subcategory'):
+                        update_fields.append("subcategory = %s")
+                        values.append(row['subcategory'])
+                    if row.get('year'):
+                        update_fields.append("year = %s")
+                        values.append(row['year'])
+                    if row.get('description'):
+                        update_fields.append("description = %s")
+                        values.append(row['description'])
+                    
+                    # Handle document_type field
+                    if row.get('document_type'):
+                        document_type = row['document_type'].lower()
+                        if document_type in ['book', 'article']:
+                            update_fields.append("document_type = %s")
+                            values.append(document_type)
+                    
+                    # Handle URL fields
+                    if row.get('mc_press_url'):
+                        update_fields.append("mc_press_url = %s")
+                        values.append(row['mc_press_url'])
+                    
+                    if row.get('article_url'):
+                        update_fields.append("article_url = %s")
+                        values.append(row['article_url'])
+
+                    # Update document metadata if there are changes
+                    if update_fields:
+                        values.append(doc_id)
+                        query = f"UPDATE books SET {', '.join(update_fields)} WHERE id = %s"
+
+                        async with conn.cursor() as cursor:
+                            await cursor.execute(query, values)
+
+                    # Handle multi-author data
+                    authors_field = row.get('authors', '')
+                    author_urls_field = row.get('author_site_urls', '')
+                    
+                    if authors_field:
+                        # Parse pipe-delimited authors
+                        author_names = [name.strip() for name in authors_field.split('|') if name.strip()]
+                        author_urls = [url.strip() for url in author_urls_field.split('|')] if author_urls_field else []
+                        
+                        # Pad author_urls list to match author_names length
+                        while len(author_urls) < len(author_names):
+                            author_urls.append('')
+                        
+                        # Clear existing authors for this document
+                        await document_author_service.clear_document_authors(doc_id)
+                        
+                        # Create/update authors and associate with document
+                        for order, (author_name, author_url) in enumerate(zip(author_names, author_urls)):
+                            if not author_name:
+                                continue
+                                
+                            # Clean up URL (empty string if not valid)
+                            site_url = author_url if author_url and author_url.startswith(('http://', 'https://')) else None
+                            
+                            # Get or create author
+                            author_id = await author_service.get_or_create_author(author_name, site_url)
+                            
+                            # Track if this was a new author or update
+                            existing_author = await author_service.get_author_by_id(author_id)
+                            if existing_author:
+                                if existing_author.get('site_url') != site_url and site_url:
+                                    await author_service.update_author(author_id, author_name, site_url)
+                                    authors_updated += 1
+                            else:
+                                authors_created += 1
+                            
+                            # Associate author with document
+                            await document_author_service.add_author_to_document(doc_id, author_id, order)
+                    
+                    updated += 1
+
+                except Exception as row_error:
+                    errors.append(f"Row {row_num} ({filename}): {str(row_error)}")
+
+            await conn.commit()
+
+            return {
+                "message": f"Import completed. Updated {updated} documents, created {authors_created} authors, updated {authors_updated} authors.",
+                "updated": updated,
+                "authors_created": authors_created,
+                "authors_updated": authors_updated,
+                "errors": errors if errors else None
+            }
+        finally:
+            await conn.close()
+    except Exception as e:
+        print(f"Error importing CSV: {str(e)}")
+        raise Exception(f"CSV import failed: {str(e)}")
+
+@router.get("/search/by-author")
+async def search_documents_by_author(
+    author_name: str = Query(..., description="Author name to search for"),
+    exact_match: bool = Query(False, description="Use exact name matching"),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+    current_admin = Depends(get_current_admin)
+):
+    """
+    Search documents by author name with exact or partial matching
+    
+    **Validates:** Requirements 8.1, 8.2
+    """
+    try:
+        conn = await get_vector_store()._get_connection()
+        try:
+            # Build query based on exact match preference
+            if exact_match:
+                # Exact author name matching
+                query = """
+                    SELECT DISTINCT b.id, b.filename, b.title, b.category, b.subcategory,
+                           b.total_pages, b.file_hash, b.processed_at, b.mc_press_url,
+                           b.description, b.tags, b.year, b.document_type, b.article_url
+                    FROM books b
+                    INNER JOIN document_authors da ON b.id = da.book_id
+                    INNER JOIN authors a ON da.author_id = a.id
+                    WHERE a.name = %s
+                    ORDER BY b.title
+                """
+                query_params = [author_name]
+            else:
+                # Partial author name matching (case-insensitive)
+                query = """
+                    SELECT DISTINCT b.id, b.filename, b.title, b.category, b.subcategory,
+                           b.total_pages, b.file_hash, b.processed_at, b.mc_press_url,
+                           b.description, b.tags, b.year, b.document_type, b.article_url
+                    FROM books b
+                    INNER JOIN document_authors da ON b.id = da.book_id
+                    INNER JOIN authors a ON da.author_id = a.id
+                    WHERE a.name ILIKE %s
+                    ORDER BY b.title
+                """
+                query_params = [f"%{author_name}%"]
+
+            async with conn.cursor() as cursor:
+                await cursor.execute(query, query_params)
+                rows = await cursor.fetchall()
+
+                documents = []
+                for row in rows:
+                    book_id = row[0]
+                    
+                    # Get authors for this document
+                    await cursor.execute("""
+                        SELECT a.id, a.name, a.site_url, da.author_order
+                        FROM authors a
+                        INNER JOIN document_authors da ON a.id = da.author_id
+                        WHERE da.book_id = %s
+                        ORDER BY da.author_order
+                    """, (book_id,))
+                    
+                    author_rows = await cursor.fetchall()
+                    authors = [
+                        {
+                            'id': author_row[0],
+                            'name': author_row[1],
+                            'site_url': author_row[2],
+                            'order': author_row[3]
+                        }
+                        for author_row in author_rows
+                    ]
+                    
+                    documents.append({
+                        'id': book_id,
+                        'filename': row[1],
+                        'title': row[2] or row[1].replace('.pdf', ''),
+                        'authors': authors,
+                        'category': row[3],
+                        'subcategory': row[4],
+                        'total_pages': row[5] or 0,
+                        'file_hash': row[6],
+                        'processed_at': row[7].isoformat() if row[7] else None,
+                        'mc_press_url': row[8],
+                        'description': row[9],
+                        'tags': row[10] or [],
+                        'year': row[11],
+                        'document_type': row[12] or 'book',
+                        'article_url': row[13]
+                    })
+        finally:
+            await conn.close()
+
+        # Apply pagination
+        total = len(documents)
+        total_pages = (total + per_page - 1) // per_page
+        start = (page - 1) * per_page
+        end = start + per_page
+        paginated_docs = documents[start:end]
+
+        return {
+            "documents": paginated_docs,
+            "pagination": {
+                "page": page,
+                "per_page": per_page,
+                "total": total,
+                "total_pages": total_pages
+            },
+            "search_params": {
+                "author_name": author_name,
+                "exact_match": exact_match
+            }
+        }
+    except Exception as e:
+        print(f"Error searching documents by author: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/stats")

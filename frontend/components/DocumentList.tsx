@@ -4,27 +4,42 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 import MetadataEditDialog from './MetadataEditDialog'
 import BookLink from './BookLink'
+import ExcelImportDialog from './ExcelImportDialog'
 import { API_URL } from '../config/api'
 
+interface Author {
+  id: number
+  name: string
+  site_url?: string
+  order: number
+}
+
 interface Document {
+  id?: number
   filename: string
-  total_chunks: number
-  has_images: boolean
-  has_code: boolean
+  title?: string
+  total_chunks?: number
+  has_images?: boolean
+  has_code?: boolean
   total_pages: number
   category?: string
-  author?: string
+  subcategory?: string
+  authors?: Author[]
+  author?: string // Legacy field for backward compatibility
   mc_press_url?: string
+  article_url?: string
+  document_type?: 'book' | 'article'
   images_processed?: number
   code_blocks_found?: number
   upload_date?: string
+  processed_at?: string
   file_size?: number
 }
 
 interface DocumentCardProps {
   document: Document
   onDelete: (filename: string) => void
-  onEdit: (filename: string, title: string, author: string, mc_press_url?: string) => void
+  onEdit: (document: Document) => void
   onSelect?: (filename: string) => void
   isSelected?: boolean
   isCompact?: boolean
@@ -137,6 +152,30 @@ function DocumentCard({ document, onDelete, onEdit, onSelect, isSelected = false
   const [isExpanded, setIsExpanded] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
+  const formatAuthors = (authors?: Author[], legacyAuthor?: string): string => {
+    if (authors && authors.length > 0) {
+      return authors.map(author => author.name).join(', ')
+    }
+    return legacyAuthor || 'Unknown'
+  }
+
+  const getDocumentTypeBadge = (documentType?: string) => {
+    if (!documentType || documentType === 'book') {
+      return (
+        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          📚 Book
+        </span>
+      )
+    } else if (documentType === 'article') {
+      return (
+        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          📄 Article
+        </span>
+      )
+    }
+    return null
+  }
+
   const getFileIcon = () => {
     return (
       <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
@@ -190,7 +229,13 @@ function DocumentCard({ document, onDelete, onEdit, onSelect, isSelected = false
   const getContentTypeIndicators = () => {
     const indicators = []
     
-    // Add category indicator first
+    // Add document type badge first
+    const typeBadge = getDocumentTypeBadge(document.document_type)
+    if (typeBadge) {
+      indicators.push(typeBadge)
+    }
+    
+    // Add category indicator
     if (document.category) {
       indicators.push(
         <span key="category" className={`px-2 py-1 rounded text-xs font-medium ${getCategoryColor(document.category)}`}>
@@ -287,12 +332,36 @@ function DocumentCard({ document, onDelete, onEdit, onSelect, isSelected = false
           </div>
           {isSelected && (
             <div className="mt-3 pt-3 border-t border-indigo-200 space-y-2 text-xs text-gray-600">
-              {document.author && (
+              {(document.authors?.length || document.author) && (
                 <div className="mb-1 flex items-center gap-1">
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
-                  <span className="font-medium">By:</span> {document.author}
+                  <span className="font-medium">By:</span> 
+                  <div className="flex flex-wrap gap-1">
+                    {document.authors && document.authors.length > 0 ? (
+                      document.authors.map((author, index) => (
+                        <span key={author.id || index}>
+                          {author.site_url ? (
+                            <a
+                              href={author.site_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 underline"
+                              title={`Visit ${author.name}'s website`}
+                            >
+                              {author.name}
+                            </a>
+                          ) : (
+                            <span>{author.name}</span>
+                          )}
+                          {index < document.authors.length - 1 && ', '}
+                        </span>
+                      ))
+                    ) : (
+                      <span>{document.author}</span>
+                    )}
+                  </div>
                 </div>
               )}
               <BookLink 
@@ -327,7 +396,7 @@ function DocumentCard({ document, onDelete, onEdit, onSelect, isSelected = false
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
-                    onEdit(document.filename, document.filename.replace('.pdf', ''), document.author || '', document.mc_press_url)
+                    onEdit(document)
                   }}
                   className="text-blue-600 hover:text-blue-800 text-xs underline"
                 >
@@ -380,7 +449,7 @@ function DocumentCard({ document, onDelete, onEdit, onSelect, isSelected = false
               <button
                 onClick={(e) => {
                   e.stopPropagation()
-                  onEdit(document.filename, document.filename.replace('.pdf', ''), document.author || '')
+                  onEdit(document)
                 }}
                 className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
                 title="Edit metadata"
@@ -428,18 +497,57 @@ function DocumentCard({ document, onDelete, onEdit, onSelect, isSelected = false
             {getContentTypeIndicators()}
           </div>
 
-          {/* Author and MC Press Link */}
-          <div className="flex items-center gap-4 mb-2">
-            {document.author && (
-              <span className="text-xs text-gray-600">
-                <span className="font-medium">Author:</span> {document.author}
-              </span>
+          {/* Authors and Links */}
+          <div className="flex flex-col gap-2 mb-2">
+            {(document.authors?.length || document.author) && (
+              <div className="text-xs text-gray-600">
+                <span className="font-medium">Author{document.authors && document.authors.length > 1 ? 's' : ''}:</span>{' '}
+                <div className="inline-flex flex-wrap gap-1">
+                  {document.authors && document.authors.length > 0 ? (
+                    document.authors.map((author, index) => (
+                      <span key={author.id || index}>
+                        {author.site_url ? (
+                          <a
+                            href={author.site_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 underline"
+                            title={`Visit ${author.name}'s website`}
+                          >
+                            {author.name}
+                          </a>
+                        ) : (
+                          <span>{author.name}</span>
+                        )}
+                        {index < document.authors.length - 1 && ', '}
+                      </span>
+                    ))
+                  ) : (
+                    <span>{document.author}</span>
+                  )}
+                </div>
+              </div>
             )}
-            <BookLink 
-              url={document.mc_press_url} 
-              title={document.filename.replace('.pdf', '')}
-              className="text-xs"
-            />
+            <div className="flex items-center gap-4">
+              <BookLink 
+                url={document.mc_press_url} 
+                title={document.title || document.filename.replace('.pdf', '')}
+                className="text-xs"
+              />
+              {document.article_url && (
+                <a
+                  href={document.article_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-green-600 hover:text-green-800 underline flex items-center gap-1"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  Read Article
+                </a>
+              )}
+            </div>
           </div>
 
           {/* Expanded details */}
@@ -502,7 +610,8 @@ export default function DocumentList({ onDocumentChange }: DocumentListProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
   const [selectedDocument, setSelectedDocument] = useState<string | null>(null)
   const [showEditDialog, setShowEditDialog] = useState(false)
-  const [editingDocument, setEditingDocument] = useState<{filename: string, title: string, author: string, mc_press_url?: string} | null>(null)
+  const [showExcelImportDialog, setShowExcelImportDialog] = useState(false)
+  const [editingDocument, setEditingDocument] = useState<Document | null>(null)
 
   useEffect(() => {
     fetchDocuments()
@@ -511,25 +620,39 @@ export default function DocumentList({ onDocumentChange }: DocumentListProps) {
   const fetchDocuments = async () => {
     try {
       setError(null)
-      const response = await axios.get(`${API_URL}/documents`)
-      // Handle nested response format: {documents: {documents: [...]}}
-      let documents = response.data.documents || []
-      if (documents.documents) {
-        documents = documents.documents
-      }
+      // Use admin documents endpoint for multi-author support
+      const response = await axios.get(`${API_URL}/api/admin/documents`, {
+        params: {
+          per_page: 1000, // Get all documents
+          sort_by: 'title',
+          sort_direction: 'asc'
+        }
+      })
+      
+      const documents = response.data.documents || []
       setDocuments(documents)
       onDocumentChange?.(documents.length)
-      // Clear any previous errors on success
       setError(null)
     } catch (error: any) {
       console.error('Error fetching documents:', error)
-      // Only show error if it's a real network/server error
-      if (error.response?.status >= 500 || !error.response) {
-        setError('Failed to connect to server')
+      // Fallback to legacy endpoint if admin endpoint fails
+      try {
+        const fallbackResponse = await axios.get(`${API_URL}/documents`)
+        let documents = fallbackResponse.data.documents || []
+        if (documents.documents) {
+          documents = documents.documents
+        }
+        setDocuments(documents)
+        onDocumentChange?.(documents.length)
+        setError(null)
+      } catch (fallbackError: any) {
+        console.error('Fallback fetch also failed:', fallbackError)
+        if (error.response?.status >= 500 || !error.response) {
+          setError('Failed to connect to server')
+        }
+        setDocuments([])
+        onDocumentChange?.(0)
       }
-      // For other cases (like 404, empty results), just set empty documents
-      setDocuments([])
-      onDocumentChange?.(0)
     } finally {
       setLoading(false)
     }
@@ -546,8 +669,8 @@ export default function DocumentList({ onDocumentChange }: DocumentListProps) {
     console.log('Selected document:', filename)
   }
 
-  const handleEdit = (filename: string, title: string, author: string, mc_press_url?: string) => {
-    setEditingDocument({ filename, title, author, mc_press_url })
+  const handleEdit = (document: Document) => {
+    setEditingDocument(document)
     setShowEditDialog(true)
   }
 
@@ -662,10 +785,19 @@ export default function DocumentList({ onDocumentChange }: DocumentListProps) {
             MC Press Library
           </h3>
           <p className="text-xs text-gray-500 mt-1">
-            {documents.length} books across {categorizedDocuments.length} categories
+            {documents.length} documents across {categorizedDocuments.length} categories
           </p>
         </div>
         <div className="flex items-center gap-1">
+          <button
+            onClick={() => setShowExcelImportDialog(true)}
+            className="p-1 text-gray-400 hover:text-green-600 transition-colors"
+            title="Import Excel metadata"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </button>
           <button
             onClick={fetchDocuments}
             className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
@@ -728,12 +860,16 @@ export default function DocumentList({ onDocumentChange }: DocumentListProps) {
             setEditingDocument(null)
           }}
           onSuccess={handleEditSuccess}
-          filename={editingDocument.filename}
-          currentTitle={editingDocument.title}
-          currentAuthor={editingDocument.author}
-          currentUrl={editingDocument.mc_press_url}
+          document={editingDocument}
         />
       )}
+
+      {/* Excel Import Dialog */}
+      <ExcelImportDialog
+        isOpen={showExcelImportDialog}
+        onClose={() => setShowExcelImportDialog(false)}
+        onSuccess={handleEditSuccess}
+      />
     </div>
   )
 }
