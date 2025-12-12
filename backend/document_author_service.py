@@ -267,9 +267,6 @@ class DocumentAuthorService:
                     b.id,
                     b.filename,
                     b.title,
-                    b.category,
-                    b.document_type,
-                    b.processed_at,
                     da.author_order
                 FROM books b
                 INNER JOIN document_authors da ON b.id = da.book_id
