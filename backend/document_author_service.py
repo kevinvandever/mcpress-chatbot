@@ -269,7 +269,6 @@ class DocumentAuthorService:
                     b.title,
                     b.category,
                     b.document_type,
-                    b.total_pages,
                     b.processed_at,
                     da.author_order
                 FROM books b
