@@ -293,11 +293,6 @@ class DocumentAuthorService:
                     'id': row['id'],
                     'filename': row['filename'],
                     'title': row['title'],
-                    'category': row['category'],
-                    'subcategory': row['subcategory'],
-                    'document_type': row['document_type'],
-                    'total_pages': row['total_pages'],
-                    'processed_at': row['processed_at'],
                     'author_order': row['author_order']
                 }
                 for row in rows
