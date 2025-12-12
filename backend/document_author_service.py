@@ -268,7 +268,6 @@ class DocumentAuthorService:
                     b.filename,
                     b.title,
                     b.category,
-                    b.subcategory,
                     b.document_type,
                     b.total_pages,
                     b.processed_at,

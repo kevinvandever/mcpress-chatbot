@@ -42,11 +42,11 @@
   - **Property 16: Require at least one author**
   - **Validates: Requirements 5.7**
 
-- [x] 3.3 Write property test for cascade deletion
+- [ ] 3.3 Write property test for cascade deletion
   - **Property 4: Cascade deletion preserves shared authors**
   - **Validates: Requirements 1.5**
 
-- [x] 4. Create data migration script
+- [x] 4. Create database migration script
   - Write migration to create new tables (authors, document_authors)
   - Extract unique authors from books.author column
   - Create author records with deduplication
@@ -114,7 +114,7 @@
   - **Property 6: Type-specific URL fields**
   - **Validates: Requirements 2.2, 2.3**
 
-- [ ] 9. Create data migration script to populate authors table
+- [x] 9. Create data migration script to populate authors table
   - Extract unique authors from existing books.author column
   - Create author records using AuthorService.get_or_create_author()
   - Create document_authors associations for all existing books
@@ -122,27 +122,7 @@
   - Log migration progress and any errors
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-- [ ] 10. Update batch upload to support multi-author parsing
-  - Parse multiple authors from PDF metadata (separated by semicolon, comma, or "and")
-  - Call AuthorService.get_or_create_author() for each parsed author
-  - Create document_authors associations in correct order
-  - Set document_type based on file metadata or default to 'book'
-  - Handle missing author metadata with default or prompt
-  - _Requirements: 6.1, 6.2, 6.3, 6.5_
-
-- [ ] 10.1 Write property test for batch upload author creation
-  - **Property 17: Batch upload creates authors**
-  - **Validates: Requirements 6.1**
-
-- [ ] 10.2 Write property test for multi-author parsing
-  - **Property 18: Parse multiple authors**
-  - **Validates: Requirements 6.2**
-
-- [ ] 10.3 Write property test for batch deduplication
-  - **Property 19: Batch upload deduplicates authors**
-  - **Validates: Requirements 6.5**
-
-- [ ] 11. Update CSV export to include multi-author data
+- [x] 10. Update CSV export to include multi-author data
   - Add authors column with pipe-delimited author names
   - Add author_site_urls column with pipe-delimited URLs
   - Add document_type column
@@ -151,19 +131,19 @@
   - Format multiple authors as "Author1|Author2|Author3"
   - _Requirements: 7.1, 7.2, 7.3_
 
-- [ ] 11.1 Write property test for CSV multi-author export
+- [x] 10.1 Write property test for CSV multi-author export
   - **Property 20: CSV export includes all authors**
   - **Validates: Requirements 7.1**
 
-- [ ] 11.2 Write property test for CSV field inclusion
+- [x] 10.2 Write property test for CSV field inclusion
   - **Property 21: CSV export includes all URL fields**
   - **Validates: Requirements 7.2**
 
-- [ ] 11.3 Write property test for CSV formatting
+- [x] 10.3 Write property test for CSV formatting
   - **Property 22: CSV multi-author formatting**
   - **Validates: Requirements 7.3**
 
-- [ ] 12. Update CSV import to parse multi-author data
+- [x] 11. Update CSV import to parse multi-author data
   - Parse pipe-delimited authors from CSV
   - Parse pipe-delimited author_site_urls from CSV
   - Call AuthorService.get_or_create_author() for each author
@@ -172,44 +152,15 @@
   - Handle article_url and mc_press_url fields
   - _Requirements: 7.4, 7.5_
 
-- [ ]* 12.1 Write property test for CSV round-trip
+- [x]* 11.1 Write property test for CSV round-trip
   - **Property 23: CSV import round-trip**
   - **Validates: Requirements 7.4**
 
-- [ ]* 12.2 Write property test for CSV import author creation
+- [x]* 11.2 Write property test for CSV import author creation
   - **Property 24: CSV import creates authors**
   - **Validates: Requirements 7.5**
 
-- [ ] 13. Implement author search and filtering in existing endpoints
-  - Update document search to query document_authors join
-  - Implement exact author name matching filter
-  - Add author document count to author responses (already in AuthorService)
-  - Implement pagination for author lists (already in author_routes)
-  - Implement sorting by name or document count
-  - Add filter to exclude authors with zero documents
-  - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
-
-- [ ]* 13.1 Write property test for author search
-  - **Property 25: Search by author returns all documents**
-  - **Validates: Requirements 8.1**
-
-- [ ]* 13.2 Write property test for exact matching
-  - **Property 26: Exact author name matching**
-  - **Validates: Requirements 8.2**
-
-- [ ]* 13.3 Write property test for document count
-  - **Property 27: Author document count**
-  - **Validates: Requirements 8.3**
-
-- [ ]* 13.4 Write property test for pagination and sorting
-  - **Property 28: Author pagination and sorting**
-  - **Validates: Requirements 8.4**
-
-- [ ]* 13.5 Write property test for filtering empty authors
-  - **Property 29: Filter authors without documents**
-  - **Validates: Requirements 8.5**
-
-- [ ] 14. Create MultiAuthorInput React component
+- [x] 12. Create MultiAuthorInput React component
   - Build input field with autocomplete for author names
   - Implement author search API integration using /api/authors/search
   - Add ability to add new authors inline
@@ -219,7 +170,7 @@
   - Style using MC Press design tokens (--mc-blue, --mc-orange, etc.)
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.7_
 
-- [ ] 15. Create DocumentTypeSelector React component
+- [x] 13. Create DocumentTypeSelector React component
   - Build radio buttons for book/article selection
   - Show mc_press_url field when type is 'book' (existing field)
   - Show article_url field when type is 'article'
@@ -227,7 +178,7 @@
   - Style using MC Press design tokens
   - _Requirements: 2.1, 2.2, 2.3_
 
-- [ ] 16. Update DocumentList component for multi-author display
+- [x] 14. Update DocumentList component for multi-author display
   - Fetch authors from GET /api/documents/{document_id} endpoint
   - Display all authors for each document (comma-separated)
   - Show document type badge (book/article)
@@ -236,7 +187,7 @@
   - Handle author site URL display and linking
   - _Requirements: 1.3, 2.4, 3.3, 3.4_
 
-- [ ] 17. Update MetadataEditDialog for multi-author editing
+- [x] 15. Update MetadataEditDialog for multi-author editing
   - Replace single author input with MultiAuthorInput component
   - Add DocumentTypeSelector component
   - Add conditional URL fields based on document type
@@ -244,17 +195,93 @@
   - Handle author reordering using PUT /api/documents/{document_id}/authors/order
   - _Requirements: 5.1, 5.5, 5.6, 5.7_
 
-- [ ] 18. Update BatchUpload component for multi-author support
+- [x] 16. Implement author search and filtering in existing endpoints
+  - Update document search to query document_authors join
+  - Implement exact author name matching filter
+  - Add author document count to author responses (already in AuthorService)
+  - Implement pagination for author lists (already in author_routes)
+  - Implement sorting by name or document count
+  - Add filter to exclude authors with zero documents
+  - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
+
+- [x]* 16.1 Write property test for author search
+  - **Property 25: Search by author returns all documents**
+  - **Validates: Requirements 8.1**
+
+- [x]* 16.2 Write property test for exact matching
+  - **Property 26: Exact author name matching**
+  - **Validates: Requirements 8.2**
+
+- [x]* 16.3 Write property test for document count
+  - **Property 27: Author document count**
+  - **Validates: Requirements 8.3**
+
+- [x]* 16.4 Write property test for pagination and sorting
+  - **Property 28: Author pagination and sorting**
+  - **Validates: Requirements 8.4**
+
+- [x]* 16.5 Write property test for filtering empty authors
+  - **Property 29: Filter authors without documents**
+  - **Validates: Requirements 8.5**
+
+- [x] 17. Update BatchUpload component for multi-author support
   - Update progress display to show parsed authors
   - Handle author prompt for documents without metadata
   - Display author count in upload summary
   - Show document type in file status
   - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
-- [ ] 19. Checkpoint - Ensure all tests pass
+- [x] 18. Add spreadsheet import functionality for author metadata
+  - Create Excel import endpoint for author metadata spreadsheets
+  - Parse author names, site URLs, and additional metadata from files
+  - Create new author records and update existing ones
+  - Validate URLs before storing in database
+  - Report creation/update statistics and validation errors
+  - Support CSV format with configurable column mappings
+  - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6_
+
+- [x] 19. Add spreadsheet import functionality for article metadata
+  - Create Excel import endpoint for article metadata spreadsheets
+  - Parse document IDs, article URLs, titles, and category information
+  - Update existing document records with article metadata
+  - Set document_type to "article" for documents with article URLs
+  - Validate URLs and preserve existing document data
+  - Report update statistics and handle missing document IDs
+  - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7_
+
+- [x] 20. Add spreadsheet validation and preview functionality
+  - Validate file format and column headers before processing
+  - Check for required columns and report missing fields
+  - Identify invalid URLs, duplicate entries, and data format issues
+  - Provide preview of first 10 rows with validation status
+  - Show detailed error messages for specific rows and columns
+  - Allow administrators to proceed or cancel after validation
+  - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6_
+
+- [x] 21. Update batch upload to support multi-author parsing
+  - Parse multiple authors from PDF metadata (separated by semicolon, comma, or "and")
+  - Call AuthorService.get_or_create_author() for each parsed author
+  - Create document_authors associations in correct order
+  - Set document_type based on file metadata or default to 'book'
+  - Handle missing author metadata with default or prompt
+  - _Requirements: 6.1, 6.2, 6.3, 6.5_
+
+- [ ]* 21.1 Write property test for batch upload author creation
+  - **Property 17: Batch upload creates authors**
+  - **Validates: Requirements 6.1**
+
+- [ ]* 21.2 Write property test for multi-author parsing
+  - **Property 18: Parse multiple authors**
+  - **Validates: Requirements 6.2**
+
+- [ ]* 21.3 Write property test for batch deduplication
+  - **Property 19: Batch upload deduplicates authors**
+  - **Validates: Requirements 6.5**
+
+- [x] 22. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 20. Run database migration on production environment
+- [ ] 23. Run database migration on production environment
   - Create database backup
   - Execute migration script (backend/run_migration_003.py)
   - Run data migration script to populate authors table
@@ -262,7 +289,7 @@
   - Check for any data integrity issues
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
 
-- [ ] 21. Update API documentation
+- [ ] 24. Update API documentation
   - Document new author management endpoints
   - Document updated document endpoints with authors array
   - Document CSV format changes
@@ -270,6 +297,6 @@
   - Add examples for multi-author operations
   - _Requirements: All_
 
-- [ ] 22. Final Checkpoint - Ensure all tests pass
+- [ ] 25. Final Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 

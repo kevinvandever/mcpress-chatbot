@@ -966,6 +966,10 @@ def parse_authors(author_string: str) -> List[str]:
             # Simple "A and B" format
             return [author.strip() for author in author_string.split(" and ") if author.strip()]
     
+    # Handle edge case: string ends with " and" (incomplete)
+    if author_string.endswith(" and"):
+        return [author_string[:-4].strip()]
+    
     # Handle comma separation
     if "," in author_string:
         return [author.strip() for author in author_string.split(",") if author.strip()]
@@ -1016,40 +1020,26 @@ async def process_single_pdf(file_content: bytes, filename: str, batch_id: str, 
         
         print(f"📝 Batch upload status for {filename}: Author metadata = '{author_metadata}', Needs author = {needs_author}")
         
+        # Handle missing author metadata with default
         if needs_author:
-            # Store temporarily and mark as needing metadata
-            temp_storage[filename] = {
-                "extracted_content": extracted_content,
-                "category": category,
-                "file_path": file_path,
-                "batch_id": batch_id
-            }
-            
-            # Update progress with special status
-            upload_progress[batch_id]["files_status"][filename] = {
-                "status": "needs_metadata",
-                "progress": 90,
-                "message": "Author extraction failed - manual input required",
-                "stats": {
-                    "chunks_created": len(extracted_content["chunks"]),
-                    "images_processed": len(extracted_content["images"]),
-                    "code_blocks_found": len(extracted_content["code_blocks"]),
-                    "total_pages": extracted_content["total_pages"],
-                    "category": category
-                },
-                "extraction_details": "Author extraction attempted using PDF metadata and text patterns"
-            }
-            print(f"📋 File {filename} needs author metadata - stored in temp_storage")
-            return "needs_metadata"
-        
-        # Parse multiple authors from metadata
-        parsed_authors = parse_authors(author_metadata)
-        print(f"📝 Parsed {len(parsed_authors)} authors from '{author_metadata}': {parsed_authors}")
+            print(f"⚠️ No author metadata found for {filename}, using default 'Unknown Author'")
+            author_metadata = "Unknown Author"
+            parsed_authors = ["Unknown Author"]
+        else:
+            # Parse multiple authors from metadata
+            parsed_authors = parse_authors(author_metadata)
+            print(f"📝 Parsed {len(parsed_authors)} authors from '{author_metadata}': {parsed_authors}")
         
         # Determine document type (default to 'book')
         document_type = extracted_content.get("document_type", "book")
         
         try:
+            # Initialize database connections if needed
+            if author_service and not author_service.pool:
+                await author_service.init_database()
+            if doc_author_service and not doc_author_service.pool:
+                await doc_author_service.init_database()
+            
             # Create or get author records using AuthorService
             author_ids = []
             if author_service:
@@ -1064,6 +1054,43 @@ async def process_single_pdf(file_content: bytes, filename: str, batch_id: str, 
                             print(f"⚠️ Error creating author '{author_name}': {e}")
                             # Continue with other authors
             
+            # Create document record in books table
+            book_id = None
+            if vector_store and vector_store.pool:
+                async with vector_store.pool.acquire() as conn:
+                    try:
+                        book_id = await conn.fetchval("""
+                            INSERT INTO books (filename, title, document_type, category, total_pages, processed_at)
+                            VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+                            ON CONFLICT (filename) DO UPDATE SET
+                                title = EXCLUDED.title,
+                                document_type = EXCLUDED.document_type,
+                                category = EXCLUDED.category,
+                                total_pages = EXCLUDED.total_pages,
+                                processed_at = EXCLUDED.processed_at
+                            RETURNING id
+                        """, filename, title, document_type, category, extracted_content["total_pages"])
+                        print(f"✅ Created/updated book record with ID {book_id} for {filename}")
+                    except Exception as e:
+                        print(f"⚠️ Error creating book record for {filename}: {e}")
+                        # Continue without book record - document will still be added to vector store
+            
+            # Create document-author associations if services are available
+            if doc_author_service and author_ids and book_id:
+                try:
+                    # Clear existing associations for this document (in case of re-upload)
+                    await doc_author_service.clear_document_authors(book_id)
+                    
+                    # Create new associations in correct order
+                    for order, author_id in enumerate(author_ids):
+                        await doc_author_service.add_author_to_document(book_id, author_id, order)
+                        print(f"✅ Associated author ID {author_id} with document ID {book_id} (order {order})")
+                    
+                    print(f"✅ Created {len(author_ids)} document-author associations for {filename}")
+                except Exception as e:
+                    print(f"⚠️ Error creating document-author associations: {e}")
+                    # Continue - the document is still added to vector store
+            
             # Add to vector store with enhanced metadata
             await vector_store.add_documents(
                 documents=extracted_content["chunks"],
@@ -1077,22 +1104,11 @@ async def process_single_pdf(file_content: bytes, filename: str, batch_id: str, 
                     "has_images": len(extracted_content["images"]) > 0,
                     "has_code": len(extracted_content["code_blocks"]) > 0,
                     "upload_batch": batch_id,
-                    "upload_timestamp": time.time()
+                    "upload_timestamp": time.time(),
+                    "book_id": book_id  # Link to books table record
                 }
             )
             print(f"Successfully added all {chunks_count} chunks for {filename}")
-            
-            # Create document-author associations if services are available
-            if doc_author_service and author_ids:
-                try:
-                    # Get the document ID from vector store (we'll need to modify this)
-                    # For now, we'll use a placeholder approach
-                    # TODO: Modify vector store to return document ID or implement book creation
-                    print(f"📝 Would create document-author associations for {len(author_ids)} authors")
-                    # This will be implemented when we have proper book table integration
-                except Exception as e:
-                    print(f"⚠️ Error creating document-author associations: {e}")
-                    # Continue - the document is still added to vector store
             
         except Exception as e:
             print(f"Error processing document {filename}: {str(e)}")
@@ -1108,8 +1124,13 @@ async def process_single_pdf(file_content: bytes, filename: str, batch_id: str, 
                 "images_processed": len(extracted_content["images"]),
                 "code_blocks_found": len(extracted_content["code_blocks"]),
                 "total_pages": extracted_content["total_pages"],
-                "category": category
-            }
+                "category": category,
+                "authors_parsed": len(parsed_authors),
+                "authors_created": len(author_ids),
+                "document_type": document_type,
+                "book_id": book_id
+            },
+            "authors": parsed_authors
         }
         
         upload_progress[batch_id]["processed_files"] += 1

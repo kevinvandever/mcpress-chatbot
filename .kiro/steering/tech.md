@@ -82,6 +82,26 @@ WITH (lists = 100);
 - **NO LOCAL DATABASE**: There is no local database setup
 - **Railway-only**: All tests, migrations, and database operations must be executed on Railway
 - **Test execution**: Push code to trigger Railway deployment, then run tests via Railway CLI or SSH
+- **Python Command**: Always use `python3` instead of `python` (macOS requirement)
+
+### Testing Commands
+```bash
+# WRONG - Do not use locally
+python -m pytest backend/test_file.py
+
+# CORRECT - Use python3 for any local scripts
+python3 test_script.py
+
+# CORRECT - Run tests on Railway via SSH
+railway shell
+python3 -m pytest backend/test_file.py
+```
+
+### Local Development Limitations
+- **No FastAPI server**: Cannot run `uvicorn` locally due to missing dependencies
+- **No database access**: All database operations must be done on Railway
+- **Limited testing**: Only isolated functions can be tested locally (no imports from backend modules)
+- **Deployment required**: All integration testing requires Railway deployment
 
 ### Backend (Railway)
 - **Auto-deploy**: Push to `main` branch triggers Railway deployment
@@ -89,7 +109,7 @@ WITH (lists = 100);
 - **Start command**: `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`
 - **Health check**: `/health` endpoint
 - **Deploy time**: ~10-15 minutes
-- **Run tests on Railway**: Use Railway CLI or connect via SSH to execute pytest
+- **Run tests on Railway**: Use Railway CLI or connect via SSH to execute `python3 -m pytest`
 
 ### Frontend (Netlify)
 - **Auto-deploy**: Push to `main` branch triggers Netlify deployment
@@ -100,10 +120,10 @@ WITH (lists = 100);
 ### Database Operations
 ```bash
 # Run migrations (via Railway or direct connection)
-python backend/run_migration_003.py
+python3 backend/run_migration_003.py
 
 # Check database status
-python check_pgvector.py
+python3 check_pgvector.py
 ```
 
 ## Environment Variables
