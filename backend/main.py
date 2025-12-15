@@ -541,6 +541,72 @@ if diagnostic_available:
     except Exception as e:
         print(f"⚠️ Could not enable diagnostic endpoint: {e}")
 
+# Populate Books Router (temporary)
+populate_books_available = False
+try:
+    try:
+        from populate_books_from_documents import populate_books_router
+        populate_books_available = True
+    except ImportError:
+        from backend.populate_books_from_documents import populate_books_router
+        populate_books_available = True
+    print("✅ Populate books router loaded")
+except Exception as e:
+    print(f"⚠️ Populate books router not available: {e}")
+    populate_books_router = None
+    populate_books_available = False
+
+if populate_books_available:
+    try:
+        app.include_router(populate_books_router)
+        print("✅ Populate books endpoint enabled at /populate-books/*")
+    except Exception as e:
+        print(f"⚠️ Could not enable populate books endpoint: {e}")
+
+# Supabase to Railway Migration Router (temporary)
+migrate_supabase_available = False
+try:
+    try:
+        from migrate_supabase_to_railway import migrate_supabase_router
+        migrate_supabase_available = True
+    except ImportError:
+        from backend.migrate_supabase_to_railway import migrate_supabase_router
+        migrate_supabase_available = True
+    print("✅ Supabase migration router loaded")
+except Exception as e:
+    print(f"⚠️ Supabase migration router not available: {e}")
+    migrate_supabase_router = None
+    migrate_supabase_available = False
+
+if migrate_supabase_available:
+    try:
+        app.include_router(migrate_supabase_router)
+        print("✅ Supabase migration endpoint enabled at /migrate-supabase/*")
+    except Exception as e:
+        print(f"⚠️ Could not enable Supabase migration endpoint: {e}")
+
+# Database Connection Info Router (temporary)
+db_info_available = False
+try:
+    try:
+        from database_connection_info import db_info_router
+        db_info_available = True
+    except ImportError:
+        from backend.database_connection_info import db_info_router
+        db_info_available = True
+    print("✅ Database connection info router loaded")
+except Exception as e:
+    print(f"⚠️ Database connection info router not available: {e}")
+    db_info_router = None
+    db_info_available = False
+
+if db_info_available:
+    try:
+        app.include_router(db_info_router)
+        print("✅ Database connection info endpoint enabled at /db-info/*")
+    except Exception as e:
+        print(f"⚠️ Could not enable database connection info endpoint: {e}")
+
 # Task 6 Test Endpoint
 test_task_6_available = False
 try:
