@@ -41,12 +41,42 @@ async def migrate_books_from_supabase():
             # Step 1: Get books from Supabase
             results.append("📚 Fetching books from Supabase...")
             
-            supabase_books = await supabase_conn.fetch("""
-                SELECT id, title, author, filename, category, mc_press_url, 
-                       created_at, document_type, article_url
-                FROM books 
-                ORDER BY id
+            # First check what columns exist in Supabase books table
+            supabase_columns = await supabase_conn.fetch("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'books'
+                ORDER BY ordinal_position
             """)
+            
+            supabase_col_names = [col['column_name'] for col in supabase_columns]
+            results.append(f"📋 Supabase books columns: {', '.join(supabase_col_names)}")
+            
+            # Build dynamic query based on available columns
+            base_columns = ['id', 'title', 'author', 'filename', 'category', 'mc_press_url']
+            optional_columns = ['created_at', 'document_type', 'article_url']
+            
+            select_columns = []
+            for col in base_columns:
+                if col in supabase_col_names:
+                    select_columns.append(col)
+            
+            for col in optional_columns:
+                if col in supabase_col_names:
+                    select_columns.append(col)
+                else:
+                    # Add default values for missing columns
+                    if col == 'created_at':
+                        select_columns.append("CURRENT_TIMESTAMP as created_at")
+                    elif col == 'document_type':
+                        select_columns.append("'book' as document_type")
+                    elif col == 'article_url':
+                        select_columns.append("NULL as article_url")
+            
+            query = f"SELECT {', '.join(select_columns)} FROM books ORDER BY id"
+            results.append(f"📝 Query: {query}")
+            
+            supabase_books = await supabase_conn.fetch(query)
             
             results.append(f"✅ Found {len(supabase_books)} books in Supabase")
             
@@ -72,6 +102,17 @@ async def migrate_books_from_supabase():
                 results.append("❌ Railway books table does not exist")
                 raise HTTPException(status_code=400, detail="Railway books table not found")
             
+            # Check Railway books table columns
+            railway_columns = await railway_conn.fetch("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'books'
+                ORDER BY ordinal_position
+            """)
+            
+            railway_col_names = [col['column_name'] for col in railway_columns]
+            results.append(f"📋 Railway books columns: {', '.join(railway_col_names)}")
+            
             # Get current count
             current_railway_books = await railway_conn.fetchval("SELECT COUNT(*) FROM books")
             results.append(f"📊 Railway currently has {current_railway_books} books")
@@ -94,22 +135,51 @@ async def migrate_books_from_supabase():
                         skipped_count += 1
                         continue
                     
-                    # Insert book into Railway
-                    await railway_conn.execute("""
-                        INSERT INTO books (
-                            title, author, filename, category, mc_press_url,
-                            created_at, document_type, article_url
-                        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                    """, 
-                        book['title'],
-                        book['author'], 
-                        book['filename'],
-                        book['category'],
-                        book['mc_press_url'],
-                        book['created_at'],
-                        book.get('document_type', 'book'),
-                        book.get('article_url')
-                    )
+                    # Build dynamic insert based on Railway table structure
+                    insert_columns = []
+                    insert_values = []
+                    insert_params = []
+                    param_count = 1
+                    
+                    # Core columns that should exist
+                    core_mapping = {
+                        'title': book.get('title'),
+                        'author': book.get('author'),
+                        'filename': book.get('filename'),
+                        'category': book.get('category'),
+                        'mc_press_url': book.get('mc_press_url')
+                    }
+                    
+                    # Optional columns
+                    optional_mapping = {
+                        'created_at': book.get('created_at'),
+                        'document_type': book.get('document_type', 'book'),
+                        'article_url': book.get('article_url')
+                    }
+                    
+                    # Add core columns
+                    for col, value in core_mapping.items():
+                        if col in railway_col_names:
+                            insert_columns.append(col)
+                            insert_values.append(f"${param_count}")
+                            insert_params.append(value)
+                            param_count += 1
+                    
+                    # Add optional columns if they exist in Railway
+                    for col, value in optional_mapping.items():
+                        if col in railway_col_names:
+                            insert_columns.append(col)
+                            insert_values.append(f"${param_count}")
+                            insert_params.append(value)
+                            param_count += 1
+                    
+                    # Build and execute insert query
+                    insert_query = f"""
+                        INSERT INTO books ({', '.join(insert_columns)})
+                        VALUES ({', '.join(insert_values)})
+                    """
+                    
+                    await railway_conn.execute(insert_query, *insert_params)
                     
                     migrated_count += 1
                     
