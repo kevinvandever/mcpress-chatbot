@@ -275,6 +275,18 @@ app.add_middleware(
 # Include auth router
 app.include_router(auth_router)
 
+# Debug endpoint for books schema
+try:
+    try:
+        from debug_books_schema import router as debug_router
+    except ImportError:
+        from backend.debug_books_schema import router as debug_router
+    
+    app.include_router(debug_router)
+    print("✅ Debug endpoints enabled at /debug/*")
+except Exception as e:
+    print(f"⚠️ Debug endpoints not available: {e}")
+
 # Multi-Author Books API v2
 try:
     try:

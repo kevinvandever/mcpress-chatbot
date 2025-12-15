@@ -391,51 +391,39 @@ class PostgresVectorStore:
             """)
             
             if books_exists:
-                # Use new books table with multi-author support
+                # Use new books table - start with simplest possible query
                 rows = await conn.fetch("""
-                    WITH book_authors AS (
-                        SELECT 
-                            b.id,
-                            b.filename,
-                            b.title,
-                            b.category,
-                            b.document_type,
-                            b.mc_press_url,
-                            b.article_url,
-                            b.total_pages,
-                            b.processed_at,
-                            COALESCE(
-                                STRING_AGG(a.name, '; ' ORDER BY da.author_order),
-                                'Unknown'
-                            ) as authors,
-                            COUNT(d.id) as chunk_count
-                        FROM books b
-                        LEFT JOIN document_authors da ON b.id = da.book_id
-                        LEFT JOIN authors a ON da.author_id = a.id
-                        LEFT JOIN documents d ON b.filename = d.filename
-                        GROUP BY b.id, b.filename, b.title, b.category, 
-                                 b.document_type, b.mc_press_url, b.article_url, 
-                                 b.total_pages, b.processed_at
-                        ORDER BY b.processed_at DESC
-                    )
-                    SELECT * FROM book_authors
+                    SELECT 
+                        id,
+                        filename,
+                        title,
+                        author,
+                        category
+                    FROM books 
+                    ORDER BY id DESC
+                    LIMIT 200
                 """)
                 
                 documents = []
                 for row in rows:
+                    # Get chunk count from documents table
+                    chunk_count = await conn.fetchval("""
+                        SELECT COUNT(*) FROM documents WHERE filename = $1
+                    """, row['filename'])
+                    
                     documents.append({
                         'id': row['id'],
                         'filename': row['filename'],
                         'title': row['title'] or row['filename'].replace('.pdf', ''),
-                        'author': row['authors'],  # Legacy field for compatibility
-                        'authors': row['authors'].split('; ') if row['authors'] and row['authors'] != 'Unknown' else ['Unknown'],
+                        'author': row['author'] or 'Unknown',  # Legacy field for compatibility
+                        'authors': [row['author']] if row['author'] else ['Unknown'],
                         'category': row['category'] or 'Uncategorized',
-                        'document_type': row['document_type'] or 'book',
-                        'mc_press_url': row['mc_press_url'],
-                        'article_url': row['article_url'],
-                        'total_pages': row['total_pages'] or 'N/A',
-                        'chunk_count': row['chunk_count'] or 0,
-                        'uploaded_at': row['processed_at'].isoformat() if row['processed_at'] else None
+                        'document_type': 'book',  # Default
+                        'mc_press_url': None,
+                        'article_url': None,
+                        'total_pages': 'N/A',
+                        'chunk_count': chunk_count or 0,
+                        'uploaded_at': None
                     })
             else:
                 # Fallback to old documents table aggregation
