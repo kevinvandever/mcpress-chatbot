@@ -399,7 +399,6 @@ class PostgresVectorStore:
                             b.filename,
                             b.title,
                             b.category,
-                            b.subcategory,
                             b.document_type,
                             b.mc_press_url,
                             b.article_url,
@@ -414,7 +413,7 @@ class PostgresVectorStore:
                         LEFT JOIN document_authors da ON b.id = da.book_id
                         LEFT JOIN authors a ON da.author_id = a.id
                         LEFT JOIN documents d ON b.filename = d.filename
-                        GROUP BY b.id, b.filename, b.title, b.category, b.subcategory, 
+                        GROUP BY b.id, b.filename, b.title, b.category, 
                                  b.document_type, b.mc_press_url, b.article_url, 
                                  b.total_pages, b.processed_at
                         ORDER BY b.processed_at DESC
@@ -431,7 +430,6 @@ class PostgresVectorStore:
                         'author': row['authors'],  # Legacy field for compatibility
                         'authors': row['authors'].split('; ') if row['authors'] and row['authors'] != 'Unknown' else ['Unknown'],
                         'category': row['category'] or 'Uncategorized',
-                        'subcategory': row['subcategory'],
                         'document_type': row['document_type'] or 'book',
                         'mc_press_url': row['mc_press_url'],
                         'article_url': row['article_url'],

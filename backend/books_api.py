@@ -98,7 +98,6 @@ async def list_books_v2(
                         b.filename,
                         b.title,
                         b.category,
-                        b.subcategory,
                         b.document_type,
                         b.mc_press_url,
                         b.article_url,
@@ -119,7 +118,7 @@ async def list_books_v2(
                     LEFT JOIN authors a ON da.author_id = a.id
                     LEFT JOIN documents d ON b.filename = d.filename
                     {where_clause}
-                    GROUP BY b.id, b.filename, b.title, b.category, b.subcategory, 
+                    GROUP BY b.id, b.filename, b.title, b.category, 
                              b.document_type, b.mc_press_url, b.article_url, 
                              b.total_pages, b.processed_at
                     ORDER BY b.processed_at DESC
@@ -154,7 +153,6 @@ async def list_books_v2(
                     'authors': authors,  # Full author objects with metadata
                     'author': authors_string,  # Legacy string format for compatibility
                     'category': row['category'] or 'Uncategorized',
-                    'subcategory': row['subcategory'],
                     'document_type': row['document_type'] or 'book',
                     'mc_press_url': row['mc_press_url'],
                     'article_url': row['article_url'],
@@ -198,7 +196,6 @@ async def get_book_v2(book_id: int):
                     b.filename,
                     b.title,
                     b.category,
-                    b.subcategory,
                     b.document_type,
                     b.mc_press_url,
                     b.article_url,
@@ -219,7 +216,7 @@ async def get_book_v2(book_id: int):
                 LEFT JOIN authors a ON da.author_id = a.id
                 LEFT JOIN documents d ON b.filename = d.filename
                 WHERE b.id = $1
-                GROUP BY b.id, b.filename, b.title, b.category, b.subcategory, 
+                GROUP BY b.id, b.filename, b.title, b.category, 
                          b.document_type, b.mc_press_url, b.article_url, 
                          b.total_pages, b.processed_at
             """, book_id)
@@ -238,7 +235,6 @@ async def get_book_v2(book_id: int):
                 'authors': authors,  # Full author objects with metadata
                 'author': authors_string,  # Legacy string format for compatibility
                 'category': row['category'] or 'Uncategorized',
-                'subcategory': row['subcategory'],
                 'document_type': row['document_type'] or 'book',
                 'mc_press_url': row['mc_press_url'],
                 'article_url': row['article_url'],
