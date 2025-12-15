@@ -62,15 +62,18 @@ async def migrate_books_from_supabase():
                     select_columns.append(col)
             
             for col in optional_columns:
-                if col in supabase_col_names:
-                    select_columns.append(col)
-                else:
-                    # Add default values for missing columns
-                    if col == 'created_at':
-                        select_columns.append("CURRENT_TIMESTAMP as created_at")
-                    elif col == 'document_type':
+                # Always use defaults for optional columns to avoid compatibility issues
+                if col == 'created_at':
+                    select_columns.append("NOW() as created_at")
+                elif col == 'document_type':
+                    if col in supabase_col_names:
+                        select_columns.append(col)
+                    else:
                         select_columns.append("'book' as document_type")
-                    elif col == 'article_url':
+                elif col == 'article_url':
+                    if col in supabase_col_names:
+                        select_columns.append(col)
+                    else:
                         select_columns.append("NULL as article_url")
             
             query = f"SELECT {', '.join(select_columns)} FROM books ORDER BY id"
@@ -150,9 +153,9 @@ async def migrate_books_from_supabase():
                         'mc_press_url': book.get('mc_press_url')
                     }
                     
-                    # Optional columns
+                    # Optional columns (created_at will be current time from NOW())
                     optional_mapping = {
-                        'created_at': book.get('created_at'),
+                        'created_at': None,  # Will use NOW() from query
                         'document_type': book.get('document_type', 'book'),
                         'article_url': book.get('article_url')
                     }
@@ -168,10 +171,16 @@ async def migrate_books_from_supabase():
                     # Add optional columns if they exist in Railway
                     for col, value in optional_mapping.items():
                         if col in railway_col_names:
-                            insert_columns.append(col)
-                            insert_values.append(f"${param_count}")
-                            insert_params.append(value)
-                            param_count += 1
+                            if col == 'created_at':
+                                # Use CURRENT_TIMESTAMP for created_at
+                                insert_columns.append(col)
+                                insert_values.append("CURRENT_TIMESTAMP")
+                                # Don't add to params since it's a SQL function
+                            else:
+                                insert_columns.append(col)
+                                insert_values.append(f"${param_count}")
+                                insert_params.append(value)
+                                param_count += 1
                     
                     # Build and execute insert query
                     insert_query = f"""
