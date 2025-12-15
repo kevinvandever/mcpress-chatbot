@@ -42,7 +42,7 @@
   - **Property 16: Require at least one author**
   - **Validates: Requirements 5.7**
 
-- [ ] 3.3 Write property test for cascade deletion
+- [x] 3.3 Write property test for cascade deletion
   - **Property 4: Cascade deletion preserves shared authors**
   - **Validates: Requirements 1.5**
 
@@ -281,7 +281,7 @@
 - [x] 22. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 23. Run database migration on production environment
+- [x] 23. Run database migration on production environment
   - Create database backup
   - Execute migration script (backend/run_migration_003.py)
   - Run data migration script to populate authors table

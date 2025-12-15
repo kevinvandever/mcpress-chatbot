@@ -479,6 +479,14 @@ if data_migration_003_available:
     except Exception as e:
         print(f"⚠️ Could not enable Data Migration 003 endpoint: {e}")
 
+# Database Diagnostic Endpoint (temporary)
+if diagnostic_available:
+    try:
+        app.include_router(diagnostic_router)
+        print("✅ Database diagnostic endpoint enabled at /diagnostic/*")
+    except Exception as e:
+        print(f"⚠️ Could not enable diagnostic endpoint: {e}")
+
 # Author Management API Routes
 author_service = None
 doc_author_service = None
@@ -515,6 +523,21 @@ except Exception as e:
     print(f"⚠️ Document-author routes not available: {e}")
     document_author_router = None
     document_author_routes_available = False
+
+# Database Diagnostic Router (temporary)
+diagnostic_available = False
+try:
+    try:
+        from database_diagnostic import diagnostic_router
+        diagnostic_available = True
+    except ImportError:
+        from backend.database_diagnostic import diagnostic_router
+        diagnostic_available = True
+    print("✅ Database diagnostic router loaded")
+except Exception as e:
+    print(f"⚠️ Database diagnostic router not available: {e}")
+    diagnostic_router = None
+    diagnostic_available = False
 
 # Task 6 Test Endpoint
 test_task_6_available = False
