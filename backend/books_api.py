@@ -1,46 +1,44 @@
 """
-Multi-Author Books API Endpoint
-Provides clean API for frontend to access book data with proper multi-author support
+Books API v2 - Multi-Author Support
+Provides enhanced book endpoints with proper multi-author metadata
 """
 
 from fastapi import APIRouter, HTTPException, Query
-from typing import Dict, List, Any, Optional
-import os
+from typing import List, Dict, Any, Optional
 import asyncpg
-import json
+import os
+import logging
 
-router = APIRouter(prefix="/api/v2", tags=["books-v2"])
+logger = logging.getLogger(__name__)
 
-# Global database connection
+router = APIRouter(prefix="/api/v2/books", tags=["books-v2"])
+
+# Global database pool
 _pool = None
 
 async def get_db_pool():
-    """Get database connection pool"""
+    """Get or create database connection pool"""
     global _pool
-    if not _pool:
+    if _pool is None:
         database_url = os.getenv('DATABASE_URL')
         if not database_url:
             raise HTTPException(status_code=500, detail="Database not configured")
         _pool = await asyncpg.create_pool(database_url)
     return _pool
 
-@router.get("/books")
+@router.get("/")
 async def list_books_v2(
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(50, ge=1, le=100, description="Items per page"),
+    author: Optional[str] = Query(None, description="Filter by author name"),
     category: Optional[str] = Query(None, description="Filter by category"),
-    document_type: Optional[str] = Query(None, description="Filter by document type (book/article)"),
-    author: Optional[str] = Query(None, description="Filter by author name")
-) -> Dict[str, Any]:
+    document_type: Optional[str] = Query(None, description="Filter by document type (book/article)")
+):
     """
-    List books with proper multi-author support and metadata.
+    List books with multi-author support and filtering
     
-    This endpoint reads from the books table (not document chunks) and provides:
-    - Proper multi-author data with author order
-    - Real metadata (categories, page counts, etc.)
-    - Document type information (book/article)
-    - Pagination support
-    - Filtering capabilities
+    Returns books from the books table with proper author relationships,
+    replacing the old documents-based aggregation.
     """
     try:
         pool = await get_db_pool()
@@ -57,7 +55,7 @@ async def list_books_v2(
             if not books_exists:
                 raise HTTPException(
                     status_code=503, 
-                    detail="Books table not available. Migration may be needed."
+                    detail="Books table not available. Migration may be required."
                 )
             
             # Build WHERE clause for filtering
@@ -65,46 +63,34 @@ async def list_books_v2(
             params = []
             param_count = 0
             
+            if author:
+                param_count += 1
+                where_conditions.append(f"a.name ILIKE ${param_count}")
+                params.append(f"%{author}%")
+            
             if category:
                 param_count += 1
                 where_conditions.append(f"b.category ILIKE ${param_count}")
                 params.append(f"%{category}%")
-            
+                
             if document_type:
                 param_count += 1
                 where_conditions.append(f"b.document_type = ${param_count}")
                 params.append(document_type)
             
-            if author:
-                param_count += 1
-                where_conditions.append(f"EXISTS (SELECT 1 FROM document_authors da JOIN authors a ON da.author_id = a.id WHERE da.book_id = b.id AND a.name ILIKE ${param_count})")
-                params.append(f"%{author}%")
-            
             where_clause = ""
             if where_conditions:
                 where_clause = "WHERE " + " AND ".join(where_conditions)
             
-            # Get total count for pagination
-            count_query = f"""
-                SELECT COUNT(DISTINCT b.id)
-                FROM books b
-                {where_clause}
-            """
-            
-            total_count = await conn.fetchval(count_query, *params)
-            
-            # Calculate pagination
+            # Calculate offset
             offset = (page - 1) * limit
-            total_pages = (total_count + limit - 1) // limit
-            
-            # Add pagination parameters
             param_count += 1
             limit_param = param_count
             param_count += 1
             offset_param = param_count
             params.extend([limit, offset])
             
-            # Main query with authors
+            # Main query with multi-author support
             query = f"""
                 WITH book_authors AS (
                     SELECT 
@@ -118,24 +104,20 @@ async def list_books_v2(
                         b.article_url,
                         b.total_pages,
                         b.processed_at,
-                        COALESCE(
-                            JSON_AGG(
-                                JSON_BUILD_OBJECT(
-                                    'id', a.id,
-                                    'name', a.name,
-                                    'site_url', a.site_url,
-                                    'order', da.author_order
-                                ) ORDER BY da.author_order
-                            ) FILTER (WHERE a.id IS NOT NULL),
-                            '[]'::json
-                        ) as authors_json,
-                        COALESCE(
-                            STRING_AGG(a.name, '; ' ORDER BY da.author_order),
-                            'Unknown'
-                        ) as authors_string
+                        ARRAY_AGG(
+                            json_build_object(
+                                'id', a.id,
+                                'name', a.name,
+                                'site_url', a.site_url,
+                                'order', da.author_order
+                            ) ORDER BY da.author_order
+                        ) FILTER (WHERE a.id IS NOT NULL) as authors_json,
+                        STRING_AGG(a.name, '; ' ORDER BY da.author_order) as authors_string,
+                        COUNT(d.id) as chunk_count
                     FROM books b
                     LEFT JOIN document_authors da ON b.id = da.book_id
                     LEFT JOIN authors a ON da.author_id = a.id
+                    LEFT JOIN documents d ON b.filename = d.filename
                     {where_clause}
                     GROUP BY b.id, b.filename, b.title, b.category, b.subcategory, 
                              b.document_type, b.mc_press_url, b.article_url, 
@@ -148,37 +130,36 @@ async def list_books_v2(
             
             rows = await conn.fetch(query, *params)
             
+            # Get total count for pagination
+            count_query = f"""
+                SELECT COUNT(DISTINCT b.id)
+                FROM books b
+                LEFT JOIN document_authors da ON b.id = da.book_id
+                LEFT JOIN authors a ON da.author_id = a.id
+                {where_clause}
+            """
+            
+            total_count = await conn.fetchval(count_query, *params[:-2])  # Exclude limit/offset params
+            
             books = []
             for row in rows:
-                # Parse authors JSON
-                authors_data = row['authors_json']
-                if isinstance(authors_data, str):
-                    try:
-                        authors_data = json.loads(authors_data)
-                    except:
-                        authors_data = []
-                
-                # Ensure authors_data is a list
-                if not isinstance(authors_data, list):
-                    authors_data = []
-                
-                # Fallback to string if no structured data
-                if not authors_data and row['authors_string'] and row['authors_string'] != 'Unknown':
-                    authors_data = [{'name': name.strip(), 'site_url': None, 'order': i} 
-                                  for i, name in enumerate(row['authors_string'].split(';'))]
+                # Handle authors
+                authors = row['authors_json'] or []
+                authors_string = row['authors_string'] or 'Unknown'
                 
                 books.append({
                     'id': row['id'],
                     'filename': row['filename'],
                     'title': row['title'] or row['filename'].replace('.pdf', ''),
-                    'authors': authors_data,
-                    'author': row['authors_string'],  # Legacy field for compatibility
+                    'authors': authors,  # Full author objects with metadata
+                    'author': authors_string,  # Legacy string format for compatibility
                     'category': row['category'] or 'Uncategorized',
                     'subcategory': row['subcategory'],
                     'document_type': row['document_type'] or 'book',
                     'mc_press_url': row['mc_press_url'],
                     'article_url': row['article_url'],
                     'total_pages': row['total_pages'],
+                    'chunk_count': row['chunk_count'] or 0,
                     'processed_at': row['processed_at'].isoformat() if row['processed_at'] else None
                 })
             
@@ -187,25 +168,24 @@ async def list_books_v2(
                 'pagination': {
                     'page': page,
                     'limit': limit,
-                    'total_count': total_count,
-                    'total_pages': total_pages,
-                    'has_next': page < total_pages,
-                    'has_prev': page > 1
+                    'total': total_count,
+                    'pages': (total_count + limit - 1) // limit
                 },
                 'filters': {
+                    'author': author,
                     'category': category,
-                    'document_type': document_type,
-                    'author': author
+                    'document_type': document_type
                 }
             }
             
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        logger.error(f"Error listing books: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/books/{book_id}")
-async def get_book_v2(book_id: int) -> Dict[str, Any]:
+@router.get("/{book_id}")
+async def get_book_v2(book_id: int):
     """
-    Get a single book with full multi-author details.
+    Get a single book with full multi-author details
     """
     try:
         pool = await get_db_pool()
@@ -224,24 +204,20 @@ async def get_book_v2(book_id: int) -> Dict[str, Any]:
                     b.article_url,
                     b.total_pages,
                     b.processed_at,
-                    COALESCE(
-                        JSON_AGG(
-                            JSON_BUILD_OBJECT(
-                                'id', a.id,
-                                'name', a.name,
-                                'site_url', a.site_url,
-                                'order', da.author_order
-                            ) ORDER BY da.author_order
-                        ) FILTER (WHERE a.id IS NOT NULL),
-                        '[]'::json
-                    ) as authors_json,
-                    COALESCE(
-                        STRING_AGG(a.name, '; ' ORDER BY da.author_order),
-                        'Unknown'
-                    ) as authors_string
+                    ARRAY_AGG(
+                        json_build_object(
+                            'id', a.id,
+                            'name', a.name,
+                            'site_url', a.site_url,
+                            'order', da.author_order
+                        ) ORDER BY da.author_order
+                    ) FILTER (WHERE a.id IS NOT NULL) as authors_json,
+                    STRING_AGG(a.name, '; ' ORDER BY da.author_order) as authors_string,
+                    COUNT(d.id) as chunk_count
                 FROM books b
                 LEFT JOIN document_authors da ON b.id = da.book_id
                 LEFT JOIN authors a ON da.author_id = a.id
+                LEFT JOIN documents d ON b.filename = d.filename
                 WHERE b.id = $1
                 GROUP BY b.id, b.filename, b.title, b.category, b.subcategory, 
                          b.document_type, b.mc_press_url, b.article_url, 
@@ -251,51 +227,40 @@ async def get_book_v2(book_id: int) -> Dict[str, Any]:
             if not row:
                 raise HTTPException(status_code=404, detail="Book not found")
             
-            # Parse authors JSON
-            authors_data = row['authors_json']
-            if isinstance(authors_data, str):
-                try:
-                    authors_data = json.loads(authors_data)
-                except:
-                    authors_data = []
-            
-            # Ensure authors_data is a list
-            if not isinstance(authors_data, list):
-                authors_data = []
-            
-            # Fallback to string if no structured data
-            if not authors_data and row['authors_string'] and row['authors_string'] != 'Unknown':
-                authors_data = [{'name': name.strip(), 'site_url': None, 'order': i} 
-                              for i, name in enumerate(row['authors_string'].split(';'))]
+            # Handle authors
+            authors = row['authors_json'] or []
+            authors_string = row['authors_string'] or 'Unknown'
             
             return {
                 'id': row['id'],
                 'filename': row['filename'],
                 'title': row['title'] or row['filename'].replace('.pdf', ''),
-                'authors': authors_data,
-                'author': row['authors_string'],  # Legacy field for compatibility
+                'authors': authors,  # Full author objects with metadata
+                'author': authors_string,  # Legacy string format for compatibility
                 'category': row['category'] or 'Uncategorized',
                 'subcategory': row['subcategory'],
                 'document_type': row['document_type'] or 'book',
                 'mc_press_url': row['mc_press_url'],
                 'article_url': row['article_url'],
                 'total_pages': row['total_pages'],
+                'chunk_count': row['chunk_count'] or 0,
                 'processed_at': row['processed_at'].isoformat() if row['processed_at'] else None
             }
             
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        logger.error(f"Error getting book {book_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/authors")
+@router.get("/authors/")
 async def list_authors_v2(
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(50, ge=1, le=100, description="Items per page"),
     search: Optional[str] = Query(None, description="Search author names")
-) -> Dict[str, Any]:
+):
     """
-    List all authors with their document counts.
+    List all authors with their document counts
     """
     try:
         pool = await get_db_pool()
@@ -308,23 +273,9 @@ async def list_authors_v2(
                 where_clause = "WHERE a.name ILIKE $1"
                 params.append(f"%{search}%")
             
-            # Get total count
-            count_query = f"""
-                SELECT COUNT(*)
-                FROM authors a
-                {where_clause}
-            """
-            
-            total_count = await conn.fetchval(count_query, *params)
-            
-            # Calculate pagination
+            # Calculate offset
             offset = (page - 1) * limit
-            total_pages = (total_count + limit - 1) // limit
-            
-            # Add pagination parameters
             params.extend([limit, offset])
-            param_offset = len(params) - 1
-            param_limit = len(params)
             
             # Main query
             query = f"""
@@ -339,10 +290,20 @@ async def list_authors_v2(
                 {where_clause}
                 GROUP BY a.id, a.name, a.site_url, a.created_at
                 ORDER BY a.name
-                LIMIT ${param_limit} OFFSET ${param_offset}
+                LIMIT ${len(params)-1} OFFSET ${len(params)}
             """
             
             rows = await conn.fetch(query, *params)
+            
+            # Get total count
+            count_query = f"""
+                SELECT COUNT(DISTINCT a.id)
+                FROM authors a
+                {where_clause}
+            """
+            
+            count_params = params[:-2] if search else []
+            total_count = await conn.fetchval(count_query, *count_params)
             
             authors = []
             for row in rows:
@@ -359,13 +320,12 @@ async def list_authors_v2(
                 'pagination': {
                     'page': page,
                     'limit': limit,
-                    'total_count': total_count,
-                    'total_pages': total_pages,
-                    'has_next': page < total_pages,
-                    'has_prev': page > 1
+                    'total': total_count,
+                    'pages': (total_count + limit - 1) // limit
                 },
                 'search': search
             }
             
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        logger.error(f"Error listing authors: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

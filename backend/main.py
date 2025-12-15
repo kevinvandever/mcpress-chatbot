@@ -531,7 +531,7 @@ except Exception as e:
     document_author_routes_available = False
 
 # Temporary migration endpoints removed after successful migration
-    db_info_available = False
+db_info_available = False
 
 if db_info_available:
     try:
