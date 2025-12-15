@@ -376,66 +376,127 @@ class PostgresVectorStore:
         return results
     
     async def list_documents(self) -> Dict[str, Any]:
-        """List all unique documents in the database"""
+        """List all documents from books table with multi-author support"""
         # Only init if pool doesn't exist
         if not self.pool:
             await self.init_database()
         
         async with self.pool.acquire() as conn:
-            # Use DISTINCT ON to get one row per filename with most recent metadata
-            rows = await conn.fetch("""
-                WITH doc_stats AS (
-                    SELECT filename,
-                           COUNT(*) as chunk_count,
-                           MAX(page_number) as total_pages,
-                           MIN(created_at) as uploaded_at
-                    FROM documents
-                    GROUP BY filename
-                ),
-                latest_metadata AS (
-                    SELECT DISTINCT ON (filename)
-                           filename,
-                           metadata
-                    FROM documents
-                    ORDER BY filename, id DESC
+            # Check if books table exists (for backward compatibility)
+            books_exists = await conn.fetchval("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_name = 'books'
                 )
-                SELECT ds.filename,
-                       ds.chunk_count,
-                       ds.total_pages,
-                       ds.uploaded_at,
-                       lm.metadata
-                FROM doc_stats ds
-                JOIN latest_metadata lm ON ds.filename = lm.filename
-                ORDER BY ds.uploaded_at DESC
             """)
             
-            documents = []
-            for row in rows:
-                # Handle metadata - could be dict, string, or None
-                metadata = row['metadata']
-                if metadata is None:
-                    metadata = {}
-                elif isinstance(metadata, str):
-                    try:
-                        metadata = json.loads(metadata)
-                    except:
+            if books_exists:
+                # Use new books table with multi-author support
+                rows = await conn.fetch("""
+                    WITH book_authors AS (
+                        SELECT 
+                            b.id,
+                            b.filename,
+                            b.title,
+                            b.category,
+                            b.subcategory,
+                            b.document_type,
+                            b.mc_press_url,
+                            b.article_url,
+                            b.total_pages,
+                            b.processed_at,
+                            COALESCE(
+                                STRING_AGG(a.name, '; ' ORDER BY da.author_order),
+                                'Unknown'
+                            ) as authors,
+                            COUNT(d.id) as chunk_count
+                        FROM books b
+                        LEFT JOIN document_authors da ON b.id = da.book_id
+                        LEFT JOIN authors a ON da.author_id = a.id
+                        LEFT JOIN documents d ON b.filename = d.filename
+                        GROUP BY b.id, b.filename, b.title, b.category, b.subcategory, 
+                                 b.document_type, b.mc_press_url, b.article_url, 
+                                 b.total_pages, b.processed_at
+                        ORDER BY b.processed_at DESC
+                    )
+                    SELECT * FROM book_authors
+                """)
+                
+                documents = []
+                for row in rows:
+                    documents.append({
+                        'id': row['id'],
+                        'filename': row['filename'],
+                        'title': row['title'] or row['filename'].replace('.pdf', ''),
+                        'author': row['authors'],  # Legacy field for compatibility
+                        'authors': row['authors'].split('; ') if row['authors'] and row['authors'] != 'Unknown' else ['Unknown'],
+                        'category': row['category'] or 'Uncategorized',
+                        'subcategory': row['subcategory'],
+                        'document_type': row['document_type'] or 'book',
+                        'mc_press_url': row['mc_press_url'],
+                        'article_url': row['article_url'],
+                        'total_pages': row['total_pages'] or 'N/A',
+                        'chunk_count': row['chunk_count'] or 0,
+                        'uploaded_at': row['processed_at'].isoformat() if row['processed_at'] else None
+                    })
+            else:
+                # Fallback to old documents table aggregation
+                rows = await conn.fetch("""
+                    WITH doc_stats AS (
+                        SELECT filename,
+                               COUNT(*) as chunk_count,
+                               MAX(page_number) as total_pages,
+                               MIN(created_at) as uploaded_at
+                        FROM documents
+                        GROUP BY filename
+                    ),
+                    latest_metadata AS (
+                        SELECT DISTINCT ON (filename)
+                               filename,
+                               metadata
+                        FROM documents
+                        ORDER BY filename, id DESC
+                    )
+                    SELECT ds.filename,
+                           ds.chunk_count,
+                           ds.total_pages,
+                           ds.uploaded_at,
+                           lm.metadata
+                    FROM doc_stats ds
+                    JOIN latest_metadata lm ON ds.filename = lm.filename
+                    ORDER BY ds.uploaded_at DESC
+                """)
+                
+                documents = []
+                for row in rows:
+                    # Handle metadata - could be dict, string, or None
+                    metadata = row['metadata']
+                    if metadata is None:
                         metadata = {}
-                elif not isinstance(metadata, dict):
-                    metadata = {}
+                    elif isinstance(metadata, str):
+                        try:
+                            metadata = json.loads(metadata)
+                        except:
+                            metadata = {}
+                    elif not isinstance(metadata, dict):
+                        metadata = {}
 
-                documents.append({
-                    'filename': row['filename'],
-                    'chunk_count': row['chunk_count'],
-                    'total_pages': row['total_pages'] or 'N/A',
-                    'uploaded_at': row['uploaded_at'].isoformat() if row['uploaded_at'] else None,
-                    'author': metadata.get('author', 'Unknown') if isinstance(metadata, dict) else 'Unknown',
-                    'category': metadata.get('category', 'Uncategorized') if isinstance(metadata, dict) else 'Uncategorized',
-                    'title': metadata.get('title', row['filename'].replace('.pdf', '')) if isinstance(metadata, dict) else row['filename'].replace('.pdf', ''),
-                    'mc_press_url': metadata.get('mc_press_url') if isinstance(metadata, dict) else None
-                })
+                    author = metadata.get('author', 'Unknown') if isinstance(metadata, dict) else 'Unknown'
+                    documents.append({
+                        'filename': row['filename'],
+                        'chunk_count': row['chunk_count'],
+                        'total_pages': row['total_pages'] or 'N/A',
+                        'uploaded_at': row['uploaded_at'].isoformat() if row['uploaded_at'] else None,
+                        'author': author,  # Legacy field for compatibility
+                        'authors': [author],  # Multi-author format
+                        'category': metadata.get('category', 'Uncategorized') if isinstance(metadata, dict) else 'Uncategorized',
+                        'title': metadata.get('title', row['filename'].replace('.pdf', '')) if isinstance(metadata, dict) else row['filename'].replace('.pdf', ''),
+                        'mc_press_url': metadata.get('mc_press_url') if isinstance(metadata, dict) else None,
+                        'document_type': 'book'  # Default for legacy data
+                    })
         
         result = {'documents': documents}
-        logger.info(f"📋 list_documents returning: {type(result)} with {len(documents)} unique documents")
+        logger.info(f"📋 list_documents returning: {type(result)} with {len(documents)} documents from {'books' if books_exists else 'documents'} table")
         return result
     
     async def delete_by_filename(self, filename: str):

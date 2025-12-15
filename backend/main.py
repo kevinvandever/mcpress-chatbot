@@ -275,6 +275,18 @@ app.add_middleware(
 # Include auth router
 app.include_router(auth_router)
 
+# Multi-Author Books API v2
+try:
+    try:
+        from books_api import router as books_v2_router
+    except ImportError:
+        from backend.books_api import router as books_v2_router
+    
+    app.include_router(books_v2_router)
+    print("✅ Books API v2 endpoints enabled at /api/v2/books")
+except Exception as e:
+    print(f"⚠️ Books API v2 not available: {e}")
+
 # REMOVING ALL CUSTOM ENDPOINTS TO DEBUG
 # The app stops responding when we add ANY new code
 print("⚠️ All custom endpoints disabled for debugging")
