@@ -309,6 +309,88 @@ async def check_migration_003_status():
         raise HTTPException(status_code=500, detail=f"Status check failed: {str(e)}")
 
 
+@migration_003_router.get("/find-books")
+async def find_books_in_database():
+    """
+    Find where books/documents are actually stored in the database
+    """
+    try:
+        database_url = os.getenv('DATABASE_URL')
+        if not database_url:
+            raise HTTPException(status_code=500, detail="DATABASE_URL not configured")
+
+        conn = await asyncpg.connect(database_url)
+        results = {}
+
+        # Check documents table (vector store)
+        try:
+            doc_count = await conn.fetchval("SELECT COUNT(*) FROM documents")
+            if doc_count > 0:
+                # Get unique filenames
+                unique_files = await conn.fetch("""
+                    SELECT DISTINCT filename, COUNT(*) as chunks
+                    FROM documents 
+                    WHERE filename IS NOT NULL
+                    GROUP BY filename
+                    ORDER BY filename
+                    LIMIT 20
+                """)
+                
+                results['documents_table'] = {
+                    "total_chunks": doc_count,
+                    "unique_files": len(unique_files),
+                    "sample_files": [{"filename": f['filename'], "chunks": f['chunks']} for f in unique_files]
+                }
+        except Exception as e:
+            results['documents_table'] = {"error": str(e)}
+
+        # Check books table
+        try:
+            books_count = await conn.fetchval("SELECT COUNT(*) FROM books")
+            results['books_table'] = {"count": books_count}
+            
+            if books_count > 0:
+                sample_books = await conn.fetch("SELECT * FROM books LIMIT 5")
+                results['books_table']['sample'] = [dict(book) for book in sample_books]
+        except Exception as e:
+            results['books_table'] = {"error": str(e)}
+
+        # List all tables
+        try:
+            tables = await conn.fetch("""
+                SELECT table_name, 
+                       (SELECT COUNT(*) FROM information_schema.columns WHERE table_name = t.table_name) as column_count
+                FROM information_schema.tables t
+                WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+                ORDER BY table_name
+            """)
+            
+            results['all_tables'] = []
+            for table in tables:
+                table_name = table['table_name']
+                try:
+                    row_count = await conn.fetchval(f"SELECT COUNT(*) FROM {table_name}")
+                    results['all_tables'].append({
+                        "name": table_name,
+                        "columns": table['column_count'],
+                        "rows": row_count
+                    })
+                except:
+                    results['all_tables'].append({
+                        "name": table_name,
+                        "columns": table['column_count'],
+                        "rows": "error"
+                    })
+        except Exception as e:
+            results['all_tables'] = {"error": str(e)}
+
+        await conn.close()
+        return results
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+
+
 @migration_003_router.get("/rollback")
 async def rollback_migration_003():
     """
