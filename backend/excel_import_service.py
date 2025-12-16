@@ -139,14 +139,18 @@ class ExcelImportService:
                 ))
                 return ValidationResult(valid=False, errors=errors, preview_rows=[])
             
-            # Allow both .xlsm and .xlsx for book files, only .xlsm for articles
-            allowed_extensions = ['.xlsm', '.xlsx'] if file_type == "book" else ['.xlsm']
+            # Allow Excel and CSV for book files, only .xlsm for articles
+            if file_type == "book":
+                allowed_extensions = ['.xlsm', '.xlsx', '.csv']
+            else:
+                allowed_extensions = ['.xlsm']
+                
             if not any(file_path.lower().endswith(ext) for ext in allowed_extensions):
                 if file_type == "book":
                     errors.append(ExcelValidationError(
                         row=0,
                         column="file",
-                        message="File must be .xlsm or .xlsx format",
+                        message="File must be .xlsm, .xlsx, or .csv format",
                         severity="error"
                     ))
                 else:
@@ -158,9 +162,31 @@ class ExcelImportService:
                     ))
                 return ValidationResult(valid=False, errors=errors, preview_rows=[])
             
-            # Try to read the Excel file
+            # Try to read the file (Excel or CSV)
             if file_type == "book":
-                df = pd.read_excel(file_path, engine='openpyxl')
+                # Determine file type and read accordingly
+                if file_path.lower().endswith('.csv'):
+                    df = pd.read_csv(file_path)
+                else:
+                    df = pd.read_excel(file_path, engine='openpyxl')
+                
+                # Normalize column names - strip whitespace and handle case variations
+                df.columns = df.columns.str.strip()
+                
+                # Map common variations to standard names
+                column_mapping = {}
+                for col in df.columns:
+                    col_lower = col.lower().strip()
+                    if col_lower in ['url', 'urls', 'link', 'links']:
+                        column_mapping[col] = 'URL'
+                    elif col_lower in ['title', 'book title', 'name']:
+                        column_mapping[col] = 'Title'  
+                    elif col_lower in ['author', 'authors', 'author(s)', 'writer', 'writers']:
+                        column_mapping[col] = 'Author'
+                
+                # Rename columns to standard names
+                df = df.rename(columns=column_mapping)
+                
                 required_columns = ['URL', 'Title', 'Author']
             elif file_type == "article":
                 # For articles, read the export_subset sheet
@@ -203,11 +229,13 @@ class ExcelImportService:
             missing_columns = [col for col in required_columns if col not in df.columns]
             if missing_columns:
                 for col in missing_columns:
+                    # Make URL column optional for now - we can add URLs later
+                    severity = "warning" if col == "URL" else "error"
                     errors.append(ExcelValidationError(
                         row=0,
                         column=col,
                         message=f"Required column '{col}' is missing",
-                        severity="error"
+                        severity=severity
                     ))
             
             # Generate preview of first 10 rows with validation
@@ -282,9 +310,11 @@ class ExcelImportService:
                     'Author': str(row.get('Author', '')).strip()
                 }
                 
-                # Validate URL
-                if not self._is_valid_url(row_data['URL']):
+                # Validate URL (allow empty URLs for now)
+                if row_data['URL'] and not self._is_valid_url(row_data['URL']):
                     row_errors.append(f"Invalid URL format")
+                elif not row_data['URL']:
+                    row_errors.append(f"URL is empty (will be skipped)")
                 
                 # Validate required fields
                 if not row_data['Title'].strip():
@@ -494,8 +524,28 @@ class ExcelImportService:
                 result.processing_time = time.time() - start_time
                 return result
             
-            # Read Excel file
-            df = pd.read_excel(file_path, engine='openpyxl')
+            # Read file (Excel or CSV)
+            if file_path.lower().endswith('.csv'):
+                df = pd.read_csv(file_path)
+            else:
+                df = pd.read_excel(file_path, engine='openpyxl')
+            
+            # Normalize column names - strip whitespace and handle case variations
+            df.columns = df.columns.str.strip()
+            
+            # Map common variations to standard names
+            column_mapping = {}
+            for col in df.columns:
+                col_lower = col.lower().strip()
+                if col_lower in ['url', 'urls', 'link', 'links']:
+                    column_mapping[col] = 'URL'
+                elif col_lower in ['title', 'book title', 'name']:
+                    column_mapping[col] = 'Title'  
+                elif col_lower in ['author', 'authors', 'author(s)', 'writer', 'writers']:
+                    column_mapping[col] = 'Author'
+            
+            # Rename columns to standard names
+            df = df.rename(columns=column_mapping)
             
             books_processed = 0
             books_matched = 0
@@ -530,6 +580,9 @@ class ExcelImportService:
                             severity="error"
                         ))
                         continue
+                    
+                    # Debug: Print what we're processing
+                    print(f"Processing row {idx + 1}: Title='{title}', Author='{author_string}', URL='{url}'")
                     
                     # Find matching book by title
                     book_id = await self.fuzzy_match_title(title)

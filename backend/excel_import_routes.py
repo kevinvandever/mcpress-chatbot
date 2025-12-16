@@ -68,22 +68,22 @@ async def validate_excel_file(
             detail="file_type must be 'book' or 'article'"
         )
     
-    # Check file extension - allow both .xlsm and .xlsx for book files
-    allowed_extensions = ['.xlsm', '.xlsx'] if file_type == "book" else ['.xlsm']
+    # Check file extension - allow Excel and CSV for book files
+    if file_type == "book":
+        allowed_extensions = ['.xlsm', '.xlsx', '.csv']
+        format_message = "File must be .xlsm, .xlsx, or .csv format"
+    else:
+        allowed_extensions = ['.xlsm']
+        format_message = "File must be .xlsm format"
+        
     if not file.filename or not any(file.filename.lower().endswith(ext) for ext in allowed_extensions):
-        if file_type == "book":
-            raise HTTPException(
-                status_code=400,
-                detail="File must be .xlsm or .xlsx format"
-            )
-        else:
-            raise HTTPException(
-                status_code=400,
-                detail="File must be .xlsm format"
-            )
+        raise HTTPException(
+            status_code=400,
+            detail=format_message
+        )
     
     # Log the validation request
-    logger.info(f"Validating Excel file: {file.filename}, type: {file_type}")
+    logger.info(f"Validating file: {file.filename}, type: {file_type}")
     
     # Save uploaded file to temporary location
     with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsm') as temp_file:
@@ -139,11 +139,12 @@ async def import_book_metadata(
     if not excel_service:
         raise HTTPException(status_code=500, detail="Excel import service not available")
     
-    # Check file extension - allow both .xlsm and .xlsx for book files
-    if not file.filename or not (file.filename.lower().endswith('.xlsm') or file.filename.lower().endswith('.xlsx')):
+    # Check file extension - allow Excel and CSV for book files
+    allowed_extensions = ['.xlsm', '.xlsx', '.csv']
+    if not file.filename or not any(file.filename.lower().endswith(ext) for ext in allowed_extensions):
         raise HTTPException(
             status_code=400,
-            detail="File must be .xlsm or .xlsx format"
+            detail="File must be .xlsm, .xlsx, or .csv format"
         )
     
     # Log the import request
