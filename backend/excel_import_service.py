@@ -139,13 +139,23 @@ class ExcelImportService:
                 ))
                 return ValidationResult(valid=False, errors=errors, preview_rows=[])
             
-            if not file_path.lower().endswith('.xlsm'):
-                errors.append(ExcelValidationError(
-                    row=0,
-                    column="file",
-                    message="File must be .xlsm format",
-                    severity="error"
-                ))
+            # Allow both .xlsm and .xlsx for book files, only .xlsm for articles
+            allowed_extensions = ['.xlsm', '.xlsx'] if file_type == "book" else ['.xlsm']
+            if not any(file_path.lower().endswith(ext) for ext in allowed_extensions):
+                if file_type == "book":
+                    errors.append(ExcelValidationError(
+                        row=0,
+                        column="file",
+                        message="File must be .xlsm or .xlsx format",
+                        severity="error"
+                    ))
+                else:
+                    errors.append(ExcelValidationError(
+                        row=0,
+                        column="file",
+                        message="File must be .xlsm format",
+                        severity="error"
+                    ))
                 return ValidationResult(valid=False, errors=errors, preview_rows=[])
             
             # Try to read the Excel file
@@ -251,11 +261,25 @@ class ExcelImportService:
             row_errors = []
             
             if file_type == "book":
-                # Validate book metadata row
+                # Validate book metadata row with improved URL handling
+                url_raw = row.get('URL', '')
+                
+                # Handle different data types that might come from Numbers/Excel export
+                if pd.isna(url_raw) or url_raw is None:
+                    url_str = ''
+                elif isinstance(url_raw, (int, float)):
+                    # Sometimes URLs get interpreted as numbers
+                    url_str = str(url_raw) if url_raw != 0 else ''
+                else:
+                    url_str = str(url_raw).strip()
+                
+                # Debug: Log what we're actually reading
+                print(f"DEBUG Row {idx+1}: URL raw = {repr(url_raw)} (type: {type(url_raw)}), URL str = {repr(url_str)}")
+                
                 row_data = {
-                    'URL': str(row.get('URL', '')),
-                    'Title': str(row.get('Title', '')),
-                    'Author': str(row.get('Author', ''))
+                    'URL': url_str,
+                    'Title': str(row.get('Title', '')).strip(),
+                    'Author': str(row.get('Author', '')).strip()
                 }
                 
                 # Validate URL
@@ -486,7 +510,15 @@ class ExcelImportService:
                 try:
                     books_processed += 1
                     
-                    url = str(row.get('URL', '')).strip()
+                    # Handle URL with improved parsing for Numbers exports
+                    url_raw = row.get('URL', '')
+                    if pd.isna(url_raw) or url_raw is None:
+                        url = ''
+                    elif isinstance(url_raw, (int, float)):
+                        url = str(url_raw) if url_raw != 0 else ''
+                    else:
+                        url = str(url_raw).strip()
+                    
                     title = str(row.get('Title', '')).strip()
                     author_string = str(row.get('Author', '')).strip()
                     

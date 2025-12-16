@@ -266,15 +266,15 @@
   - Handle missing author metadata with default or prompt
   - _Requirements: 6.1, 6.2, 6.3, 6.5_
 
-- [ ]* 21.1 Write property test for batch upload author creation
+- [x]* 21.1 Write property test for batch upload author creation
   - **Property 17: Batch upload creates authors**
   - **Validates: Requirements 6.1**
 
-- [ ]* 21.2 Write property test for multi-author parsing
+- [x]* 21.2 Write property test for multi-author parsing
   - **Property 18: Parse multiple authors**
   - **Validates: Requirements 6.2**
 
-- [ ]* 21.3 Write property test for batch deduplication
+- [x]* 21.3 Write property test for batch deduplication
   - **Property 19: Batch upload deduplicates authors**
   - **Validates: Requirements 6.5**
 
@@ -289,7 +289,7 @@
   - Check for any data integrity issues
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
 
-- [ ] 24. Update API documentation
+- [x] 24. Update API documentation
   - Document new author management endpoints
   - Document updated document endpoints with authors array
   - Document CSV format changes
@@ -297,6 +297,6 @@
   - Add examples for multi-author operations
   - _Requirements: All_
 
-- [ ] 25. Final Checkpoint - Ensure all tests pass
+- [x] 25. Final Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 

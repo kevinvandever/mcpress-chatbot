@@ -68,12 +68,19 @@ async def validate_excel_file(
             detail="file_type must be 'book' or 'article'"
         )
     
-    # Check file extension
-    if not file.filename or not file.filename.lower().endswith('.xlsm'):
-        raise HTTPException(
-            status_code=400,
-            detail="File must be .xlsm format"
-        )
+    # Check file extension - allow both .xlsm and .xlsx for book files
+    allowed_extensions = ['.xlsm', '.xlsx'] if file_type == "book" else ['.xlsm']
+    if not file.filename or not any(file.filename.lower().endswith(ext) for ext in allowed_extensions):
+        if file_type == "book":
+            raise HTTPException(
+                status_code=400,
+                detail="File must be .xlsm or .xlsx format"
+            )
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="File must be .xlsm format"
+            )
     
     # Log the validation request
     logger.info(f"Validating Excel file: {file.filename}, type: {file_type}")
@@ -119,7 +126,7 @@ async def import_book_metadata(
     file: UploadFile = File(...)
 ):
     """
-    Import book metadata from book-metadata.xlsm file
+    Import book metadata from book-metadata.xlsm or .xlsx file
     
     Args:
         file: Excel file containing book metadata (URL, Title, Author columns)
@@ -132,11 +139,11 @@ async def import_book_metadata(
     if not excel_service:
         raise HTTPException(status_code=500, detail="Excel import service not available")
     
-    # Check file extension
-    if not file.filename or not file.filename.lower().endswith('.xlsm'):
+    # Check file extension - allow both .xlsm and .xlsx for book files
+    if not file.filename or not (file.filename.lower().endswith('.xlsm') or file.filename.lower().endswith('.xlsx')):
         raise HTTPException(
             status_code=400,
-            detail="File must be .xlsm format"
+            detail="File must be .xlsm or .xlsx format"
         )
     
     # Log the import request
