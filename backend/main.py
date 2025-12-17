@@ -2097,6 +2097,105 @@ async def run_migration_simple():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+# Debug endpoints for enrichment testing
+@app.get("/debug-enrichment/env")
+async def debug_enrichment_env():
+    """Check environment variables for enrichment."""
+    database_url = os.getenv('DATABASE_URL')
+    return {
+        "database_url_set": bool(database_url),
+        "database_url_length": len(database_url) if database_url else 0,
+        "database_url_prefix": database_url[:20] + "..." if database_url else None
+    }
+
+@app.get("/debug-enrichment/connection")
+async def debug_enrichment_connection():
+    """Test database connection for enrichment."""
+    database_url = os.getenv('DATABASE_URL')
+    if not database_url:
+        raise HTTPException(status_code=500, detail="DATABASE_URL not set")
+    
+    try:
+        import asyncpg
+        conn = await asyncpg.connect(database_url)
+        
+        # Test basic query
+        version = await conn.fetchval("SELECT version()")
+        
+        # Check required tables
+        tables = await conn.fetch("""
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_name IN ('books', 'authors', 'document_authors')
+            ORDER BY table_name
+        """)
+        
+        table_names = [row['table_name'] for row in tables]
+        
+        # Check sample data
+        book_count = await conn.fetchval("SELECT COUNT(*) FROM books")
+        author_count = await conn.fetchval("SELECT COUNT(*) FROM authors")
+        doc_author_count = await conn.fetchval("SELECT COUNT(*) FROM document_authors")
+        
+        await conn.close()
+        
+        return {
+            "connection_success": True,
+            "database_version": version[:100],
+            "tables_found": table_names,
+            "book_count": book_count,
+            "author_count": author_count,
+            "document_author_count": doc_author_count
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database connection failed: {str(e)}")
+
+@app.get("/debug-enrichment/test/{filename}")
+async def debug_enrichment_test(filename: str):
+    """Test the enrichment method with a specific filename."""
+    try:
+        result = await chat_handler._enrich_source_metadata(filename)
+        
+        return {
+            "filename": filename,
+            "enrichment_success": bool(result),
+            "enrichment_result": result
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Enrichment failed: {str(e)}")
+
+@app.get("/debug-enrichment/sample-books")
+async def debug_enrichment_sample_books():
+    """Get a sample of books from the database to test with."""
+    database_url = os.getenv('DATABASE_URL')
+    if not database_url:
+        raise HTTPException(status_code=500, detail="DATABASE_URL not set")
+    
+    try:
+        import asyncpg
+        conn = await asyncpg.connect(database_url)
+        
+        # Get sample books
+        books = await conn.fetch("""
+            SELECT filename, title, legacy_author, document_type
+            FROM books 
+            WHERE filename IS NOT NULL 
+            ORDER BY id 
+            LIMIT 10
+        """)
+        
+        await conn.close()
+        
+        return {
+            "sample_books": [dict(book) for book in books]
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Query failed: {str(e)}")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
