@@ -225,6 +225,129 @@ async def test_enrich_source_metadata_article_with_url(chat_handler):
 
 
 # =====================================================
+# Task 3.1: Unit Test for Missing DATABASE_URL
+# =====================================================
+
+@pytest.mark.asyncio
+async def test_enrich_source_metadata_missing_database_url(chat_handler, caplog):
+    """
+    Test graceful degradation when DATABASE_URL is not set
+    
+    Requirements tested:
+    - 4.1: WHEN the DATABASE_URL environment variable is not set 
+           THEN the system SHALL log a warning and return empty enrichment metadata
+    """
+    import logging
+    
+    # Arrange: Ensure DATABASE_URL is not set
+    with patch.dict(os.environ, {}, clear=False):
+        # Remove DATABASE_URL if it exists
+        if 'DATABASE_URL' in os.environ:
+            del os.environ['DATABASE_URL']
+        
+        # Act: Call the enrichment method with caplog to capture logs
+        with caplog.at_level(logging.WARNING):
+            result = await chat_handler._enrich_source_metadata('test-book.pdf')
+    
+    # Assert: Verify empty dict is returned
+    assert result == {}, \
+        f"Expected empty dict when DATABASE_URL is missing, got: {result}"
+    
+    # Assert: Verify warning was logged
+    assert any('DATABASE_URL not available' in record.message 
+               for record in caplog.records), \
+        "Expected warning log about DATABASE_URL not being available"
+    
+    print("✅ Test passed: Missing DATABASE_URL returns empty dict with warning")
+
+
+# =====================================================
+# Task 3.2: Unit Test for Database Connection Failure
+# =====================================================
+
+@pytest.mark.asyncio
+async def test_enrich_source_metadata_connection_failure(chat_handler, caplog):
+    """
+    Test graceful degradation when database connection fails
+    
+    Requirements tested:
+    - 4.2: WHEN a database connection fails 
+           THEN the system SHALL catch the exception and return empty enrichment metadata
+    """
+    import logging
+    
+    # Arrange: Mock asyncpg.connect to raise ConnectionError
+    with patch('asyncpg.connect', AsyncMock(side_effect=ConnectionError("Database connection failed"))):
+        with patch.dict(os.environ, {'DATABASE_URL': 'postgresql://test'}):
+            # Act: Call the enrichment method with caplog to capture logs
+            with caplog.at_level(logging.ERROR):
+                result = await chat_handler._enrich_source_metadata('test-book.pdf')
+    
+    # Assert: Verify empty dict is returned
+    assert result == {}, \
+        f"Expected empty dict when connection fails, got: {result}"
+    
+    # Assert: Verify error was logged with traceback
+    error_logs = [record for record in caplog.records if record.levelname == 'ERROR']
+    assert len(error_logs) > 0, "Expected error log when connection fails"
+    
+    # Check that the error message contains information about the failure
+    assert any('Error enriching source metadata' in record.message 
+               for record in error_logs), \
+        "Expected error log about enrichment failure"
+    
+    # Verify traceback is included in logs
+    assert any('Traceback' in record.message 
+               for record in error_logs), \
+        "Expected traceback in error log"
+    
+    print("✅ Test passed: Connection failure returns empty dict with error log")
+
+
+# =====================================================
+# Task 3.3: Unit Test for Book Not Found
+# =====================================================
+
+@pytest.mark.asyncio
+async def test_enrich_source_metadata_book_not_found(chat_handler, caplog):
+    """
+    Test graceful degradation when book is not found in database
+    
+    Requirements tested:
+    - 4.3: WHEN a filename is not found in the books table 
+           THEN the system SHALL return empty enrichment metadata
+    """
+    import logging
+    
+    # Arrange: Mock database connection that returns no book
+    mock_conn = AsyncMock()
+    mock_conn.fetchrow = AsyncMock(return_value=None)  # No book found
+    mock_conn.close = AsyncMock()
+    
+    # Mock asyncpg.connect to return our mock connection
+    with patch('asyncpg.connect', AsyncMock(return_value=mock_conn)):
+        with patch.dict(os.environ, {'DATABASE_URL': 'postgresql://test'}):
+            # Act: Call the enrichment method with caplog to capture logs
+            with caplog.at_level(logging.INFO):
+                result = await chat_handler._enrich_source_metadata('nonexistent-book.pdf')
+    
+    # Assert: Verify empty dict is returned
+    assert result == {}, \
+        f"Expected empty dict when book not found, got: {result}"
+    
+    # Assert: Verify info log message about book not found
+    info_logs = [record for record in caplog.records if record.levelname == 'INFO']
+    assert any('No book found for filename' in record.message 
+               for record in info_logs), \
+        "Expected info log about book not being found"
+    
+    # Assert: Verify the connection was closed
+    mock_conn.close.assert_called_once()
+    
+    print("✅ Test passed: Book not found returns empty dict with info log")
+
+
+# =====================================================
 # Run tests
 # =====================================================
 
