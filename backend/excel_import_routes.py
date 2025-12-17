@@ -82,8 +82,8 @@ async def validate_excel_file(
             detail=format_message
         )
     
-    # Log the validation request
-    logger.info(f"Validating file: {file.filename}, type: {file_type}")
+    # Log the validation request  
+    logger.info(f"Validating file: {file.filename}, type: {file_type}, extension: {Path(file.filename).suffix if file.filename else 'none'}")
     
     # Save uploaded file to temporary location
     with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsm') as temp_file:
