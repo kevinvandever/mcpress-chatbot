@@ -496,7 +496,7 @@ Please answer the following question based on your general knowledge, but clearl
                         da.author_order
                     FROM document_authors da
                     JOIN authors a ON da.author_id = a.id
-                    WHERE da.document_id = $1
+                    WHERE da.book_id = $1
                     ORDER BY da.author_order
                 """, book_data['id'])
                 
