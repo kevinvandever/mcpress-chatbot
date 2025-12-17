@@ -102,7 +102,7 @@
     - Wait for deployment to complete (~10-15 minutes)
     - _Requirements: All_
 
-  - [ ] 5.2 Debug production enrichment issue
+  - [x] 5.2 Debug production enrichment issue
     - Submit test chat query: "Tell me about DB2"
     - Monitor Railway logs for enrichment messages
     - Check if logs show "About to enrich metadata for: [filename]"
@@ -112,7 +112,7 @@
     - Verify DATABASE_URL environment variable is set in Railway
     - _Requirements: All_
 
-  - [ ] 5.3 Verify frontend display after fix
+  - [x] 5.3 Verify frontend display after fix
     - Open chat interface in browser
     - Submit query that returns known books
     - Verify sources show actual author names (not "Unknown")
@@ -121,14 +121,14 @@
     - Verify author names with site_url are clickable links
     - _Requirements: 2.4, 2.5, 5.2, 5.3, 5.4, 5.5_
 
-- [ ] 6. Investigate and fix production enrichment failure
-  - [ ] 6.1 Check Railway deployment status
+- [-] 6. Investigate and fix production enrichment failure
+  - [x] 6.1 Check Railway deployment status
     - Verify latest chat_handler.py code is deployed to Railway
     - Check Railway build logs for any deployment errors
     - Confirm asyncpg dependency is installed in production
     - _Requirements: All_
 
-  - [ ] 6.2 Debug database connection in production
+  - [-] 6.2 Debug database connection in production
     - Test DATABASE_URL environment variable is accessible
     - Test direct database connection from Railway environment
     - Check if asyncpg.connect() is working in production

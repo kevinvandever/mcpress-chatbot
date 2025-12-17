@@ -2180,7 +2180,7 @@ async def debug_enrichment_sample_books():
         
         # Get sample books
         books = await conn.fetch("""
-            SELECT filename, title, legacy_author, document_type
+            SELECT filename, title, author as legacy_author, document_type
             FROM books 
             WHERE filename IS NOT NULL 
             ORDER BY id 
