@@ -435,7 +435,9 @@ Please answer the following question based on your general knowledge, but clearl
                                "text")
                 
                 # Enrich with database metadata
+                logger.info(f"About to enrich metadata for: {filename}")
                 enriched_metadata = await self._enrich_source_metadata(filename)
+                logger.info(f"Enrichment result: {enriched_metadata}")
                 
                 sources.append({
                     "filename": filename,
@@ -530,4 +532,6 @@ Please answer the following question based on your general knowledge, but clearl
                 
         except Exception as e:
             logger.error(f"Error enriching source metadata for {filename}: {e}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             return {}
