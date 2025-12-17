@@ -17,7 +17,7 @@
     - _Requirements: 1.2, 1.3_
 
 - [ ] 2. Verify enrichment behavior with test data
-  - [ ] 2.1 Create unit test for successful enrichment with multiple authors
+  - [-] 2.1 Create unit test for successful enrichment with multiple authors
     - Mock database to return book with 3 authors in specific order
     - Call `_enrich_source_metadata()` with test filename
     - Verify returned metadata contains all author objects
