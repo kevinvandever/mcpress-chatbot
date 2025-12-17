@@ -458,22 +458,16 @@ Please answer the following question based on your general knowledge, but clearl
                 return {}
             
             async with self.vector_store.pool.acquire() as conn:
-                # Get book metadata with authors
+                # Get book metadata
                 book_data = await conn.fetchrow("""
                     SELECT 
                         b.id,
                         b.filename,
                         b.title,
+                        b.author as legacy_author,
                         b.mc_press_url,
                         b.article_url,
-                        b.document_type,
-                        COALESCE(
-                            (SELECT string_agg(a.name, ', ' ORDER BY da.author_order)
-                             FROM document_authors da
-                             JOIN authors a ON da.author_id = a.id
-                             WHERE da.document_id = b.id),
-                            b.author
-                        ) as author_names
+                        b.document_type
                     FROM books b
                     WHERE b.filename = $1
                     LIMIT 1
@@ -482,7 +476,7 @@ Please answer the following question based on your general knowledge, but clearl
                 if not book_data:
                     return {}
                 
-                # Get detailed author information
+                # Get detailed author information from document_authors table
                 authors = await conn.fetch("""
                     SELECT 
                         a.id,
@@ -495,12 +489,11 @@ Please answer the following question based on your general knowledge, but clearl
                     ORDER BY da.author_order
                 """, book_data['id'])
                 
-                return {
-                    "author": book_data['author_names'] or "Unknown",
-                    "mc_press_url": book_data['mc_press_url'] or "",
-                    "article_url": book_data['article_url'],
-                    "document_type": book_data['document_type'] or "book",
-                    "authors": [
+                # Determine author information
+                if authors:
+                    # Use multi-author data if available
+                    author_names = ", ".join([author['name'] for author in authors])
+                    authors_list = [
                         {
                             "id": author['id'],
                             "name": author['name'],
@@ -509,6 +502,17 @@ Please answer the following question based on your general knowledge, but clearl
                         }
                         for author in authors
                     ]
+                else:
+                    # Fall back to legacy author field
+                    author_names = book_data['legacy_author'] or "Unknown"
+                    authors_list = []
+                
+                return {
+                    "author": author_names,
+                    "mc_press_url": book_data['mc_press_url'] or "",
+                    "article_url": book_data['article_url'],
+                    "document_type": book_data['document_type'] or "book",
+                    "authors": authors_list
                 }
                 
         except Exception as e:
