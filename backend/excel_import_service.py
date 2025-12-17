@@ -165,12 +165,16 @@ class ExcelImportService:
             # Try to read the file (Excel or CSV)
             if file_type == "book":
                 # Determine file type and read accordingly
-                print(f"DEBUG: Reading file {file_path}, ends with .csv: {file_path.lower().endswith('.csv')}")
-                if file_path.lower().endswith('.csv'):
+                file_lower = file_path.lower()
+                print(f"DEBUG: Reading file {file_path}")
+                print(f"DEBUG: File lower: {file_lower}")
+                print(f"DEBUG: Ends with .csv: {file_lower.endswith('.csv')}")
+                
+                if file_lower.endswith('.csv'):
                     print(f"DEBUG: Reading as CSV")
                     df = pd.read_csv(file_path)
                 else:
-                    print(f"DEBUG: Reading as Excel")
+                    print(f"DEBUG: Reading as Excel with openpyxl")
                     df = pd.read_excel(file_path, engine='openpyxl')
                 
                 # Normalize column names - strip whitespace and handle case variations

@@ -84,9 +84,11 @@ async def validate_excel_file(
     
     # Log the validation request  
     logger.info(f"Validating file: {file.filename}, type: {file_type}, extension: {Path(file.filename).suffix if file.filename else 'none'}")
+    logger.info(f"Original file extension will be preserved in temp file")
     
-    # Save uploaded file to temporary location
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsm') as temp_file:
+    # Save uploaded file to temporary location with correct extension
+    original_suffix = Path(file.filename).suffix if file.filename else '.xlsm'
+    with tempfile.NamedTemporaryFile(delete=False, suffix=original_suffix) as temp_file:
         try:
             # Read and write file content
             content = await file.read()
@@ -150,8 +152,9 @@ async def import_book_metadata(
     # Log the import request
     logger.info(f"Starting book metadata import from: {file.filename}")
     
-    # Save uploaded file to temporary location
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsm') as temp_file:
+    # Save uploaded file to temporary location with correct extension
+    original_suffix = Path(file.filename).suffix if file.filename else '.xlsm'
+    with tempfile.NamedTemporaryFile(delete=False, suffix=original_suffix) as temp_file:
         try:
             # Read and write file content
             content = await file.read()
