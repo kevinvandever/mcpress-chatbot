@@ -2,12 +2,22 @@
 
 import { useState } from 'react'
 
+interface Author {
+  id: number
+  name: string
+  site_url?: string
+  order: number
+}
+
 interface Source {
   filename: string
   page: string | number
   distance?: number
   author?: string
   mc_press_url?: string
+  article_url?: string
+  document_type?: string
+  authors?: Author[]
 }
 
 interface CompactSourcesProps {
@@ -24,12 +34,22 @@ export default function CompactSources({ sources }: CompactSourcesProps) {
       acc[filename] = {
         pages: [],
         author: source.author || 'Unknown Author',
-        mc_press_url: source.mc_press_url || ''
+        mc_press_url: source.mc_press_url || '',
+        article_url: source.article_url || '',
+        document_type: source.document_type || 'book',
+        authors: source.authors || []
       }
     }
     acc[filename].pages.push(source.page)
     return acc
-  }, {} as Record<string, { pages: (string | number)[], author: string, mc_press_url: string }>)
+  }, {} as Record<string, { 
+    pages: (string | number)[], 
+    author: string, 
+    mc_press_url: string,
+    article_url: string,
+    document_type: string,
+    authors: Author[]
+  }>)
   
   const sourceKeys = Object.keys(groupedSources)
   const displayCount = isExpanded ? sourceKeys.length : Math.min(2, sourceKeys.length)
@@ -60,7 +80,28 @@ export default function CompactSources({ sources }: CompactSourcesProps) {
                     {filename}
                   </div>
                   <div className="text-xs text-gray-500 mt-0.5">
-                    by {sourceData.author}
+                    by {sourceData.authors.length > 0 ? (
+                      sourceData.authors.map((author, index) => (
+                        <span key={author.id}>
+                          {author.site_url ? (
+                            <a
+                              href={author.site_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 underline"
+                              title={`Visit ${author.name}'s website`}
+                            >
+                              {author.name}
+                            </a>
+                          ) : (
+                            author.name
+                          )}
+                          {index < sourceData.authors.length - 1 && ', '}
+                        </span>
+                      ))
+                    ) : (
+                      sourceData.author
+                    )}
                     {uniquePages.length > 0 && uniquePages[0] !== 'N/A' && (
                       <span className="ml-1">
                         • p. {uniquePages.slice(0, 3).join(', ')}
@@ -69,26 +110,45 @@ export default function CompactSources({ sources }: CompactSourcesProps) {
                     )}
                   </div>
                 </div>
-                {sourceData.mc_press_url && (
-                  <a
-                    href={sourceData.mc_press_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-shrink-0 text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded transition-colors"
-                    title="Purchase from MC Press"
-                  >
-                    Buy
-                  </a>
-                )}
-                {!sourceData.mc_press_url && (
-                  <button
-                    disabled
-                    className="flex-shrink-0 text-xs bg-gray-200 text-gray-400 px-2 py-1 rounded cursor-not-allowed"
-                    title="Purchase link not available"
-                  >
-                    Buy
-                  </button>
-                )}
+                <div className="flex gap-1">
+                  {/* Show article link for articles */}
+                  {sourceData.document_type === 'article' && sourceData.article_url && (
+                    <a
+                      href={sourceData.article_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-shrink-0 text-xs bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded transition-colors"
+                      title="Read full article"
+                    >
+                      Read
+                    </a>
+                  )}
+                  
+                  {/* Show purchase link for books */}
+                  {sourceData.document_type === 'book' && sourceData.mc_press_url && (
+                    <a
+                      href={sourceData.mc_press_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-shrink-0 text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded transition-colors"
+                      title="Purchase from MC Press"
+                    >
+                      Buy
+                    </a>
+                  )}
+                  
+                  {/* Show disabled button if no links available */}
+                  {!((sourceData.document_type === 'article' && sourceData.article_url) || 
+                     (sourceData.document_type === 'book' && sourceData.mc_press_url)) && (
+                    <button
+                      disabled
+                      className="flex-shrink-0 text-xs bg-gray-200 text-gray-400 px-2 py-1 rounded cursor-not-allowed"
+                      title="Link not available"
+                    >
+                      {sourceData.document_type === 'article' ? 'Read' : 'Buy'}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           )

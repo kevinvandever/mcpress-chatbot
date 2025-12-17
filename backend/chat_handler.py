@@ -303,7 +303,7 @@ Please answer the following question based on your general knowledge, but clearl
             
             yield {
                 "type": "done",
-                "sources": self._format_sources(relevant_docs),
+                "sources": await self._format_sources(relevant_docs),
                 "timestamp": datetime.now().isoformat()
             }
             
@@ -409,7 +409,7 @@ Please answer the following question based on your general knowledge, but clearl
 
         return filtered_docs
     
-    def _format_sources(self, documents: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    async def _format_sources(self, documents: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         sources = []
         seen = set()
         
@@ -433,13 +433,84 @@ Please answer the following question based on your general knowledge, but clearl
                                metadata.get("content_type") or 
                                "text")
                 
+                # Enrich with database metadata
+                enriched_metadata = await self._enrich_source_metadata(filename)
+                
                 sources.append({
                     "filename": filename,
                     "page": page,
                     "type": content_type,
                     "distance": doc.get("distance", 0),
-                    "author": metadata.get("author", "Unknown"),
-                    "mc_press_url": metadata.get("mc_press_url", "")
+                    "author": enriched_metadata.get("author", metadata.get("author", "Unknown")),
+                    "mc_press_url": enriched_metadata.get("mc_press_url", metadata.get("mc_press_url", "")),
+                    "article_url": enriched_metadata.get("article_url"),
+                    "document_type": enriched_metadata.get("document_type", "book"),
+                    "authors": enriched_metadata.get("authors", [])
                 })
         
         return sources
+    
+    async def _enrich_source_metadata(self, filename: str) -> Dict[str, Any]:
+        """Enrich source with full book and author metadata from database"""
+        try:
+            # Get database connection from vector store
+            if not hasattr(self.vector_store, 'pool') or not self.vector_store.pool:
+                return {}
+            
+            async with self.vector_store.pool.acquire() as conn:
+                # Get book metadata with authors
+                book_data = await conn.fetchrow("""
+                    SELECT 
+                        b.id,
+                        b.filename,
+                        b.title,
+                        b.mc_press_url,
+                        b.article_url,
+                        b.document_type,
+                        COALESCE(
+                            (SELECT string_agg(a.name, ', ' ORDER BY da.author_order)
+                             FROM document_authors da
+                             JOIN authors a ON da.author_id = a.id
+                             WHERE da.document_id = b.id),
+                            b.author
+                        ) as author_names
+                    FROM books b
+                    WHERE b.filename = $1
+                    LIMIT 1
+                """, filename)
+                
+                if not book_data:
+                    return {}
+                
+                # Get detailed author information
+                authors = await conn.fetch("""
+                    SELECT 
+                        a.id,
+                        a.name,
+                        a.site_url,
+                        da.author_order
+                    FROM document_authors da
+                    JOIN authors a ON da.author_id = a.id
+                    WHERE da.document_id = $1
+                    ORDER BY da.author_order
+                """, book_data['id'])
+                
+                return {
+                    "author": book_data['author_names'] or "Unknown",
+                    "mc_press_url": book_data['mc_press_url'] or "",
+                    "article_url": book_data['article_url'],
+                    "document_type": book_data['document_type'] or "book",
+                    "authors": [
+                        {
+                            "id": author['id'],
+                            "name": author['name'],
+                            "site_url": author['site_url'],
+                            "order": author['author_order']
+                        }
+                        for author in authors
+                    ]
+                }
+                
+        except Exception as e:
+            logger.error(f"Error enriching source metadata for {filename}: {e}")
+            return {}
