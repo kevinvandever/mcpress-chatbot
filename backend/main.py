@@ -287,6 +287,18 @@ try:
 except Exception as e:
     print(f"⚠️ Debug endpoints not available: {e}")
 
+# Enrichment Debug endpoints
+try:
+    try:
+        from debug_enrichment_endpoint import router as enrichment_debug_router
+    except ImportError:
+        from backend.debug_enrichment_endpoint import router as enrichment_debug_router
+    
+    app.include_router(enrichment_debug_router)
+    print("✅ Enrichment debug endpoints enabled at /debug/enrichment/*")
+except Exception as e:
+    print(f"⚠️ Enrichment debug endpoints not available: {e}")
+
 # Multi-Author Books API v2
 try:
     try:
