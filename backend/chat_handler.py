@@ -5,6 +5,7 @@ import json
 import logging
 from datetime import datetime
 import tiktoken
+import asyncpg
 from .config import OPENAI_CONFIG, SEARCH_CONFIG, RESPONSE_CONFIG
 
 # Set up logging for source relevance debugging
@@ -453,11 +454,16 @@ Please answer the following question based on your general knowledge, but clearl
     async def _enrich_source_metadata(self, filename: str) -> Dict[str, Any]:
         """Enrich source with full book and author metadata from database"""
         try:
-            # Get database connection from vector store
-            if not hasattr(self.vector_store, 'pool') or not self.vector_store.pool:
+            # Create direct database connection
+            database_url = os.getenv('DATABASE_URL')
+            if not database_url:
+                logger.warning("DATABASE_URL not available for enrichment")
                 return {}
             
-            async with self.vector_store.pool.acquire() as conn:
+            logger.info(f"Enriching metadata for filename: {filename}")
+            conn = await asyncpg.connect(database_url)
+            
+            try:
                 # Get book metadata
                 book_data = await conn.fetchrow("""
                     SELECT 
@@ -474,7 +480,10 @@ Please answer the following question based on your general knowledge, but clearl
                 """, filename)
                 
                 if not book_data:
+                    logger.info(f"No book found for filename: {filename}")
                     return {}
+                
+                logger.info(f"Found book: {book_data['title']} by {book_data['legacy_author']}")
                 
                 # Get detailed author information from document_authors table
                 authors = await conn.fetch("""
@@ -502,10 +511,12 @@ Please answer the following question based on your general knowledge, but clearl
                         }
                         for author in authors
                     ]
+                    logger.info(f"Using multi-author data: {author_names}")
                 else:
                     # Fall back to legacy author field
                     author_names = book_data['legacy_author'] or "Unknown"
                     authors_list = []
+                    logger.info(f"Using legacy author: {author_names}")
                 
                 return {
                     "author": author_names,
@@ -514,6 +525,8 @@ Please answer the following question based on your general knowledge, but clearl
                     "document_type": book_data['document_type'] or "book",
                     "authors": authors_list
                 }
+            finally:
+                await conn.close()
                 
         except Exception as e:
             logger.error(f"Error enriching source metadata for {filename}: {e}")
