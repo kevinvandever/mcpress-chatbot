@@ -163,6 +163,67 @@ async def test_enrich_source_metadata_with_multiple_authors(chat_handler):
     print("✅ Test passed: Enrichment with multiple authors works correctly")
 
 
+@pytest.mark.asyncio
+async def test_enrich_source_metadata_article_with_url(chat_handler):
+    """
+    Test successful enrichment for article type with article_url
+    
+    Requirements tested:
+    - 2.2: WHEN a source document has a document_type of "article" and an article_url 
+           THEN the system SHALL include the article_url in the enriched metadata
+    - 2.3: WHEN enriched metadata is returned to the frontend 
+           THEN the system SHALL include the document_type field
+    """
+    # Arrange: Mock database connection and responses
+    mock_conn = AsyncMock()
+    
+    # Mock article data response
+    mock_book_data = {
+        'id': 456,
+        'filename': 'test-article.pdf',
+        'title': 'Test Article Title',
+        'legacy_author': 'Article Author',
+        'mc_press_url': '',
+        'article_url': 'https://mcpress.com/articles/test-article',
+        'document_type': 'article'
+    }
+    
+    # Mock single author for article
+    mock_authors = [
+        {
+            'id': 10,
+            'name': 'Article Author',
+            'site_url': 'https://author.example.com',
+            'author_order': 0
+        }
+    ]
+    
+    # Configure mock connection
+    mock_conn.fetchrow = AsyncMock(return_value=mock_book_data)
+    mock_conn.fetch = AsyncMock(return_value=mock_authors)
+    mock_conn.close = AsyncMock()
+    
+    # Mock asyncpg.connect to return our mock connection
+    with patch('asyncpg.connect', AsyncMock(return_value=mock_conn)):
+        with patch.dict(os.environ, {'DATABASE_URL': 'postgresql://test'}):
+            # Act: Call the enrichment method
+            result = await chat_handler._enrich_source_metadata('test-article.pdf')
+    
+    # Assert: Verify article_url is included
+    assert result['article_url'] == 'https://mcpress.com/articles/test-article', \
+        f"Expected article_url to be included, got: {result['article_url']}"
+    
+    # Assert: Verify document_type is 'article'
+    assert result['document_type'] == 'article', \
+        f"Expected document_type to be 'article', got: {result['document_type']}"
+    
+    # Assert: Verify mc_press_url is empty for article
+    assert result['mc_press_url'] == '', \
+        f"Expected mc_press_url to be empty for article, got: {result['mc_press_url']}"
+    
+    print("✅ Test passed: Article enrichment with article_url works correctly")
+
+
 # =====================================================
 # Run tests
 # =====================================================
