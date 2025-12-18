@@ -111,6 +111,34 @@ export default function CompactSources({ sources }: CompactSourcesProps) {
                   </div>
                 </div>
                 <div className="flex gap-1">
+                  {/* NEW: Author website button - shows when any author has a website */}
+                  {sourceData.authors.some(author => author.site_url) && (
+                    <div className="relative group">
+                      <button className="flex-shrink-0 text-xs bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded transition-colors">
+                        Author
+                      </button>
+                      {/* Dropdown with author websites */}
+                      <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-lg z-10 min-w-32 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
+                        {sourceData.authors
+                          .filter(author => author.site_url)
+                          .map(author => (
+                            <a
+                              key={author.id}
+                              href={author.site_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block px-3 py-2 text-xs text-gray-700 hover:bg-gray-100 border-b border-gray-100 last:border-b-0"
+                              title={`Visit ${author.name}'s website`}
+                            >
+                              <div className="font-medium">{author.name}</div>
+                              <div className="text-gray-500 truncate">{author.site_url}</div>
+                            </a>
+                          ))
+                        }
+                      </div>
+                    </div>
+                  )}
+                  
                   {/* Show article link for articles */}
                   {sourceData.document_type === 'article' && sourceData.article_url && (
                     <a
