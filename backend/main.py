@@ -275,6 +275,18 @@ app.add_middleware(
 # Include auth router
 app.include_router(auth_router)
 
+# Include fix authors endpoint
+try:
+    try:
+        from fix_authors_endpoint import router as fix_authors_router
+    except ImportError:
+        from backend.fix_authors_endpoint import router as fix_authors_router
+    
+    app.include_router(fix_authors_router, prefix="/api", tags=["admin"])
+    print("✅ Fix authors endpoints enabled at /api/fix-authors and /api/check-authors")
+except Exception as e:
+    print(f"⚠️ Fix authors endpoints not available: {e}")
+
 # Debug endpoint for books schema
 try:
     try:
