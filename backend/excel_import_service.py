@@ -211,18 +211,19 @@ class ExcelImportService:
                     raise
                 
                 # Map column letters to names for articles
-                # A=id, H=feature_article, J=author, K=article_url, L=author_url
-                required_columns = ['A', 'H', 'J', 'K', 'L']
+                # A=id, B=title, H=feature_article, J=author, K=article_url, L=author_url
+                required_columns = ['A', 'B', 'H', 'J', 'K', 'L']
                 # Rename columns to match expected names
                 if len(df.columns) >= 12:  # Ensure we have at least L column
                     df = df.rename(columns={
                         df.columns[0]: 'id',           # Column A
+                        df.columns[1]: 'title',        # Column B
                         df.columns[7]: 'feature_article',  # Column H
                         df.columns[9]: 'author',       # Column J
                         df.columns[10]: 'article_url', # Column K
                         df.columns[11]: 'author_url'   # Column L
                     })
-                    required_columns = ['id', 'feature_article', 'author', 'article_url', 'author_url']
+                    required_columns = ['id', 'title', 'feature_article', 'author', 'article_url', 'author_url']
             else:
                 errors.append(ExcelValidationError(
                     row=0,
@@ -333,6 +334,7 @@ class ExcelImportService:
                 # Validate article metadata row
                 row_data = {
                     'id': str(row.get('id', '')),
+                    'title': str(row.get('title', '')),
                     'feature_article': str(row.get('feature_article', '')),
                     'author': str(row.get('author', '')),
                     'article_url': str(row.get('article_url', '')),
@@ -711,6 +713,7 @@ class ExcelImportService:
                     articles_processed += 1
                     
                     article_id = str(row.get('id', '')).strip()
+                    article_title = str(row.get('title', '')).strip()
                     author_string = str(row.get('author', '')).strip()
                     article_url = str(row.get('article_url', '')).strip()
                     author_url = str(row.get('author_url', '')).strip()
@@ -723,6 +726,15 @@ class ExcelImportService:
                             severity="error"
                         ))
                         continue
+                    
+                    # Validate title (optional but recommended)
+                    if not article_title:
+                        errors.append(ExcelValidationError(
+                            row=idx + 1,
+                            column="title",
+                            message="Article title is missing",
+                            severity="warning"
+                        ))
                     
                     # Match article ID against PDF filenames
                     async with self.pool.acquire() as conn:
@@ -743,13 +755,13 @@ class ExcelImportService:
                     
                     articles_matched += 1
                     
-                    # Update document with article_url and document_type
+                    # Update document with title, article_url and document_type
                     async with self.pool.acquire() as conn:
                         await conn.execute("""
                             UPDATE books 
-                            SET article_url = $1, document_type = 'article'
-                            WHERE id = $2
-                        """, article_url if article_url else None, book_id)
+                            SET title = $1, article_url = $2, document_type = 'article'
+                            WHERE id = $3
+                        """, article_title if article_title else None, article_url if article_url else None, book_id)
                     documents_updated += 1
                     
                     # Parse and create/update authors
