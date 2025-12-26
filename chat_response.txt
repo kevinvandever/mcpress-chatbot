@@ -1,0 +1,1667 @@
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100    90    0     0  100    90      0     58  0:00:01  0:00:01 --:--:--    58data: {"type": "content", "content": "R", "timestamp": "2025-12-22T18:18:57.787560"}
+
+data: {"type": "content", "content": "PG", "timestamp": "2025-12-22T18:18:57.787894"}
+
+data: {"type": "content", "content": " (", "timestamp": "2025-12-22T18:18:57.814266"}
+
+data: {"type": "content", "content": "Report", "timestamp": "2025-12-22T18:18:57.814495"}
+
+data: {"type": "content", "content": " Program", "timestamp": "2025-12-22T18:18:57.836174"}
+
+data: {"type": "content", "content": " Generator", "timestamp": "2025-12-22T18:18:57.836470"}
+
+data: {"type": "content", "content": ")", "timestamp": "2025-12-22T18:18:57.864496"}
+
+data: {"type": "content", "content": " is", "timestamp": "2025-12-22T18:18:57.864847"}
+
+data: {"type": "content", "content": " a", "timestamp": "2025-12-22T18:18:57.889790"}
+
+data: {"type": "content", "content": " high", "timestamp": "2025-12-22T18:18:57.889993"}
+
+100   980    0   890  100    90    359     36  0:00:02  0:00:02 --:--:--   395data: {"type": "content", "content": "-level", "timestamp": "2025-12-22T18:18:57.915751"}
+
+data: {"type": "content", "content": " programming", "timestamp": "2025-12-22T18:18:57.916002"}
+
+data: {"type": "content", "content": " language", "timestamp": "2025-12-22T18:18:57.957574"}
+
+data: {"type": "content", "content": " primarily", "timestamp": "2025-12-22T18:18:57.957903"}
+
+data: {"type": "content", "content": " used", "timestamp": "2025-12-22T18:18:57.997494"}
+
+data: {"type": "content", "content": " for", "timestamp": "2025-12-22T18:18:57.997752"}
+
+data: {"type": "content", "content": " business", "timestamp": "2025-12-22T18:18:58.031294"}
+
+data: {"type": "content", "content": " applications", "timestamp": "2025-12-22T18:18:58.031570"}
+
+data: {"type": "content", "content": " on", "timestamp": "2025-12-22T18:18:58.059087"}
+
+data: {"type": "content", "content": " IBM", "timestamp": "2025-12-22T18:18:58.059591"}
+
+data: {"type": "content", "content": "'s", "timestamp": "2025-12-22T18:18:58.106151"}
+
+data: {"type": "content", "content": " mid", "timestamp": "2025-12-22T18:18:58.106425"}
+
+data: {"type": "content", "content": "range", "timestamp": "2025-12-22T18:18:58.140459"}
+
+data: {"type": "content", "content": " computer", "timestamp": "2025-12-22T18:18:58.140687"}
+
+data: {"type": "content", "content": " systems", "timestamp": "2025-12-22T18:18:58.178873"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:18:58.179029"}
+
+data: {"type": "content", "content": " particularly", "timestamp": "2025-12-22T18:18:58.220329"}
+
+data: {"type": "content", "content": " the", "timestamp": "2025-12-22T18:18:58.220539"}
+
+data: {"type": "content", "content": " IBM", "timestamp": "2025-12-22T18:18:58.266063"}
+
+data: {"type": "content", "content": " i", "timestamp": "2025-12-22T18:18:58.266230"}
+
+data: {"type": "content", "content": " platform", "timestamp": "2025-12-22T18:18:58.294077"}
+
+data: {"type": "content", "content": " (", "timestamp": "2025-12-22T18:18:58.294318"}
+
+data: {"type": "content", "content": "formerly", "timestamp": "2025-12-22T18:18:58.321149"}
+
+data: {"type": "content", "content": " known", "timestamp": "2025-12-22T18:18:58.321380"}
+
+data: {"type": "content", "content": " as", "timestamp": "2025-12-22T18:18:58.350298"}
+
+data: {"type": "content", "content": " AS", "timestamp": "2025-12-22T18:18:58.350534"}
+
+data: {"type": "content", "content": "/", "timestamp": "2025-12-22T18:18:58.381162"}
+
+data: {"type": "content", "content": "400", "timestamp": "2025-12-22T18:18:58.381332"}
+
+100  3522    0  3432  100    90   1158     30  0:00:03  0:00:02  0:00:01  1188data: {"type": "content", "content": ").", "timestamp": "2025-12-22T18:18:58.417396"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:18:58.417609"}
+
+data: {"type": "content", "content": " has", "timestamp": "2025-12-22T18:18:58.453946"}
+
+data: {"type": "content", "content": " evolved", "timestamp": "2025-12-22T18:18:58.454176"}
+
+data: {"type": "content", "content": " significantly", "timestamp": "2025-12-22T18:18:58.477183"}
+
+data: {"type": "content", "content": " since", "timestamp": "2025-12-22T18:18:58.477420"}
+
+data: {"type": "content", "content": " its", "timestamp": "2025-12-22T18:18:58.497476"}
+
+data: {"type": "content", "content": " inception", "timestamp": "2025-12-22T18:18:58.497662"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:18:58.538006"}
+
+data: {"type": "content", "content": " transitioning", "timestamp": "2025-12-22T18:18:58.538168"}
+
+data: {"type": "content", "content": " from", "timestamp": "2025-12-22T18:18:58.580081"}
+
+data: {"type": "content", "content": " a", "timestamp": "2025-12-22T18:18:58.580325"}
+
+data: {"type": "content", "content": " language", "timestamp": "2025-12-22T18:18:58.599193"}
+
+data: {"type": "content", "content": " designed", "timestamp": "2025-12-22T18:18:58.599475"}
+
+data: {"type": "content", "content": " for", "timestamp": "2025-12-22T18:18:58.630787"}
+
+data: {"type": "content", "content": " generating", "timestamp": "2025-12-22T18:18:58.630970"}
+
+data: {"type": "content", "content": " reports", "timestamp": "2025-12-22T18:18:58.656751"}
+
+data: {"type": "content", "content": " to", "timestamp": "2025-12-22T18:18:58.656946"}
+
+data: {"type": "content", "content": " a", "timestamp": "2025-12-22T18:18:58.686913"}
+
+data: {"type": "content", "content": " modern", "timestamp": "2025-12-22T18:18:58.687101"}
+
+data: {"type": "content", "content": " programming", "timestamp": "2025-12-22T18:18:58.720917"}
+
+data: {"type": "content", "content": " language", "timestamp": "2025-12-22T18:18:58.721075"}
+
+data: {"type": "content", "content": " capable", "timestamp": "2025-12-22T18:18:58.744373"}
+
+data: {"type": "content", "content": " of", "timestamp": "2025-12-22T18:18:58.744524"}
+
+data: {"type": "content", "content": " supporting", "timestamp": "2025-12-22T18:18:58.776670"}
+
+data: {"type": "content", "content": " complex", "timestamp": "2025-12-22T18:18:58.776816"}
+
+data: {"type": "content", "content": " business", "timestamp": "2025-12-22T18:18:58.802608"}
+
+data: {"type": "content", "content": " logic", "timestamp": "2025-12-22T18:18:58.802859"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:18:58.845177"}
+
+data: {"type": "content", "content": " application", "timestamp": "2025-12-22T18:18:58.845656"}
+
+data: {"type": "content", "content": " development", "timestamp": "2025-12-22T18:18:58.876577"}
+
+data: {"type": "content", "content": ".", "timestamp": "2025-12-22T18:18:58.876787"}
+
+data: {"type": "content", "content": " Below", "timestamp": "2025-12-22T18:18:58.903487"}
+
+data: {"type": "content", "content": " is", "timestamp": "2025-12-22T18:18:58.903655"}
+
+data: {"type": "content", "content": " a", "timestamp": "2025-12-22T18:18:58.933993"}
+
+data: {"type": "content", "content": " comprehensive", "timestamp": "2025-12-22T18:18:58.934274"}
+
+data: {"type": "content", "content": " overview", "timestamp": "2025-12-22T18:18:58.967120"}
+
+data: {"type": "content", "content": " of", "timestamp": "2025-12-22T18:18:58.967270"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:18:59.074953"}
+
+data: {"type": "content", "content": " programming", "timestamp": "2025-12-22T18:18:59.075245"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:18:59.150650"}
+
+data: {"type": "content", "content": " including", "timestamp": "2025-12-22T18:18:59.150875"}
+
+data: {"type": "content", "content": " its", "timestamp": "2025-12-22T18:18:59.180017"}
+
+data: {"type": "content", "content": " history", "timestamp": "2025-12-22T18:18:59.180180"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:18:59.212040"}
+
+data: {"type": "content", "content": " features", "timestamp": "2025-12-22T18:18:59.212344"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:18:59.239164"}
+
+data: {"type": "content", "content": " syntax", "timestamp": "2025-12-22T18:18:59.239594"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:18:59.268958"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:18:59.269126"}
+
+data: {"type": "content", "content": " modern", "timestamp": "2025-12-22T18:18:59.297783"}
+
+data: {"type": "content", "content": " usage", "timestamp": "2025-12-22T18:18:59.298030"}
+
+data: {"type": "content", "content": ".\n\n", "timestamp": "2025-12-22T18:18:59.358130"}
+
+data: {"type": "content", "content": "###", "timestamp": "2025-12-22T18:18:59.358372"}
+
+data: {"type": "content", "content": " History", "timestamp": "2025-12-22T18:18:59.386145"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:18:59.386458"}
+
+100  8636    0  8546  100    90   2153     22  0:00:04  0:00:03  0:00:01  2175data: {"type": "content", "content": " Evolution", "timestamp": "2025-12-22T18:18:59.424983"}
+
+data: {"type": "content", "content": " of", "timestamp": "2025-12-22T18:18:59.425171"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:18:59.449549"}
+
+data: {"type": "content", "content": "\n\n", "timestamp": "2025-12-22T18:18:59.449940"}
+
+data: {"type": "content", "content": "1", "timestamp": "2025-12-22T18:18:59.480417"}
+
+data: {"type": "content", "content": ".", "timestamp": "2025-12-22T18:18:59.480577"}
+
+data: {"type": "content", "content": " **", "timestamp": "2025-12-22T18:18:59.514001"}
+
+data: {"type": "content", "content": "Origins", "timestamp": "2025-12-22T18:18:59.514286"}
+
+data: {"type": "content", "content": "**", "timestamp": "2025-12-22T18:18:59.545639"}
+
+data: {"type": "content", "content": ":", "timestamp": "2025-12-22T18:18:59.545833"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:18:59.584404"}
+
+data: {"type": "content", "content": " was", "timestamp": "2025-12-22T18:18:59.584614"}
+
+data: {"type": "content", "content": " initially", "timestamp": "2025-12-22T18:18:59.641169"}
+
+data: {"type": "content", "content": " developed", "timestamp": "2025-12-22T18:18:59.641454"}
+
+data: {"type": "content", "content": " in", "timestamp": "2025-12-22T18:18:59.665493"}
+
+data: {"type": "content", "content": " the", "timestamp": "2025-12-22T18:18:59.665699"}
+
+data: {"type": "content", "content": " ", "timestamp": "2025-12-22T18:18:59.700163"}
+
+data: {"type": "content", "content": "196", "timestamp": "2025-12-22T18:18:59.700375"}
+
+data: {"type": "content", "content": "0", "timestamp": "2025-12-22T18:18:59.743196"}
+
+data: {"type": "content", "content": "s", "timestamp": "2025-12-22T18:18:59.743544"}
+
+data: {"type": "content", "content": " as", "timestamp": "2025-12-22T18:18:59.776074"}
+
+data: {"type": "content", "content": " a", "timestamp": "2025-12-22T18:18:59.776317"}
+
+data: {"type": "content", "content": " tool", "timestamp": "2025-12-22T18:18:59.813464"}
+
+data: {"type": "content", "content": " for", "timestamp": "2025-12-22T18:18:59.813709"}
+
+data: {"type": "content", "content": " generating", "timestamp": "2025-12-22T18:18:59.848607"}
+
+data: {"type": "content", "content": " reports", "timestamp": "2025-12-22T18:18:59.848769"}
+
+data: {"type": "content", "content": " from", "timestamp": "2025-12-22T18:18:59.881076"}
+
+data: {"type": "content", "content": " data", "timestamp": "2025-12-22T18:18:59.881229"}
+
+data: {"type": "content", "content": " stored", "timestamp": "2025-12-22T18:18:59.910472"}
+
+data: {"type": "content", "content": " on", "timestamp": "2025-12-22T18:18:59.910641"}
+
+data: {"type": "content", "content": " punched", "timestamp": "2025-12-22T18:18:59.952508"}
+
+data: {"type": "content", "content": " cards", "timestamp": "2025-12-22T18:18:59.952670"}
+
+data: {"type": "content", "content": ".", "timestamp": "2025-12-22T18:19:00.033237"}
+
+data: {"type": "content", "content": " Over", "timestamp": "2025-12-22T18:19:00.033422"}
+
+data: {"type": "content", "content": " the", "timestamp": "2025-12-22T18:19:00.078521"}
+
+data: {"type": "content", "content": " decades", "timestamp": "2025-12-22T18:19:00.078769"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:00.102171"}
+
+data: {"type": "content", "content": " it", "timestamp": "2025-12-22T18:19:00.102409"}
+
+data: {"type": "content", "content": " has", "timestamp": "2025-12-22T18:19:00.131983"}
+
+data: {"type": "content", "content": " undergone", "timestamp": "2025-12-22T18:19:00.132229"}
+
+data: {"type": "content", "content": " several", "timestamp": "2025-12-22T18:19:00.163788"}
+
+data: {"type": "content", "content": " transformations", "timestamp": "2025-12-22T18:19:00.164032"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:00.246379"}
+
+data: {"type": "content", "content": " adapting", "timestamp": "2025-12-22T18:19:00.246550"}
+
+data: {"type": "content", "content": " to", "timestamp": "2025-12-22T18:19:00.280813"}
+
+data: {"type": "content", "content": " changes", "timestamp": "2025-12-22T18:19:00.281049"}
+
+data: {"type": "content", "content": " in", "timestamp": "2025-12-22T18:19:00.308195"}
+
+data: {"type": "content", "content": " technology", "timestamp": "2025-12-22T18:19:00.308409"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:19:00.336907"}
+
+data: {"type": "content", "content": " programming", "timestamp": "2025-12-22T18:19:00.337168"}
+
+data: {"type": "content", "content": " paradig", "timestamp": "2025-12-22T18:19:00.373023"}
+
+data: {"type": "content", "content": "ms", "timestamp": "2025-12-22T18:19:00.373220"}
+
+data: {"type": "content", "content": ".\n\n", "timestamp": "2025-12-22T18:19:00.403946"}
+
+data: {"type": "content", "content": "2", "timestamp": "2025-12-22T18:19:00.404176"}
+
+100 13497    0 13407  100    90   2688     18  0:00:05  0:00:04  0:00:01  2706data: {"type": "content", "content": ".", "timestamp": "2025-12-22T18:19:00.436707"}
+
+data: {"type": "content", "content": " **", "timestamp": "2025-12-22T18:19:00.436942"}
+
+data: {"type": "content", "content": "Versions", "timestamp": "2025-12-22T18:19:00.470013"}
+
+data: {"type": "content", "content": "**", "timestamp": "2025-12-22T18:19:00.470254"}
+
+data: {"type": "content", "content": ":", "timestamp": "2025-12-22T18:19:00.502822"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:00.503072"}
+
+data: {"type": "content", "content": " has", "timestamp": "2025-12-22T18:19:00.532654"}
+
+data: {"type": "content", "content": " seen", "timestamp": "2025-12-22T18:19:00.532885"}
+
+data: {"type": "content", "content": " various", "timestamp": "2025-12-22T18:19:00.564055"}
+
+data: {"type": "content", "content": " iterations", "timestamp": "2025-12-22T18:19:00.564283"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:00.627627"}
+
+data: {"type": "content", "content": " with", "timestamp": "2025-12-22T18:19:00.627859"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:00.727909"}
+
+data: {"type": "content", "content": " III", "timestamp": "2025-12-22T18:19:00.728065"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:19:00.772722"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:00.772915"}
+
+data: {"type": "content", "content": " IV", "timestamp": "2025-12-22T18:19:00.805555"}
+
+data: {"type": "content", "content": " being", "timestamp": "2025-12-22T18:19:00.805802"}
+
+data: {"type": "content", "content": " the", "timestamp": "2025-12-22T18:19:00.838281"}
+
+data: {"type": "content", "content": " most", "timestamp": "2025-12-22T18:19:00.838434"}
+
+data: {"type": "content", "content": " notable", "timestamp": "2025-12-22T18:19:00.871545"}
+
+data: {"type": "content", "content": ".", "timestamp": "2025-12-22T18:19:00.871712"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:00.896830"}
+
+data: {"type": "content", "content": " IV", "timestamp": "2025-12-22T18:19:00.897086"}
+
+data: {"type": "content", "content": " introduced", "timestamp": "2025-12-22T18:19:00.928829"}
+
+data: {"type": "content", "content": " free", "timestamp": "2025-12-22T18:19:00.928986"}
+
+data: {"type": "content", "content": "-format", "timestamp": "2025-12-22T18:19:00.996520"}
+
+data: {"type": "content", "content": " coding", "timestamp": "2025-12-22T18:19:00.996702"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:01.024747"}
+
+data: {"type": "content", "content": " which", "timestamp": "2025-12-22T18:19:01.024931"}
+
+data: {"type": "content", "content": " significantly", "timestamp": "2025-12-22T18:19:01.054541"}
+
+data: {"type": "content", "content": " improved", "timestamp": "2025-12-22T18:19:01.054701"}
+
+data: {"type": "content", "content": " the", "timestamp": "2025-12-22T18:19:01.087108"}
+
+data: {"type": "content", "content": " readability", "timestamp": "2025-12-22T18:19:01.087268"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:19:01.115601"}
+
+data: {"type": "content", "content": " usability", "timestamp": "2025-12-22T18:19:01.115797"}
+
+data: {"type": "content", "content": " of", "timestamp": "2025-12-22T18:19:01.140478"}
+
+data: {"type": "content", "content": " the", "timestamp": "2025-12-22T18:19:01.140702"}
+
+data: {"type": "content", "content": " language", "timestamp": "2025-12-22T18:19:01.210529"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:01.210682"}
+
+data: {"type": "content", "content": " making", "timestamp": "2025-12-22T18:19:01.262243"}
+
+data: {"type": "content", "content": " it", "timestamp": "2025-12-22T18:19:01.262426"}
+
+data: {"type": "content", "content": " more", "timestamp": "2025-12-22T18:19:01.293481"}
+
+data: {"type": "content", "content": " accessible", "timestamp": "2025-12-22T18:19:01.293767"}
+
+data: {"type": "content", "content": " to", "timestamp": "2025-12-22T18:19:01.325962"}
+
+data: {"type": "content", "content": " new", "timestamp": "2025-12-22T18:19:01.326129"}
+
+data: {"type": "content", "content": " programmers", "timestamp": "2025-12-22T18:19:01.377007"}
+
+data: {"type": "content", "content": ".\n\n", "timestamp": "2025-12-22T18:19:01.377321"}
+
+100 17837    0 17747  100    90   2976     15  0:00:06  0:00:05  0:00:01  4006data: {"type": "content", "content": "3", "timestamp": "2025-12-22T18:19:01.408908"}
+
+data: {"type": "content", "content": ".", "timestamp": "2025-12-22T18:19:01.409068"}
+
+data: {"type": "content", "content": " **", "timestamp": "2025-12-22T18:19:01.437459"}
+
+data: {"type": "content", "content": "Modern", "timestamp": "2025-12-22T18:19:01.437623"}
+
+data: {"type": "content", "content": "ization", "timestamp": "2025-12-22T18:19:01.459028"}
+
+data: {"type": "content", "content": "**", "timestamp": "2025-12-22T18:19:01.459281"}
+
+data: {"type": "content", "content": ":", "timestamp": "2025-12-22T18:19:01.494986"}
+
+data: {"type": "content", "content": " The", "timestamp": "2025-12-22T18:19:01.495182"}
+
+data: {"type": "content", "content": " introduction", "timestamp": "2025-12-22T18:19:01.523979"}
+
+data: {"type": "content", "content": " of", "timestamp": "2025-12-22T18:19:01.524139"}
+
+data: {"type": "content", "content": " the", "timestamp": "2025-12-22T18:19:01.556801"}
+
+data: {"type": "content", "content": " Integrated", "timestamp": "2025-12-22T18:19:01.556950"}
+
+data: {"type": "content", "content": " Language", "timestamp": "2025-12-22T18:19:01.584193"}
+
+data: {"type": "content", "content": " Environment", "timestamp": "2025-12-22T18:19:01.584435"}
+
+data: {"type": "content", "content": " (", "timestamp": "2025-12-22T18:19:01.605868"}
+
+data: {"type": "content", "content": "ILE", "timestamp": "2025-12-22T18:19:01.606073"}
+
+data: {"type": "content", "content": ")", "timestamp": "2025-12-22T18:19:01.642642"}
+
+data: {"type": "content", "content": " has", "timestamp": "2025-12-22T18:19:01.642793"}
+
+data: {"type": "content", "content": " further", "timestamp": "2025-12-22T18:19:01.666858"}
+
+data: {"type": "content", "content": " modern", "timestamp": "2025-12-22T18:19:01.667033"}
+
+data: {"type": "content", "content": "ized", "timestamp": "2025-12-22T18:19:01.695734"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:01.695983"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:01.726572"}
+
+data: {"type": "content", "content": " allowing", "timestamp": "2025-12-22T18:19:01.726793"}
+
+data: {"type": "content", "content": " for", "timestamp": "2025-12-22T18:19:01.770753"}
+
+data: {"type": "content", "content": " better", "timestamp": "2025-12-22T18:19:01.771015"}
+
+data: {"type": "content", "content": " modular", "timestamp": "2025-12-22T18:19:01.797158"}
+
+data: {"type": "content", "content": " programming", "timestamp": "2025-12-22T18:19:01.797332"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:01.832541"}
+
+data: {"type": "content", "content": " service", "timestamp": "2025-12-22T18:19:01.832824"}
+
+data: {"type": "content", "content": " programs", "timestamp": "2025-12-22T18:19:01.888889"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:01.889145"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:19:01.915968"}
+
+data: {"type": "content", "content": " binding", "timestamp": "2025-12-22T18:19:01.916221"}
+
+data: {"type": "content", "content": " directories", "timestamp": "2025-12-22T18:19:01.984027"}
+
+data: {"type": "content", "content": ".", "timestamp": "2025-12-22T18:19:01.984234"}
+
+data: {"type": "content", "content": " This", "timestamp": "2025-12-22T18:19:01.984347"}
+
+data: {"type": "content", "content": " has", "timestamp": "2025-12-22T18:19:01.984450"}
+
+data: {"type": "content", "content": " facilitated", "timestamp": "2025-12-22T18:19:02.007558"}
+
+data: {"type": "content", "content": " the", "timestamp": "2025-12-22T18:19:02.007781"}
+
+data: {"type": "content", "content": " development", "timestamp": "2025-12-22T18:19:02.032909"}
+
+data: {"type": "content", "content": " of", "timestamp": "2025-12-22T18:19:02.033061"}
+
+data: {"type": "content", "content": " more", "timestamp": "2025-12-22T18:19:02.063240"}
+
+data: {"type": "content", "content": " complex", "timestamp": "2025-12-22T18:19:02.063579"}
+
+data: {"type": "content", "content": " applications", "timestamp": "2025-12-22T18:19:02.197513"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:19:02.197658"}
+
+data: {"type": "content", "content": " improved", "timestamp": "2025-12-22T18:19:02.301952"}
+
+data: {"type": "content", "content": " the", "timestamp": "2025-12-22T18:19:02.302250"}
+
+data: {"type": "content", "content": " integration", "timestamp": "2025-12-22T18:19:02.407469"}
+
+data: {"type": "content", "content": " of", "timestamp": "2025-12-22T18:19:02.407692"}
+
+100 22380    0 22290  100    90   3188     12  0:00:07  0:00:06  0:00:01  4742data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:02.649132"}
+
+data: {"type": "content", "content": " with", "timestamp": "2025-12-22T18:19:02.649360"}
+
+data: {"type": "content", "content": " other", "timestamp": "2025-12-22T18:19:02.649530"}
+
+data: {"type": "content", "content": " programming", "timestamp": "2025-12-22T18:19:02.649686"}
+
+data: {"type": "content", "content": " languages", "timestamp": "2025-12-22T18:19:02.773875"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:19:02.774062"}
+
+data: {"type": "content", "content": " technologies", "timestamp": "2025-12-22T18:19:02.846027"}
+
+data: {"type": "content", "content": ".\n\n", "timestamp": "2025-12-22T18:19:02.846296"}
+
+data: {"type": "content", "content": "###", "timestamp": "2025-12-22T18:19:02.881832"}
+
+data: {"type": "content", "content": " Key", "timestamp": "2025-12-22T18:19:02.882119"}
+
+data: {"type": "content", "content": " Features", "timestamp": "2025-12-22T18:19:02.916125"}
+
+data: {"type": "content", "content": " of", "timestamp": "2025-12-22T18:19:02.916294"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:02.949684"}
+
+data: {"type": "content", "content": " Programming", "timestamp": "2025-12-22T18:19:02.949875"}
+
+data: {"type": "content", "content": "\n\n", "timestamp": "2025-12-22T18:19:03.012787"}
+
+data: {"type": "content", "content": "1", "timestamp": "2025-12-22T18:19:03.013042"}
+
+data: {"type": "content", "content": ".", "timestamp": "2025-12-22T18:19:03.046997"}
+
+data: {"type": "content", "content": " **", "timestamp": "2025-12-22T18:19:03.047151"}
+
+data: {"type": "content", "content": "Pro", "timestamp": "2025-12-22T18:19:03.082864"}
+
+data: {"type": "content", "content": "priet", "timestamp": "2025-12-22T18:19:03.083028"}
+
+data: {"type": "content", "content": "ary", "timestamp": "2025-12-22T18:19:03.112491"}
+
+data: {"type": "content", "content": " Syntax", "timestamp": "2025-12-22T18:19:03.112740"}
+
+data: {"type": "content", "content": "**", "timestamp": "2025-12-22T18:19:03.143298"}
+
+data: {"type": "content", "content": ":", "timestamp": "2025-12-22T18:19:03.143656"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:03.175563"}
+
+data: {"type": "content", "content": " has", "timestamp": "2025-12-22T18:19:03.175781"}
+
+data: {"type": "content", "content": " a", "timestamp": "2025-12-22T18:19:03.214515"}
+
+data: {"type": "content", "content": " unique", "timestamp": "2025-12-22T18:19:03.214751"}
+
+data: {"type": "content", "content": " syntax", "timestamp": "2025-12-22T18:19:03.240404"}
+
+data: {"type": "content", "content": " that", "timestamp": "2025-12-22T18:19:03.240582"}
+
+data: {"type": "content", "content": " includes", "timestamp": "2025-12-22T18:19:03.268346"}
+
+data: {"type": "content", "content": " specific", "timestamp": "2025-12-22T18:19:03.268541"}
+
+data: {"type": "content", "content": " constructs", "timestamp": "2025-12-22T18:19:03.298478"}
+
+data: {"type": "content", "content": " for", "timestamp": "2025-12-22T18:19:03.298716"}
+
+data: {"type": "content", "content": " data", "timestamp": "2025-12-22T18:19:03.329541"}
+
+data: {"type": "content", "content": " description", "timestamp": "2025-12-22T18:19:03.329770"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:19:03.382398"}
+
+data: {"type": "content", "content": " output", "timestamp": "2025-12-22T18:19:03.382661"}
+
+100 25824    0 25734  100    90   3231     11  0:00:08  0:00:07  0:00:01  4460data: {"type": "content", "content": " code", "timestamp": "2025-12-22T18:19:03.412081"}
+
+data: {"type": "content", "content": ".", "timestamp": "2025-12-22T18:19:03.412347"}
+
+data: {"type": "content", "content": " While", "timestamp": "2025-12-22T18:19:03.460714"}
+
+data: {"type": "content", "content": " free", "timestamp": "2025-12-22T18:19:03.460933"}
+
+data: {"type": "content", "content": "-format", "timestamp": "2025-12-22T18:19:03.504137"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:03.504299"}
+
+data: {"type": "content", "content": " has", "timestamp": "2025-12-22T18:19:03.567702"}
+
+data: {"type": "content", "content": " made", "timestamp": "2025-12-22T18:19:03.567960"}
+
+data: {"type": "content", "content": " the", "timestamp": "2025-12-22T18:19:03.633702"}
+
+data: {"type": "content", "content": " language", "timestamp": "2025-12-22T18:19:03.633891"}
+
+data: {"type": "content", "content": " more", "timestamp": "2025-12-22T18:19:03.675958"}
+
+data: {"type": "content", "content": " mainstream", "timestamp": "2025-12-22T18:19:03.676219"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:03.695132"}
+
+data: {"type": "content", "content": " it", "timestamp": "2025-12-22T18:19:03.695405"}
+
+data: {"type": "content", "content": " still", "timestamp": "2025-12-22T18:19:03.729262"}
+
+data: {"type": "content", "content": " retains", "timestamp": "2025-12-22T18:19:03.729506"}
+
+data: {"type": "content", "content": " some", "timestamp": "2025-12-22T18:19:03.759889"}
+
+data: {"type": "content", "content": " id", "timestamp": "2025-12-22T18:19:03.760114"}
+
+data: {"type": "content", "content": "ios", "timestamp": "2025-12-22T18:19:03.790173"}
+
+data: {"type": "content", "content": "yn", "timestamp": "2025-12-22T18:19:03.790452"}
+
+data: {"type": "content", "content": "cr", "timestamp": "2025-12-22T18:19:03.829369"}
+
+data: {"type": "content", "content": "atic", "timestamp": "2025-12-22T18:19:03.829600"}
+
+data: {"type": "content", "content": " elements", "timestamp": "2025-12-22T18:19:03.870121"}
+
+data: {"type": "content", "content": " that", "timestamp": "2025-12-22T18:19:03.870361"}
+
+data: {"type": "content", "content": " may", "timestamp": "2025-12-22T18:19:03.928791"}
+
+data: {"type": "content", "content": " be", "timestamp": "2025-12-22T18:19:03.929032"}
+
+data: {"type": "content", "content": " unfamiliar", "timestamp": "2025-12-22T18:19:03.968194"}
+
+data: {"type": "content", "content": " to", "timestamp": "2025-12-22T18:19:03.968394"}
+
+data: {"type": "content", "content": " programmers", "timestamp": "2025-12-22T18:19:04.000623"}
+
+data: {"type": "content", "content": " coming", "timestamp": "2025-12-22T18:19:04.000782"}
+
+data: {"type": "content", "content": " from", "timestamp": "2025-12-22T18:19:04.051709"}
+
+data: {"type": "content", "content": " other", "timestamp": "2025-12-22T18:19:04.051857"}
+
+data: {"type": "content", "content": " languages", "timestamp": "2025-12-22T18:19:04.087150"}
+
+data: {"type": "content", "content": " such", "timestamp": "2025-12-22T18:19:04.087488"}
+
+data: {"type": "content", "content": " as", "timestamp": "2025-12-22T18:19:04.130546"}
+
+data: {"type": "content", "content": " C", "timestamp": "2025-12-22T18:19:04.130701"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:04.172745"}
+
+data: {"type": "content", "content": " Java", "timestamp": "2025-12-22T18:19:04.173064"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:04.206937"}
+
+data: {"type": "content", "content": " or", "timestamp": "2025-12-22T18:19:04.207204"}
+
+data: {"type": "content", "content": " Visual", "timestamp": "2025-12-22T18:19:04.223231"}
+
+data: {"type": "content", "content": " Basic", "timestamp": "2025-12-22T18:19:04.223551"}
+
+data: {"type": "content", "content": ".\n\n", "timestamp": "2025-12-22T18:19:04.260579"}
+
+data: {"type": "content", "content": "2", "timestamp": "2025-12-22T18:19:04.260740"}
+
+data: {"type": "content", "content": ".", "timestamp": "2025-12-22T18:19:04.286816"}
+
+data: {"type": "content", "content": " **", "timestamp": "2025-12-22T18:19:04.287054"}
+
+data: {"type": "content", "content": "Data", "timestamp": "2025-12-22T18:19:04.315710"}
+
+data: {"type": "content", "content": " Handling", "timestamp": "2025-12-22T18:19:04.315870"}
+
+data: {"type": "content", "content": "**", "timestamp": "2025-12-22T18:19:04.348906"}
+
+data: {"type": "content", "content": ":", "timestamp": "2025-12-22T18:19:04.349103"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:04.381846"}
+
+data: {"type": "content", "content": " is", "timestamp": "2025-12-22T18:19:04.382046"}
+
+100 30488    0 30398  100    90   3390     10  0:00:09  0:00:08  0:00:01  4373data: {"type": "content", "content": " particularly", "timestamp": "2025-12-22T18:19:04.427227"}
+
+data: {"type": "content", "content": " strong", "timestamp": "2025-12-22T18:19:04.427530"}
+
+data: {"type": "content", "content": " in", "timestamp": "2025-12-22T18:19:04.467033"}
+
+data: {"type": "content", "content": " handling", "timestamp": "2025-12-22T18:19:04.467239"}
+
+data: {"type": "content", "content": " business", "timestamp": "2025-12-22T18:19:04.497167"}
+
+data: {"type": "content", "content": " data", "timestamp": "2025-12-22T18:19:04.497408"}
+
+data: {"type": "content", "content": ".", "timestamp": "2025-12-22T18:19:04.521292"}
+
+data: {"type": "content", "content": " It", "timestamp": "2025-12-22T18:19:04.521488"}
+
+data: {"type": "content", "content": " allows", "timestamp": "2025-12-22T18:19:04.553149"}
+
+data: {"type": "content", "content": " for", "timestamp": "2025-12-22T18:19:04.553391"}
+
+data: {"type": "content", "content": " easy", "timestamp": "2025-12-22T18:19:04.584224"}
+
+data: {"type": "content", "content": " manipulation", "timestamp": "2025-12-22T18:19:04.584451"}
+
+data: {"type": "content", "content": " of", "timestamp": "2025-12-22T18:19:04.620799"}
+
+data: {"type": "content", "content": " data", "timestamp": "2025-12-22T18:19:04.621009"}
+
+data: {"type": "content", "content": " structures", "timestamp": "2025-12-22T18:19:04.656717"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:19:04.656963"}
+
+data: {"type": "content", "content": " provides", "timestamp": "2025-12-22T18:19:04.710013"}
+
+data: {"type": "content", "content": " built", "timestamp": "2025-12-22T18:19:04.710239"}
+
+data: {"type": "content", "content": "-in", "timestamp": "2025-12-22T18:19:04.750662"}
+
+data: {"type": "content", "content": " functions", "timestamp": "2025-12-22T18:19:04.750890"}
+
+data: {"type": "content", "content": " for", "timestamp": "2025-12-22T18:19:04.781716"}
+
+data: {"type": "content", "content": " common", "timestamp": "2025-12-22T18:19:04.781952"}
+
+data: {"type": "content", "content": " business", "timestamp": "2025-12-22T18:19:04.812887"}
+
+data: {"type": "content", "content": " operations", "timestamp": "2025-12-22T18:19:04.813146"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:04.847306"}
+
+data: {"type": "content", "content": " such", "timestamp": "2025-12-22T18:19:04.847568"}
+
+data: {"type": "content", "content": " as", "timestamp": "2025-12-22T18:19:04.880189"}
+
+data: {"type": "content", "content": " calculations", "timestamp": "2025-12-22T18:19:04.880431"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:19:04.916454"}
+
+data: {"type": "content", "content": " data", "timestamp": "2025-12-22T18:19:04.916606"}
+
+data: {"type": "content", "content": " formatting", "timestamp": "2025-12-22T18:19:04.940817"}
+
+data: {"type": "content", "content": ".\n\n", "timestamp": "2025-12-22T18:19:04.941084"}
+
+data: {"type": "content", "content": "3", "timestamp": "2025-12-22T18:19:04.972180"}
+
+data: {"type": "content", "content": ".", "timestamp": "2025-12-22T18:19:04.972336"}
+
+data: {"type": "content", "content": " **", "timestamp": "2025-12-22T18:19:05.017982"}
+
+data: {"type": "content", "content": "Mod", "timestamp": "2025-12-22T18:19:05.018140"}
+
+data: {"type": "content", "content": "ularity", "timestamp": "2025-12-22T18:19:05.081694"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:19:05.081911"}
+
+data: {"type": "content", "content": " Re", "timestamp": "2025-12-22T18:19:05.110458"}
+
+data: {"type": "content", "content": "us", "timestamp": "2025-12-22T18:19:05.110731"}
+
+data: {"type": "content", "content": "ability", "timestamp": "2025-12-22T18:19:05.137741"}
+
+data: {"type": "content", "content": "**", "timestamp": "2025-12-22T18:19:05.137998"}
+
+data: {"type": "content", "content": ":", "timestamp": "2025-12-22T18:19:05.186977"}
+
+data: {"type": "content", "content": " With", "timestamp": "2025-12-22T18:19:05.187230"}
+
+data: {"type": "content", "content": " I", "timestamp": "2025-12-22T18:19:05.227599"}
+
+data: {"type": "content", "content": "LE", "timestamp": "2025-12-22T18:19:05.227782"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:05.259205"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:05.259516"}
+
+data: {"type": "content", "content": " programmers", "timestamp": "2025-12-22T18:19:05.290568"}
+
+data: {"type": "content", "content": " can", "timestamp": "2025-12-22T18:19:05.290781"}
+
+data: {"type": "content", "content": " create", "timestamp": "2025-12-22T18:19:05.354625"}
+
+data: {"type": "content", "content": " modular", "timestamp": "2025-12-22T18:19:05.354804"}
+
+data: {"type": "content", "content": " applications", "timestamp": "2025-12-22T18:19:05.406803"}
+
+data: {"type": "content", "content": " using", "timestamp": "2025-12-22T18:19:05.407067"}
+
+100 35384    0 35294  100    90   3533      9  0:00:10  0:00:09  0:00:01  4374data: {"type": "content", "content": " service", "timestamp": "2025-12-22T18:19:05.438818"}
+
+data: {"type": "content", "content": " programs", "timestamp": "2025-12-22T18:19:05.438974"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:19:05.485255"}
+
+data: {"type": "content", "content": " binding", "timestamp": "2025-12-22T18:19:05.485454"}
+
+data: {"type": "content", "content": " directories", "timestamp": "2025-12-22T18:19:05.553439"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:05.553725"}
+
+data: {"type": "content", "content": " promoting", "timestamp": "2025-12-22T18:19:05.623532"}
+
+data: {"type": "content", "content": " code", "timestamp": "2025-12-22T18:19:05.623787"}
+
+data: {"type": "content", "content": " re", "timestamp": "2025-12-22T18:19:05.657681"}
+
+data: {"type": "content", "content": "us", "timestamp": "2025-12-22T18:19:05.657833"}
+
+data: {"type": "content", "content": "ability", "timestamp": "2025-12-22T18:19:05.697348"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:19:05.697531"}
+
+data: {"type": "content", "content": " easier", "timestamp": "2025-12-22T18:19:05.738810"}
+
+data: {"type": "content", "content": " maintenance", "timestamp": "2025-12-22T18:19:05.739065"}
+
+data: {"type": "content", "content": ".\n\n", "timestamp": "2025-12-22T18:19:05.774526"}
+
+data: {"type": "content", "content": "4", "timestamp": "2025-12-22T18:19:05.774782"}
+
+data: {"type": "content", "content": ".", "timestamp": "2025-12-22T18:19:05.797346"}
+
+data: {"type": "content", "content": " **", "timestamp": "2025-12-22T18:19:05.797600"}
+
+data: {"type": "content", "content": "Integration", "timestamp": "2025-12-22T18:19:05.839052"}
+
+data: {"type": "content", "content": " with", "timestamp": "2025-12-22T18:19:05.839374"}
+
+data: {"type": "content", "content": " Other", "timestamp": "2025-12-22T18:19:05.864303"}
+
+data: {"type": "content", "content": " Languages", "timestamp": "2025-12-22T18:19:05.864468"}
+
+data: {"type": "content", "content": "**", "timestamp": "2025-12-22T18:19:05.890937"}
+
+data: {"type": "content", "content": ":", "timestamp": "2025-12-22T18:19:05.891194"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:05.920316"}
+
+data: {"type": "content", "content": " can", "timestamp": "2025-12-22T18:19:05.920488"}
+
+data: {"type": "content", "content": " be", "timestamp": "2025-12-22T18:19:05.952247"}
+
+data: {"type": "content", "content": " integrated", "timestamp": "2025-12-22T18:19:05.952511"}
+
+data: {"type": "content", "content": " with", "timestamp": "2025-12-22T18:19:05.981516"}
+
+data: {"type": "content", "content": " Java", "timestamp": "2025-12-22T18:19:05.981668"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:19:06.017085"}
+
+data: {"type": "content", "content": " other", "timestamp": "2025-12-22T18:19:06.017239"}
+
+data: {"type": "content", "content": " languages", "timestamp": "2025-12-22T18:19:06.039669"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:06.039833"}
+
+data: {"type": "content", "content": " allowing", "timestamp": "2025-12-22T18:19:06.074179"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:06.074377"}
+
+data: {"type": "content", "content": " programmers", "timestamp": "2025-12-22T18:19:06.109563"}
+
+data: {"type": "content", "content": " to", "timestamp": "2025-12-22T18:19:06.109719"}
+
+data: {"type": "content", "content": " leverage", "timestamp": "2025-12-22T18:19:06.147299"}
+
+data: {"type": "content", "content": " modern", "timestamp": "2025-12-22T18:19:06.147621"}
+
+data: {"type": "content", "content": " programming", "timestamp": "2025-12-22T18:19:06.178111"}
+
+data: {"type": "content", "content": " techniques", "timestamp": "2025-12-22T18:19:06.178328"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:19:06.206020"}
+
+data: {"type": "content", "content": " frameworks", "timestamp": "2025-12-22T18:19:06.206257"}
+
+data: {"type": "content", "content": ".", "timestamp": "2025-12-22T18:19:06.234323"}
+
+data: {"type": "content", "content": " This", "timestamp": "2025-12-22T18:19:06.234562"}
+
+data: {"type": "content", "content": " integration", "timestamp": "2025-12-22T18:19:06.269593"}
+
+data: {"type": "content", "content": " also", "timestamp": "2025-12-22T18:19:06.269838"}
+
+data: {"type": "content", "content": " helps", "timestamp": "2025-12-22T18:19:06.293461"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:06.293708"}
+
+data: {"type": "content", "content": " programmers", "timestamp": "2025-12-22T18:19:06.331361"}
+
+data: {"type": "content", "content": " adopt", "timestamp": "2025-12-22T18:19:06.331583"}
+
+data: {"type": "content", "content": " object", "timestamp": "2025-12-22T18:19:06.362107"}
+
+data: {"type": "content", "content": "-oriented", "timestamp": "2025-12-22T18:19:06.362272"}
+
+data: {"type": "content", "content": " programming", "timestamp": "2025-12-22T18:19:06.389197"}
+
+data: {"type": "content", "content": " (", "timestamp": "2025-12-22T18:19:06.389434"}
+
+100 40497    0 40407  100    90   3681      8  0:00:11  0:00:10  0:00:01  4520data: {"type": "content", "content": "O", "timestamp": "2025-12-22T18:19:06.425487"}
+
+data: {"type": "content", "content": "OP", "timestamp": "2025-12-22T18:19:06.425741"}
+
+data: {"type": "content", "content": ")", "timestamp": "2025-12-22T18:19:06.455154"}
+
+data: {"type": "content", "content": " concepts", "timestamp": "2025-12-22T18:19:06.455392"}
+
+data: {"type": "content", "content": " gradually", "timestamp": "2025-12-22T18:19:06.530126"}
+
+data: {"type": "content", "content": ".\n\n", "timestamp": "2025-12-22T18:19:06.530401"}
+
+data: {"type": "content", "content": "###", "timestamp": "2025-12-22T18:19:06.558070"}
+
+data: {"type": "content", "content": " Learning", "timestamp": "2025-12-22T18:19:06.558317"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:06.586384"}
+
+data: {"type": "content", "content": " Programming", "timestamp": "2025-12-22T18:19:06.586567"}
+
+data: {"type": "content", "content": "\n\n", "timestamp": "2025-12-22T18:19:06.615547"}
+
+data: {"type": "content", "content": "1", "timestamp": "2025-12-22T18:19:06.615779"}
+
+data: {"type": "content", "content": ".", "timestamp": "2025-12-22T18:19:06.694548"}
+
+data: {"type": "content", "content": " **", "timestamp": "2025-12-22T18:19:06.694765"}
+
+data: {"type": "content", "content": "Learning", "timestamp": "2025-12-22T18:19:06.750197"}
+
+data: {"type": "content", "content": " Curve", "timestamp": "2025-12-22T18:19:06.750435"}
+
+data: {"type": "content", "content": "**", "timestamp": "2025-12-22T18:19:06.809384"}
+
+data: {"type": "content", "content": ":", "timestamp": "2025-12-22T18:19:06.809653"}
+
+data: {"type": "content", "content": " For", "timestamp": "2025-12-22T18:19:06.841449"}
+
+data: {"type": "content", "content": " new", "timestamp": "2025-12-22T18:19:06.841734"}
+
+data: {"type": "content", "content": " programmers", "timestamp": "2025-12-22T18:19:06.867295"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:06.867589"}
+
+data: {"type": "content", "content": " especially", "timestamp": "2025-12-22T18:19:06.898200"}
+
+data: {"type": "content", "content": " those", "timestamp": "2025-12-22T18:19:06.898411"}
+
+data: {"type": "content", "content": " fresh", "timestamp": "2025-12-22T18:19:06.927647"}
+
+data: {"type": "content", "content": " out", "timestamp": "2025-12-22T18:19:06.927907"}
+
+data: {"type": "content", "content": " of", "timestamp": "2025-12-22T18:19:06.967557"}
+
+data: {"type": "content", "content": " college", "timestamp": "2025-12-22T18:19:06.967788"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:06.984556"}
+
+data: {"type": "content", "content": " learning", "timestamp": "2025-12-22T18:19:06.984775"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:07.020072"}
+
+data: {"type": "content", "content": " can", "timestamp": "2025-12-22T18:19:07.020305"}
+
+data: {"type": "content", "content": " present", "timestamp": "2025-12-22T18:19:07.049001"}
+
+data: {"type": "content", "content": " challenges", "timestamp": "2025-12-22T18:19:07.049150"}
+
+data: {"type": "content", "content": " due", "timestamp": "2025-12-22T18:19:07.077620"}
+
+data: {"type": "content", "content": " to", "timestamp": "2025-12-22T18:19:07.077819"}
+
+data: {"type": "content", "content": " its", "timestamp": "2025-12-22T18:19:07.107823"}
+
+data: {"type": "content", "content": " proprietary", "timestamp": "2025-12-22T18:19:07.107972"}
+
+data: {"type": "content", "content": " nature", "timestamp": "2025-12-22T18:19:07.134385"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:19:07.134629"}
+
+data: {"type": "content", "content": " unique", "timestamp": "2025-12-22T18:19:07.166484"}
+
+data: {"type": "content", "content": " syntax", "timestamp": "2025-12-22T18:19:07.166684"}
+
+data: {"type": "content", "content": ".", "timestamp": "2025-12-22T18:19:07.195682"}
+
+data: {"type": "content", "content": " However", "timestamp": "2025-12-22T18:19:07.195945"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:07.236991"}
+
+data: {"type": "content", "content": " many", "timestamp": "2025-12-22T18:19:07.237179"}
+
+data: {"type": "content", "content": " resources", "timestamp": "2025-12-22T18:19:07.282217"}
+
+data: {"type": "content", "content": " are", "timestamp": "2025-12-22T18:19:07.282388"}
+
+data: {"type": "content", "content": " available", "timestamp": "2025-12-22T18:19:07.295557"}
+
+data: {"type": "content", "content": " to", "timestamp": "2025-12-22T18:19:07.295759"}
+
+data: {"type": "content", "content": " help", "timestamp": "2025-12-22T18:19:07.335758"}
+
+data: {"type": "content", "content": " bridge", "timestamp": "2025-12-22T18:19:07.335997"}
+
+data: {"type": "content", "content": " the", "timestamp": "2025-12-22T18:19:07.378524"}
+
+data: {"type": "content", "content": " knowledge", "timestamp": "2025-12-22T18:19:07.378798"}
+
+100 45381    0 45291  100    90   3785      7  0:00:12  0:00:11  0:00:01  4622data: {"type": "content", "content": " gap", "timestamp": "2025-12-22T18:19:07.405628"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:07.405789"}
+
+data: {"type": "content", "content": " including", "timestamp": "2025-12-22T18:19:07.442546"}
+
+data: {"type": "content", "content": " books", "timestamp": "2025-12-22T18:19:07.442722"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:19:07.477043"}
+
+data: {"type": "content", "content": " training", "timestamp": "2025-12-22T18:19:07.477298"}
+
+data: {"type": "content", "content": " courses", "timestamp": "2025-12-22T18:19:07.510741"}
+
+data: {"type": "content", "content": ".\n\n", "timestamp": "2025-12-22T18:19:07.511093"}
+
+data: {"type": "content", "content": "2", "timestamp": "2025-12-22T18:19:07.546745"}
+
+data: {"type": "content", "content": ".", "timestamp": "2025-12-22T18:19:07.547006"}
+
+data: {"type": "content", "content": " **", "timestamp": "2025-12-22T18:19:07.572035"}
+
+data: {"type": "content", "content": "Maintenance", "timestamp": "2025-12-22T18:19:07.572303"}
+
+data: {"type": "content", "content": " Programming", "timestamp": "2025-12-22T18:19:07.601779"}
+
+data: {"type": "content", "content": "**", "timestamp": "2025-12-22T18:19:07.602009"}
+
+data: {"type": "content", "content": ":", "timestamp": "2025-12-22T18:19:07.634056"}
+
+data: {"type": "content", "content": " Many", "timestamp": "2025-12-22T18:19:07.634207"}
+
+data: {"type": "content", "content": " organizations", "timestamp": "2025-12-22T18:19:07.665518"}
+
+data: {"type": "content", "content": " still", "timestamp": "2025-12-22T18:19:07.665776"}
+
+data: {"type": "content", "content": " rely", "timestamp": "2025-12-22T18:19:07.732878"}
+
+data: {"type": "content", "content": " on", "timestamp": "2025-12-22T18:19:07.733156"}
+
+data: {"type": "content", "content": " legacy", "timestamp": "2025-12-22T18:19:07.767058"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:07.767274"}
+
+data: {"type": "content", "content": " applications", "timestamp": "2025-12-22T18:19:07.789867"}
+
+data: {"type": "content", "content": ".", "timestamp": "2025-12-22T18:19:07.790122"}
+
+data: {"type": "content", "content": " New", "timestamp": "2025-12-22T18:19:07.828463"}
+
+data: {"type": "content", "content": " programmers", "timestamp": "2025-12-22T18:19:07.828665"}
+
+data: {"type": "content", "content": " may", "timestamp": "2025-12-22T18:19:07.885375"}
+
+data: {"type": "content", "content": " find", "timestamp": "2025-12-22T18:19:07.885532"}
+
+data: {"type": "content", "content": " themselves", "timestamp": "2025-12-22T18:19:07.938731"}
+
+data: {"type": "content", "content": " maintaining", "timestamp": "2025-12-22T18:19:07.938887"}
+
+data: {"type": "content", "content": " older", "timestamp": "2025-12-22T18:19:07.976992"}
+
+data: {"type": "content", "content": " versions", "timestamp": "2025-12-22T18:19:07.977345"}
+
+data: {"type": "content", "content": " of", "timestamp": "2025-12-22T18:19:08.046442"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:08.046664"}
+
+data: {"type": "content", "content": " (", "timestamp": "2025-12-22T18:19:08.065368"}
+
+data: {"type": "content", "content": "like", "timestamp": "2025-12-22T18:19:08.065588"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:08.161934"}
+
+data: {"type": "content", "content": " III", "timestamp": "2025-12-22T18:19:08.162172"}
+
+data: {"type": "content", "content": " or", "timestamp": "2025-12-22T18:19:08.232282"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:08.232546"}
+
+data: {"type": "content", "content": " II", "timestamp": "2025-12-22T18:19:08.267094"}
+
+data: {"type": "content", "content": "),", "timestamp": "2025-12-22T18:19:08.267305"}
+
+data: {"type": "content", "content": " which", "timestamp": "2025-12-22T18:19:08.288298"}
+
+data: {"type": "content", "content": " requires", "timestamp": "2025-12-22T18:19:08.288537"}
+
+data: {"type": "content", "content": " an", "timestamp": "2025-12-22T18:19:08.316277"}
+
+data: {"type": "content", "content": " understanding", "timestamp": "2025-12-22T18:19:08.316538"}
+
+data: {"type": "content", "content": " of", "timestamp": "2025-12-22T18:19:08.359434"}
+
+data: {"type": "content", "content": " the", "timestamp": "2025-12-22T18:19:08.359662"}
+
+data: {"type": "content", "content": " features", "timestamp": "2025-12-22T18:19:08.378834"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:19:08.379056"}
+
+100 49915    0 49825  100    90   3843      6  0:00:15  0:00:12  0:00:03  4818data: {"type": "content", "content": " limitations", "timestamp": "2025-12-22T18:19:08.414350"}
+
+data: {"type": "content", "content": " of", "timestamp": "2025-12-22T18:19:08.414528"}
+
+data: {"type": "content", "content": " these", "timestamp": "2025-12-22T18:19:08.484187"}
+
+data: {"type": "content", "content": " earlier", "timestamp": "2025-12-22T18:19:08.484387"}
+
+data: {"type": "content", "content": " language", "timestamp": "2025-12-22T18:19:08.512806"}
+
+data: {"type": "content", "content": " versions", "timestamp": "2025-12-22T18:19:08.513118"}
+
+data: {"type": "content", "content": ".\n\n", "timestamp": "2025-12-22T18:19:08.571623"}
+
+data: {"type": "content", "content": "3", "timestamp": "2025-12-22T18:19:08.571871"}
+
+data: {"type": "content", "content": ".", "timestamp": "2025-12-22T18:19:08.586823"}
+
+data: {"type": "content", "content": " **", "timestamp": "2025-12-22T18:19:08.587002"}
+
+data: {"type": "content", "content": "Modern", "timestamp": "2025-12-22T18:19:08.615630"}
+
+data: {"type": "content", "content": " Practices", "timestamp": "2025-12-22T18:19:08.615793"}
+
+data: {"type": "content", "content": "**", "timestamp": "2025-12-22T18:19:08.645385"}
+
+data: {"type": "content", "content": ":", "timestamp": "2025-12-22T18:19:08.645566"}
+
+data: {"type": "content", "content": " As", "timestamp": "2025-12-22T18:19:08.676708"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:08.676899"}
+
+data: {"type": "content", "content": " continues", "timestamp": "2025-12-22T18:19:08.705173"}
+
+data: {"type": "content", "content": " to", "timestamp": "2025-12-22T18:19:08.705465"}
+
+data: {"type": "content", "content": " evolve", "timestamp": "2025-12-22T18:19:08.750766"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:08.750974"}
+
+data: {"type": "content", "content": " programmers", "timestamp": "2025-12-22T18:19:08.766003"}
+
+data: {"type": "content", "content": " are", "timestamp": "2025-12-22T18:19:08.766218"}
+
+data: {"type": "content", "content": " encouraged", "timestamp": "2025-12-22T18:19:08.785638"}
+
+data: {"type": "content", "content": " to", "timestamp": "2025-12-22T18:19:08.786270"}
+
+data: {"type": "content", "content": " adopt", "timestamp": "2025-12-22T18:19:08.811180"}
+
+data: {"type": "content", "content": " modern", "timestamp": "2025-12-22T18:19:08.811455"}
+
+data: {"type": "content", "content": " practices", "timestamp": "2025-12-22T18:19:08.837074"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:08.837334"}
+
+data: {"type": "content", "content": " such", "timestamp": "2025-12-22T18:19:08.871846"}
+
+data: {"type": "content", "content": " as", "timestamp": "2025-12-22T18:19:08.872066"}
+
+data: {"type": "content", "content": " free", "timestamp": "2025-12-22T18:19:08.933481"}
+
+data: {"type": "content", "content": "-format", "timestamp": "2025-12-22T18:19:08.933669"}
+
+data: {"type": "content", "content": " coding", "timestamp": "2025-12-22T18:19:08.933777"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:08.933918"}
+
+data: {"type": "content", "content": " using", "timestamp": "2025-12-22T18:19:08.976958"}
+
+data: {"type": "content", "content": " built", "timestamp": "2025-12-22T18:19:08.977223"}
+
+data: {"type": "content", "content": "-in", "timestamp": "2025-12-22T18:19:08.977363"}
+
+data: {"type": "content", "content": " functions", "timestamp": "2025-12-22T18:19:08.977523"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:08.997529"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:19:08.997821"}
+
+data: {"type": "content", "content": " understanding", "timestamp": "2025-12-22T18:19:09.054479"}
+
+data: {"type": "content", "content": " design", "timestamp": "2025-12-22T18:19:09.054686"}
+
+data: {"type": "content", "content": " patterns", "timestamp": "2025-12-22T18:19:09.169432"}
+
+data: {"type": "content", "content": ".", "timestamp": "2025-12-22T18:19:09.169656"}
+
+data: {"type": "content", "content": " This", "timestamp": "2025-12-22T18:19:09.191276"}
+
+data: {"type": "content", "content": " helps", "timestamp": "2025-12-22T18:19:09.191638"}
+
+data: {"type": "content", "content": " them", "timestamp": "2025-12-22T18:19:09.216478"}
+
+data: {"type": "content", "content": " stay", "timestamp": "2025-12-22T18:19:09.216685"}
+
+data: {"type": "content", "content": " relevant", "timestamp": "2025-12-22T18:19:09.241439"}
+
+data: {"type": "content", "content": " in", "timestamp": "2025-12-22T18:19:09.241600"}
+
+data: {"type": "content", "content": " the", "timestamp": "2025-12-22T18:19:09.263213"}
+
+data: {"type": "content", "content": " rapidly", "timestamp": "2025-12-22T18:19:09.263543"}
+
+data: {"type": "content", "content": " changing", "timestamp": "2025-12-22T18:19:09.290159"}
+
+data: {"type": "content", "content": " landscape", "timestamp": "2025-12-22T18:19:09.290312"}
+
+data: {"type": "content", "content": " of", "timestamp": "2025-12-22T18:19:09.315789"}
+
+data: {"type": "content", "content": " software", "timestamp": "2025-12-22T18:19:09.316061"}
+
+data: {"type": "content", "content": " development", "timestamp": "2025-12-22T18:19:09.339659"}
+
+data: {"type": "content", "content": ".\n\n", "timestamp": "2025-12-22T18:19:09.339869"}
+
+data: {"type": "content", "content": "###", "timestamp": "2025-12-22T18:19:09.371948"}
+
+data: {"type": "content", "content": " Practical", "timestamp": "2025-12-22T18:19:09.372160"}
+
+100 55368    0 55278  100    90   3959      6  0:00:15  0:00:13  0:00:02  4977data: {"type": "content", "content": " Applications", "timestamp": "2025-12-22T18:19:09.389911"}
+
+data: {"type": "content", "content": " of", "timestamp": "2025-12-22T18:19:09.390079"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:09.421208"}
+
+data: {"type": "content", "content": "\n\n", "timestamp": "2025-12-22T18:19:09.421467"}
+
+data: {"type": "content", "content": "1", "timestamp": "2025-12-22T18:19:09.449397"}
+
+data: {"type": "content", "content": ".", "timestamp": "2025-12-22T18:19:09.449667"}
+
+data: {"type": "content", "content": " **", "timestamp": "2025-12-22T18:19:09.488365"}
+
+data: {"type": "content", "content": "Business", "timestamp": "2025-12-22T18:19:09.488573"}
+
+data: {"type": "content", "content": " Applications", "timestamp": "2025-12-22T18:19:09.518202"}
+
+data: {"type": "content", "content": "**", "timestamp": "2025-12-22T18:19:09.518400"}
+
+data: {"type": "content", "content": ":", "timestamp": "2025-12-22T18:19:09.541155"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:09.541493"}
+
+data: {"type": "content", "content": " is", "timestamp": "2025-12-22T18:19:09.575179"}
+
+data: {"type": "content", "content": " predominantly", "timestamp": "2025-12-22T18:19:09.575513"}
+
+data: {"type": "content", "content": " used", "timestamp": "2025-12-22T18:19:09.604404"}
+
+data: {"type": "content", "content": " in", "timestamp": "2025-12-22T18:19:09.604666"}
+
+data: {"type": "content", "content": " business", "timestamp": "2025-12-22T18:19:09.639710"}
+
+data: {"type": "content", "content": " environments", "timestamp": "2025-12-22T18:19:09.639953"}
+
+data: {"type": "content", "content": " for", "timestamp": "2025-12-22T18:19:09.665806"}
+
+data: {"type": "content", "content": " applications", "timestamp": "2025-12-22T18:19:09.665990"}
+
+data: {"type": "content", "content": " such", "timestamp": "2025-12-22T18:19:09.694161"}
+
+data: {"type": "content", "content": " as", "timestamp": "2025-12-22T18:19:09.694364"}
+
+data: {"type": "content", "content": " payroll", "timestamp": "2025-12-22T18:19:09.718611"}
+
+data: {"type": "content", "content": " processing", "timestamp": "2025-12-22T18:19:09.718840"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:09.742511"}
+
+data: {"type": "content", "content": " inventory", "timestamp": "2025-12-22T18:19:09.742672"}
+
+data: {"type": "content", "content": " management", "timestamp": "2025-12-22T18:19:09.773023"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:09.773196"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:19:09.792549"}
+
+data: {"type": "content", "content": " reporting", "timestamp": "2025-12-22T18:19:09.792995"}
+
+data: {"type": "content", "content": " systems", "timestamp": "2025-12-22T18:19:09.818923"}
+
+data: {"type": "content", "content": ".", "timestamp": "2025-12-22T18:19:09.819088"}
+
+data: {"type": "content", "content": " Its", "timestamp": "2025-12-22T18:19:09.839954"}
+
+data: {"type": "content", "content": " strong", "timestamp": "2025-12-22T18:19:09.840113"}
+
+data: {"type": "content", "content": " data", "timestamp": "2025-12-22T18:19:09.882061"}
+
+data: {"type": "content", "content": " handling", "timestamp": "2025-12-22T18:19:09.882351"}
+
+data: {"type": "content", "content": " capabilities", "timestamp": "2025-12-22T18:19:09.913499"}
+
+data: {"type": "content", "content": " make", "timestamp": "2025-12-22T18:19:09.913693"}
+
+data: {"type": "content", "content": " it", "timestamp": "2025-12-22T18:19:09.928960"}
+
+data: {"type": "content", "content": " well", "timestamp": "2025-12-22T18:19:09.929327"}
+
+data: {"type": "content", "content": "-s", "timestamp": "2025-12-22T18:19:09.988081"}
+
+data: {"type": "content", "content": "uited", "timestamp": "2025-12-22T18:19:09.988372"}
+
+data: {"type": "content", "content": " for", "timestamp": "2025-12-22T18:19:10.007103"}
+
+data: {"type": "content", "content": " these", "timestamp": "2025-12-22T18:19:10.007251"}
+
+data: {"type": "content", "content": " tasks", "timestamp": "2025-12-22T18:19:10.039306"}
+
+data: {"type": "content", "content": ".\n\n", "timestamp": "2025-12-22T18:19:10.039621"}
+
+data: {"type": "content", "content": "2", "timestamp": "2025-12-22T18:19:10.086877"}
+
+data: {"type": "content", "content": ".", "timestamp": "2025-12-22T18:19:10.087124"}
+
+data: {"type": "content", "content": " **", "timestamp": "2025-12-22T18:19:10.134617"}
+
+data: {"type": "content", "content": "Web", "timestamp": "2025-12-22T18:19:10.134844"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:19:10.168788"}
+
+data: {"type": "content", "content": " GUI", "timestamp": "2025-12-22T18:19:10.168998"}
+
+data: {"type": "content", "content": " Development", "timestamp": "2025-12-22T18:19:10.184790"}
+
+data: {"type": "content", "content": "**", "timestamp": "2025-12-22T18:19:10.185186"}
+
+data: {"type": "content", "content": ":", "timestamp": "2025-12-22T18:19:10.242675"}
+
+data: {"type": "content", "content": " With", "timestamp": "2025-12-22T18:19:10.242893"}
+
+data: {"type": "content", "content": " tools", "timestamp": "2025-12-22T18:19:10.266046"}
+
+data: {"type": "content", "content": " like", "timestamp": "2025-12-22T18:19:10.266227"}
+
+data: {"type": "content", "content": " Visual", "timestamp": "2025-12-22T18:19:10.292112"}
+
+data: {"type": "content", "content": "Age", "timestamp": "2025-12-22T18:19:10.292373"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:10.333181"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:10.333438"}
+
+data: {"type": "content", "content": " developers", "timestamp": "2025-12-22T18:19:10.361544"}
+
+data: {"type": "content", "content": " can", "timestamp": "2025-12-22T18:19:10.361781"}
+
+data: {"type": "content", "content": " create", "timestamp": "2025-12-22T18:19:10.426350"}
+
+data: {"type": "content", "content": " graphical", "timestamp": "2025-12-22T18:19:10.426686"}
+
+100 61345    0 61255  100    90   4078      5  0:00:18  0:00:15  0:00:03  5163data: {"type": "content", "content": " user", "timestamp": "2025-12-22T18:19:10.452899"}
+
+data: {"type": "content", "content": " interfaces", "timestamp": "2025-12-22T18:19:10.453086"}
+
+data: {"type": "content", "content": " (", "timestamp": "2025-12-22T18:19:10.489001"}
+
+data: {"type": "content", "content": "GU", "timestamp": "2025-12-22T18:19:10.489172"}
+
+data: {"type": "content", "content": "Is", "timestamp": "2025-12-22T18:19:10.495840"}
+
+data: {"type": "content", "content": ")", "timestamp": "2025-12-22T18:19:10.496074"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:19:10.527130"}
+
+data: {"type": "content", "content": " web", "timestamp": "2025-12-22T18:19:10.527424"}
+
+data: {"type": "content", "content": " applications", "timestamp": "2025-12-22T18:19:10.549087"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:10.549250"}
+
+data: {"type": "content", "content": " expanding", "timestamp": "2025-12-22T18:19:10.576893"}
+
+data: {"type": "content", "content": " the", "timestamp": "2025-12-22T18:19:10.577159"}
+
+data: {"type": "content", "content": " scope", "timestamp": "2025-12-22T18:19:10.601683"}
+
+data: {"type": "content", "content": " of", "timestamp": "2025-12-22T18:19:10.601904"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:10.640087"}
+
+data: {"type": "content", "content": " beyond", "timestamp": "2025-12-22T18:19:10.640352"}
+
+data: {"type": "content", "content": " traditional", "timestamp": "2025-12-22T18:19:10.667279"}
+
+data: {"type": "content", "content": " business", "timestamp": "2025-12-22T18:19:10.667618"}
+
+data: {"type": "content", "content": " reporting", "timestamp": "2025-12-22T18:19:10.689103"}
+
+data: {"type": "content", "content": ".\n\n", "timestamp": "2025-12-22T18:19:10.689275"}
+
+data: {"type": "content", "content": "3", "timestamp": "2025-12-22T18:19:10.718755"}
+
+data: {"type": "content", "content": ".", "timestamp": "2025-12-22T18:19:10.718921"}
+
+data: {"type": "content", "content": " **", "timestamp": "2025-12-22T18:19:10.742403"}
+
+data: {"type": "content", "content": "Integration", "timestamp": "2025-12-22T18:19:10.742638"}
+
+data: {"type": "content", "content": " with", "timestamp": "2025-12-22T18:19:10.774062"}
+
+data: {"type": "content", "content": " Web", "timestamp": "2025-12-22T18:19:10.774313"}
+
+data: {"type": "content", "content": " Technologies", "timestamp": "2025-12-22T18:19:10.802256"}
+
+data: {"type": "content", "content": "**", "timestamp": "2025-12-22T18:19:10.802473"}
+
+data: {"type": "content", "content": ":", "timestamp": "2025-12-22T18:19:10.821664"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:10.821856"}
+
+data: {"type": "content", "content": " programmers", "timestamp": "2025-12-22T18:19:10.851624"}
+
+data: {"type": "content", "content": " are", "timestamp": "2025-12-22T18:19:10.851842"}
+
+data: {"type": "content", "content": " increasingly", "timestamp": "2025-12-22T18:19:10.887659"}
+
+data: {"type": "content", "content": " integrating", "timestamp": "2025-12-22T18:19:10.887876"}
+
+data: {"type": "content", "content": " their", "timestamp": "2025-12-22T18:19:10.929171"}
+
+data: {"type": "content", "content": " applications", "timestamp": "2025-12-22T18:19:10.929372"}
+
+data: {"type": "content", "content": " with", "timestamp": "2025-12-22T18:19:10.976018"}
+
+data: {"type": "content", "content": " web", "timestamp": "2025-12-22T18:19:10.976195"}
+
+data: {"type": "content", "content": " technologies", "timestamp": "2025-12-22T18:19:10.983479"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:10.983649"}
+
+data: {"type": "content", "content": " allowing", "timestamp": "2025-12-22T18:19:11.016063"}
+
+data: {"type": "content", "content": " for", "timestamp": "2025-12-22T18:19:11.016227"}
+
+data: {"type": "content", "content": " the", "timestamp": "2025-12-22T18:19:11.040305"}
+
+data: {"type": "content", "content": " development", "timestamp": "2025-12-22T18:19:11.040628"}
+
+data: {"type": "content", "content": " of", "timestamp": "2025-12-22T18:19:11.060247"}
+
+data: {"type": "content", "content": " modern", "timestamp": "2025-12-22T18:19:11.060514"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:11.107378"}
+
+data: {"type": "content", "content": " web", "timestamp": "2025-12-22T18:19:11.107616"}
+
+data: {"type": "content", "content": "-based", "timestamp": "2025-12-22T18:19:11.143481"}
+
+data: {"type": "content", "content": " business", "timestamp": "2025-12-22T18:19:11.143676"}
+
+data: {"type": "content", "content": " applications", "timestamp": "2025-12-22T18:19:11.176524"}
+
+data: {"type": "content", "content": ".\n\n", "timestamp": "2025-12-22T18:19:11.176768"}
+
+data: {"type": "content", "content": "###", "timestamp": "2025-12-22T18:19:11.197799"}
+
+data: {"type": "content", "content": " Conclusion", "timestamp": "2025-12-22T18:19:11.198077"}
+
+data: {"type": "content", "content": "\n\n", "timestamp": "2025-12-22T18:19:11.223084"}
+
+data: {"type": "content", "content": "R", "timestamp": "2025-12-22T18:19:11.223412"}
+
+data: {"type": "content", "content": "PG", "timestamp": "2025-12-22T18:19:11.248942"}
+
+data: {"type": "content", "content": " programming", "timestamp": "2025-12-22T18:19:11.249211"}
+
+data: {"type": "content", "content": " remains", "timestamp": "2025-12-22T18:19:11.276546"}
+
+data: {"type": "content", "content": " a", "timestamp": "2025-12-22T18:19:11.276785"}
+
+data: {"type": "content", "content": " vital", "timestamp": "2025-12-22T18:19:11.299530"}
+
+data: {"type": "content", "content": " skill", "timestamp": "2025-12-22T18:19:11.299762"}
+
+data: {"type": "content", "content": " for", "timestamp": "2025-12-22T18:19:11.327174"}
+
+data: {"type": "content", "content": " developers", "timestamp": "2025-12-22T18:19:11.327417"}
+
+data: {"type": "content", "content": " working", "timestamp": "2025-12-22T18:19:11.364951"}
+
+data: {"type": "content", "content": " in", "timestamp": "2025-12-22T18:19:11.365113"}
+
+data: {"type": "content", "content": " IBM", "timestamp": "2025-12-22T18:19:11.387900"}
+
+data: {"type": "content", "content": " i", "timestamp": "2025-12-22T18:19:11.388101"}
+
+100 67532    0 67442  100    90   4222      5  0:00:18  0:00:15  0:00:03  5411data: {"type": "content", "content": " environments", "timestamp": "2025-12-22T18:19:11.419797"}
+
+data: {"type": "content", "content": ".", "timestamp": "2025-12-22T18:19:11.420037"}
+
+data: {"type": "content", "content": " Despite", "timestamp": "2025-12-22T18:19:11.441425"}
+
+data: {"type": "content", "content": " its", "timestamp": "2025-12-22T18:19:11.441598"}
+
+data: {"type": "content", "content": " proprietary", "timestamp": "2025-12-22T18:19:11.480327"}
+
+data: {"type": "content", "content": " syntax", "timestamp": "2025-12-22T18:19:11.480526"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:19:11.540485"}
+
+data: {"type": "content", "content": " historical", "timestamp": "2025-12-22T18:19:11.540643"}
+
+data: {"type": "content", "content": " roots", "timestamp": "2025-12-22T18:19:11.585210"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:11.585420"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:11.609153"}
+
+data: {"type": "content", "content": " has", "timestamp": "2025-12-22T18:19:11.609341"}
+
+data: {"type": "content", "content": " evolved", "timestamp": "2025-12-22T18:19:11.638123"}
+
+data: {"type": "content", "content": " into", "timestamp": "2025-12-22T18:19:11.638494"}
+
+data: {"type": "content", "content": " a", "timestamp": "2025-12-22T18:19:11.664985"}
+
+data: {"type": "content", "content": " robust", "timestamp": "2025-12-22T18:19:11.665240"}
+
+data: {"type": "content", "content": " language", "timestamp": "2025-12-22T18:19:11.699187"}
+
+data: {"type": "content", "content": " that", "timestamp": "2025-12-22T18:19:11.699489"}
+
+data: {"type": "content", "content": " supports", "timestamp": "2025-12-22T18:19:11.720665"}
+
+data: {"type": "content", "content": " modern", "timestamp": "2025-12-22T18:19:11.720913"}
+
+data: {"type": "content", "content": " programming", "timestamp": "2025-12-22T18:19:11.746620"}
+
+data: {"type": "content", "content": " practices", "timestamp": "2025-12-22T18:19:11.746790"}
+
+data: {"type": "content", "content": ".", "timestamp": "2025-12-22T18:19:11.771204"}
+
+data: {"type": "content", "content": " With", "timestamp": "2025-12-22T18:19:11.771442"}
+
+data: {"type": "content", "content": " ongoing", "timestamp": "2025-12-22T18:19:11.797857"}
+
+data: {"type": "content", "content": " updates", "timestamp": "2025-12-22T18:19:11.798010"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:19:11.833627"}
+
+data: {"type": "content", "content": " the", "timestamp": "2025-12-22T18:19:11.833865"}
+
+data: {"type": "content", "content": " introduction", "timestamp": "2025-12-22T18:19:11.869292"}
+
+data: {"type": "content", "content": " of", "timestamp": "2025-12-22T18:19:11.869456"}
+
+data: {"type": "content", "content": " new", "timestamp": "2025-12-22T18:19:11.922890"}
+
+data: {"type": "content", "content": " features", "timestamp": "2025-12-22T18:19:11.923056"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:11.945212"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:11.945387"}
+
+data: {"type": "content", "content": " continues", "timestamp": "2025-12-22T18:19:11.974266"}
+
+data: {"type": "content", "content": " to", "timestamp": "2025-12-22T18:19:11.974453"}
+
+data: {"type": "content", "content": " be", "timestamp": "2025-12-22T18:19:12.015763"}
+
+data: {"type": "content", "content": " relevant", "timestamp": "2025-12-22T18:19:12.015961"}
+
+data: {"type": "content", "content": " in", "timestamp": "2025-12-22T18:19:12.028860"}
+
+data: {"type": "content", "content": " today", "timestamp": "2025-12-22T18:19:12.029082"}
+
+data: {"type": "content", "content": "\u2019s", "timestamp": "2025-12-22T18:19:12.054003"}
+
+data: {"type": "content", "content": " business", "timestamp": "2025-12-22T18:19:12.054200"}
+
+data: {"type": "content", "content": " application", "timestamp": "2025-12-22T18:19:12.087503"}
+
+data: {"type": "content", "content": " landscape", "timestamp": "2025-12-22T18:19:12.087682"}
+
+data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:12.103893"}
+
+data: {"type": "content", "content": " offering", "timestamp": "2025-12-22T18:19:12.104096"}
+
+data: {"type": "content", "content": " a", "timestamp": "2025-12-22T18:19:12.133218"}
+
+data: {"type": "content", "content": " unique", "timestamp": "2025-12-22T18:19:12.133393"}
+
+data: {"type": "content", "content": " blend", "timestamp": "2025-12-22T18:19:12.156902"}
+
+data: {"type": "content", "content": " of", "timestamp": "2025-12-22T18:19:12.157215"}
+
+data: {"type": "content", "content": " legacy", "timestamp": "2025-12-22T18:19:12.192720"}
+
+data: {"type": "content", "content": " stability", "timestamp": "2025-12-22T18:19:12.192943"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:19:12.217045"}
+
+data: {"type": "content", "content": " modern", "timestamp": "2025-12-22T18:19:12.217325"}
+
+data: {"type": "content", "content": " functionality", "timestamp": "2025-12-22T18:19:12.246586"}
+
+data: {"type": "content", "content": ".", "timestamp": "2025-12-22T18:19:12.246896"}
+
+data: {"type": "content", "content": " As", "timestamp": "2025-12-22T18:19:12.270114"}
+
+data: {"type": "content", "content": " organizations", "timestamp": "2025-12-22T18:19:12.270357"}
+
+data: {"type": "content", "content": " seek", "timestamp": "2025-12-22T18:19:12.296346"}
+
+data: {"type": "content", "content": " to", "timestamp": "2025-12-22T18:19:12.296521"}
+
+data: {"type": "content", "content": " modern", "timestamp": "2025-12-22T18:19:12.324776"}
+
+data: {"type": "content", "content": "ize", "timestamp": "2025-12-22T18:19:12.325027"}
+
+data: {"type": "content", "content": " their", "timestamp": "2025-12-22T18:19:12.384738"}
+
+data: {"type": "content", "content": " applications", "timestamp": "2025-12-22T18:19:12.384972"}
+
+100 73382    0 73292  100    90   4319      5  0:00:18  0:00:16  0:00:02  5599data: {"type": "content", "content": ",", "timestamp": "2025-12-22T18:19:12.398597"}
+
+data: {"type": "content", "content": " RPG", "timestamp": "2025-12-22T18:19:12.398867"}
+
+data: {"type": "content", "content": " programmers", "timestamp": "2025-12-22T18:19:12.427724"}
+
+data: {"type": "content", "content": " equipped", "timestamp": "2025-12-22T18:19:12.427959"}
+
+data: {"type": "content", "content": " with", "timestamp": "2025-12-22T18:19:12.456692"}
+
+data: {"type": "content", "content": " the", "timestamp": "2025-12-22T18:19:12.456904"}
+
+data: {"type": "content", "content": " latest", "timestamp": "2025-12-22T18:19:12.479053"}
+
+data: {"type": "content", "content": " knowledge", "timestamp": "2025-12-22T18:19:12.479380"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:19:12.516484"}
+
+data: {"type": "content", "content": " techniques", "timestamp": "2025-12-22T18:19:12.516668"}
+
+data: {"type": "content", "content": " will", "timestamp": "2025-12-22T18:19:12.594694"}
+
+data: {"type": "content", "content": " be", "timestamp": "2025-12-22T18:19:12.595007"}
+
+data: {"type": "content", "content": " essential", "timestamp": "2025-12-22T18:19:12.690449"}
+
+data: {"type": "content", "content": " for", "timestamp": "2025-12-22T18:19:12.690707"}
+
+data: {"type": "content", "content": " driving", "timestamp": "2025-12-22T18:19:12.791429"}
+
+data: {"type": "content", "content": " innovation", "timestamp": "2025-12-22T18:19:12.791630"}
+
+data: {"type": "content", "content": " and", "timestamp": "2025-12-22T18:19:12.887948"}
+
+data: {"type": "content", "content": " efficiency", "timestamp": "2025-12-22T18:19:12.888252"}
+
+data: {"type": "content", "content": " in", "timestamp": "2025-12-22T18:19:12.919233"}
+
+data: {"type": "content", "content": " business", "timestamp": "2025-12-22T18:19:12.919516"}
+
+data: {"type": "content", "content": " processes", "timestamp": "2025-12-22T18:19:12.976426"}
+
+data: {"type": "content", "content": ".", "timestamp": "2025-12-22T18:19:12.976578"}
+
+data: {"type": "metadata", "confidence": 0.654, "source_count": 12, "model_used": "gpt-4o-mini", "temperature": 0.5, "threshold_used": 0.7, "context_tokens": 2255, "timestamp": "2025-12-22T18:19:13.020491"}
+
+data: {"type": "done", "sources": [{"filename": "Programming in RPG IV.pdf", "page": "N/A", "type": "text", "distance": 0.24939234551145573, "author": "Jim Buck", "mc_press_url": "https://mc-store.com/products/programming-in-rpg-iv", "article_url": null, "document_type": "book", "authors": [{"id": 7736, "name": "Jim Buck", "site_url": null, "order": 0}]}, {"filename": "972.pdf", "page": "N/A", "type": "text", "distance": 0.314047634601593, "author": "Unknown Author", "mc_press_url": "", "article_url": null, "document_type": "book", "authors": []}, {"filename": "9185.pdf", "page": "N/A", "type": "text", "distance": 0.32092154026031494, "author": "Joe Pluta", "mc_press_url": "", "article_url": null, "document_type": "book", "authors": []}, {"filename": "25497.pdf", "page": "N/A", "type": "text", "distance": 0.3237333297729492, "author": "Unknown Author", "mc_press_url": "", "article_url": null, "document_type": "book", "authors": []}, {"filename": "12887.pdf", "page": "N/A", "type": "code", "distance": 0.33804579603944873, "author": "Tom Snyder", "mc_press_url": "", "article_url": null, "document_type": "book", "authors": []}, {"filename": "Programming in ILE RPG, Fifth Edition.pdf", "page": "N/A", "type": "text", "distance": 0.34455076886864777, "author": "ILE RPG", "mc_press_url": "https://mc-store.com/products/programming-in-ile-rpg-fifth-edition", "article_url": null, "document_type": "book", "authors": [{"id": 7764, "name": "ILE RPG", "site_url": null, "order": 0}]}, {"filename": "16797.pdf", "page": "N/A", "type": "text", "distance": 0.3711979389190674, "author": "You Start", "mc_press_url": "", "article_url": null, "document_type": "book", "authors": []}, {"filename": "6736.pdf", "page": "N/A", "type": "code", "distance": 0.38176164735784135, "author": "Some Assembly Required", "mc_press_url": "", "article_url": null, "document_type": "book", "authors": []}, {"filename": "6883.pdf", "page": "N/A", "type": "code", "distance": 0.3882948160171509, "author": "Unknown Author", "mc_press_url": "", "article_url": null, "document_type": "book", "authors": []}, {"filename": "2534.pdf", "page": "N/A", "type": "code", "distance": 0.38936631051797577, "author": "Unknown Author", "mc_press_url": "", "article_url": null, "document_type": "book", "authors": []}], "timestamp": "2025-12-22T18:19:13.630029"}
+
+100 77944    0 77854  100    90   4265      4  0:00:22  0:00:18  0:00:04  5302100 77944    0 77854  100    90   4265      4  0:00:22  0:00:18  0:00:04  5263

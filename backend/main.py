@@ -527,6 +527,27 @@ if data_migration_003_available:
     except Exception as e:
         print(f"⚠️ Could not enable Data Migration 003 endpoint: {e}")
 
+# Article Migration Endpoint
+try:
+    try:
+        from article_migration_endpoint import router as article_migration_router
+        article_migration_available = True
+    except ImportError:
+        from backend.article_migration_endpoint import router as article_migration_router
+        article_migration_available = True
+    print("✅ Article Migration endpoint loaded")
+except Exception as e:
+    print(f"⚠️ Article Migration endpoint not available: {e}")
+    article_migration_router = None
+    article_migration_available = False
+
+if article_migration_available:
+    try:
+        app.include_router(article_migration_router)
+        print("✅ Article Migration endpoint enabled at /migrate-articles-to-books")
+    except Exception as e:
+        print(f"⚠️ Could not enable Article Migration endpoint: {e}")
+
 # Database Diagnostic Endpoint (temporary) - moved to later in file
 
 # Author Management API Routes
