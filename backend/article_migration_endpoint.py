@@ -81,7 +81,6 @@ async def migrate_articles_to_books() -> Dict[str, Any]:
                     await conn.execute("""
                         INSERT INTO books (filename, title, document_type, author, category)
                         VALUES ($1, $2, 'book', 'Unknown Author', 'Article')
-                        ON CONFLICT (filename) DO NOTHING
                     """, filename, title)
                     
                     books_created += 1
