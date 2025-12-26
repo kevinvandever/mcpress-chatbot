@@ -548,6 +548,27 @@ if article_migration_available:
     except Exception as e:
         print(f"⚠️ Could not enable Article Migration endpoint: {e}")
 
+# Fix Article URLs Endpoint
+try:
+    try:
+        from fix_article_urls_endpoint import router as fix_urls_router
+        fix_urls_available = True
+    except ImportError:
+        from backend.fix_article_urls_endpoint import router as fix_urls_router
+        fix_urls_available = True
+    print("✅ Fix Article URLs endpoint loaded")
+except Exception as e:
+    print(f"⚠️ Fix Article URLs endpoint not available: {e}")
+    fix_urls_router = None
+    fix_urls_available = False
+
+if fix_urls_available:
+    try:
+        app.include_router(fix_urls_router)
+        print("✅ Fix Article URLs endpoint enabled at /api/fix-article-urls")
+    except Exception as e:
+        print(f"⚠️ Could not enable Fix Article URLs endpoint: {e}")
+
 # Database Diagnostic Endpoint (temporary) - moved to later in file
 
 # Author Management API Routes
