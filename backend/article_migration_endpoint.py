@@ -79,8 +79,8 @@ async def migrate_articles_to_books() -> Dict[str, Any]:
                     title = f"Article {article_id}"  # Temporary title, will be updated by metadata import
                     
                     await conn.execute("""
-                        INSERT INTO books (filename, title, document_type, author, category, processed_at)
-                        VALUES ($1, $2, 'book', 'Unknown Author', 'Article', CURRENT_TIMESTAMP)
+                        INSERT INTO books (filename, title, document_type, author, category)
+                        VALUES ($1, $2, 'book', 'Unknown Author', 'Article')
                         ON CONFLICT (filename) DO NOTHING
                     """, filename, title)
                     
