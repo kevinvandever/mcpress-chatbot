@@ -391,7 +391,7 @@ class PostgresVectorStore:
             """)
             
             if books_exists:
-                # Use new books table - start with simplest possible query
+                # Use new books table - get all documents (removed LIMIT to show correct count)
                 rows = await conn.fetch("""
                     SELECT 
                         id,
@@ -401,7 +401,6 @@ class PostgresVectorStore:
                         category
                     FROM books 
                     ORDER BY id DESC
-                    LIMIT 200
                 """)
                 
                 documents = []
