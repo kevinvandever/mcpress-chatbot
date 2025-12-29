@@ -87,19 +87,7 @@ export default function CompactSources({ sources }: CompactSourcesProps) {
                     by {sourceData.authors.length > 0 ? (
                       sourceData.authors.map((author, index) => (
                         <span key={author.id}>
-                          {author.site_url ? (
-                            <a
-                              href={author.site_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 underline"
-                              title={`Visit ${author.name}'s website`}
-                            >
-                              {author.name}
-                            </a>
-                          ) : (
-                            author.name
-                          )}
+                          {author.name}
                           {index < sourceData.authors.length - 1 && ', '}
                         </span>
                       ))
@@ -115,30 +103,32 @@ export default function CompactSources({ sources }: CompactSourcesProps) {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  {/* NEW: Author website button - shows when any author has a website */}
+                  {/* Author website button - shows when any author has a website */}
                   {sourceData.authors.some(author => author.site_url) && (
                     <div className="relative group">
                       <button className="flex-shrink-0 text-xs bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded transition-colors">
                         Author
                       </button>
                       {/* Dropdown with author websites */}
-                      <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-lg z-10 min-w-32 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
-                        {sourceData.authors
-                          .filter(author => author.site_url)
-                          .map(author => (
-                            <a
-                              key={author.id}
-                              href={author.site_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="block px-3 py-2 text-xs text-gray-700 hover:bg-gray-100 border-b border-gray-100 last:border-b-0"
-                              title={`Visit ${author.name}'s website`}
-                            >
-                              <div className="font-medium">{author.name}</div>
-                              <div className="text-gray-500 truncate">{author.site_url}</div>
-                            </a>
-                          ))
-                        }
+                      <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-20 min-w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none group-hover:pointer-events-auto">
+                        <div className="py-1">
+                          {sourceData.authors
+                            .filter(author => author.site_url)
+                            .map((author) => (
+                              <a
+                                key={author.id}
+                                href={author.site_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block px-3 py-2 text-xs text-gray-700 hover:bg-gray-100 transition-colors"
+                                title={`Visit ${author.name}'s website`}
+                              >
+                                <div className="font-medium text-gray-900">{author.name}</div>
+                                <div className="text-gray-500 truncate text-xs mt-0.5">{author.site_url}</div>
+                              </a>
+                            ))
+                          }
+                        </div>
                       </div>
                     </div>
                   )}

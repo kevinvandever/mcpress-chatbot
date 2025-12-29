@@ -17,7 +17,7 @@ This implementation plan addresses the final UI and data consistency issues in t
   - **Property 1: Title Display Consistency**
   - **Validates: Requirements 1.1, 1.2, 1.3**
 
-- [ ] 2. Fix URL Format in Import Service
+- [x] 2. Fix URL Format in Import Service
   - Add URL normalization to convert "ww.mcpressonline.com" to "www.mcpressonline.com"
   - Update `backend/excel_import_service.py` import_article_metadata method
   - Add URL validation and correction during Excel processing
@@ -28,7 +28,7 @@ This implementation plan addresses the final UI and data consistency issues in t
   - **Property 3: URL Format Normalization**
   - **Validates: Requirements 3.1, 3.2**
 
-- [ ] 3. Fix Document Type Classification
+- [x] 3. Fix Document Type Classification
   - Ensure articles get `document_type='article'` during import
   - Verify source enrichment correctly retrieves document_type
   - Test that frontend shows correct button types (Read vs Buy)
@@ -39,7 +39,7 @@ This implementation plan addresses the final UI and data consistency issues in t
   - **Property 2: Document Type Button Mapping**
   - **Validates: Requirements 2.1, 2.2**
 
-- [ ] 4. Fix Author Button Dropdown
+- [x] 4. Fix Author Button Dropdown
   - Update `frontend/components/CompactSources.tsx` to fix hover dropdown
   - Remove direct hyperlinks from author names
   - Ensure Author button only shows when authors have websites
