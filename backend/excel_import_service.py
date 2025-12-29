@@ -657,14 +657,31 @@ class ExcelImportService:
                             )
                         books_updated += 1
                     
-                    # Parse and create/update authors
+                    # Parse and create/update authors, then associate with document
                     authors = self.parse_authors(author_string)
-                    for author_name in authors:
+                    for order, author_name in enumerate(authors):
                         try:
                             author_id = await self.author_service.get_or_create_author(author_name)
                             # Check if this is a new author (simplified check)
                             # In a real implementation, you might track this more precisely
                             authors_created += 1  # This is approximate
+                            
+                            # Associate author with document in document_authors table
+                            async with self.pool.acquire() as conn:
+                                # Check if association already exists to avoid duplicates
+                                exists = await conn.fetchval("""
+                                    SELECT EXISTS(
+                                        SELECT 1 FROM document_authors 
+                                        WHERE book_id = $1 AND author_id = $2
+                                    )
+                                """, book_id, author_id)
+                                
+                                if not exists:
+                                    await conn.execute("""
+                                        INSERT INTO document_authors (book_id, author_id, author_order)
+                                        VALUES ($1, $2, $3)
+                                    """, book_id, author_id, order)
+                                    
                         except Exception as e:
                             errors.append(ExcelValidationError(
                                 row=idx + 1,
@@ -812,9 +829,9 @@ class ExcelImportService:
                         """, article_title if article_title else None, article_url if article_url else None, book_id)
                     documents_updated += 1
                     
-                    # Parse and create/update authors
+                    # Parse and create/update authors, then associate with document
                     authors = self.parse_authors(author_string)
-                    for author_name in authors:
+                    for order, author_name in enumerate(authors):
                         try:
                             # Create author with site URL if provided
                             author_id = await self.author_service.get_or_create_author(
@@ -822,6 +839,23 @@ class ExcelImportService:
                                 author_url if author_url else None
                             )
                             authors_created += 1  # This is approximate
+                            
+                            # Associate author with document in document_authors table
+                            async with self.pool.acquire() as conn:
+                                # Check if association already exists to avoid duplicates
+                                exists = await conn.fetchval("""
+                                    SELECT EXISTS(
+                                        SELECT 1 FROM document_authors 
+                                        WHERE book_id = $1 AND author_id = $2
+                                    )
+                                """, book_id, author_id)
+                                
+                                if not exists:
+                                    await conn.execute("""
+                                        INSERT INTO document_authors (book_id, author_id, author_order)
+                                        VALUES ($1, $2, $3)
+                                    """, book_id, author_id, order)
+                                    
                         except Exception as e:
                             errors.append(ExcelValidationError(
                                 row=idx + 1,
