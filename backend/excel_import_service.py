@@ -312,6 +312,10 @@ class ExcelImportService:
                 # Debug: Log what we're actually reading
                 print(f"DEBUG Row {idx+1}: URL raw = {repr(url_raw)} (type: {type(url_raw)}), URL str = {repr(url_str)}")
                 
+                # Normalize URL to fix common formatting issues
+                if url_str:
+                    url_str = self._normalize_url(url_str)
+                
                 row_data = {
                     'URL': url_str,
                     'Title': str(row.get('Title', '')).strip(),
@@ -332,13 +336,22 @@ class ExcelImportService:
                     
             elif file_type == "article":
                 # Validate article metadata row
+                article_url = str(row.get('article_url', ''))
+                author_url = str(row.get('author_url', ''))
+                
+                # Normalize URLs to fix common formatting issues
+                if article_url:
+                    article_url = self._normalize_url(article_url)
+                if author_url:
+                    author_url = self._normalize_url(author_url)
+                
                 row_data = {
                     'id': str(row.get('id', '')),
                     'title': str(row.get('title', '')),
                     'feature_article': str(row.get('feature_article', '')),
                     'author': str(row.get('author', '')),
-                    'article_url': str(row.get('article_url', '')),
-                    'author_url': str(row.get('author_url', ''))
+                    'article_url': article_url,
+                    'author_url': author_url
                 }
                 
                 # Validate required fields
@@ -484,6 +497,31 @@ class ExcelImportService:
         
         return None
 
+    def _normalize_url(self, url: str) -> str:
+        """
+        Normalize URL format, specifically fixing "ww.mcpressonline.com" to "www.mcpressonline.com"
+        
+        Args:
+            url: URL string to normalize
+            
+        Returns:
+            Normalized URL string
+            
+        Validates: Requirements 3.1, 3.2
+        """
+        if not url or not url.strip():
+            return url
+        
+        url = url.strip()
+        
+        # Fix common typo: "ww.mcpressonline.com" -> "www.mcpressonline.com"
+        url = re.sub(r'://ww\.mcpressonline\.com', '://www.mcpressonline.com', url, flags=re.IGNORECASE)
+        
+        # Also handle cases without protocol
+        url = re.sub(r'^ww\.mcpressonline\.com', 'www.mcpressonline.com', url, flags=re.IGNORECASE)
+        
+        return url
+
     def _is_valid_url(self, url: str) -> bool:
         """
         Check if URL has valid format
@@ -577,6 +615,10 @@ class ExcelImportService:
                         url = str(url_raw) if url_raw != 0 else ''
                     else:
                         url = str(url_raw).strip()
+                    
+                    # Normalize URL to fix common formatting issues
+                    if url:
+                        url = self._normalize_url(url)
                     
                     title = str(row.get('Title', '')).strip()
                     author_string = str(row.get('Author', '')).strip()
@@ -717,6 +759,12 @@ class ExcelImportService:
                     author_string = str(row.get('author', '')).strip()
                     article_url = str(row.get('article_url', '')).strip()
                     author_url = str(row.get('author_url', '')).strip()
+                    
+                    # Normalize URLs to fix common formatting issues
+                    if article_url:
+                        article_url = self._normalize_url(article_url)
+                    if author_url:
+                        author_url = self._normalize_url(author_url)
                     
                     if not article_id or not author_string:
                         errors.append(ExcelValidationError(
