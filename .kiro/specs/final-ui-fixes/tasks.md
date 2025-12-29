@@ -50,7 +50,7 @@ This implementation plan addresses the final UI and data consistency issues in t
   - **Property 4: Author Button Dropdown Behavior**
   - **Validates: Requirements 4.1, 4.2, 4.3**
 
-- [ ] 5. Fix Author Name Display
+- [x] 5. Fix Author Name Display
   - Debug why articles show "Unknown Author" instead of real names
   - Verify author data is being imported from Excel Column J
   - Check document_authors relationship table population
