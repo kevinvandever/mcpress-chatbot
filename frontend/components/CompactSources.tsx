@@ -107,6 +107,7 @@ export default function CompactSources({ sources }: CompactSourcesProps) {
                   {sourceData.authors.some(author => author.site_url) && (
                     (() => {
                       const authorsWithSites = sourceData.authors.filter(author => author.site_url);
+                      console.log('Authors with sites:', authorsWithSites.length, authorsWithSites.map(a => ({name: a.name, site_url: a.site_url})));
                       
                       // If only one author with website, make it a direct link like Read/Buy buttons
                       if (authorsWithSites.length === 1) {
