@@ -444,6 +444,7 @@ Please answer the following question based on your general knowledge, but clearl
                     "page": page,
                     "type": content_type,
                     "distance": doc.get("distance", 0),
+                    "title": enriched_metadata.get("title", filename.replace('.pdf', '')),  # Add title field
                     "author": enriched_metadata.get("author", metadata.get("author", "Unknown")),
                     "mc_press_url": enriched_metadata.get("mc_press_url", metadata.get("mc_press_url", "")),
                     "article_url": enriched_metadata.get("article_url"),
@@ -521,6 +522,7 @@ Please answer the following question based on your general knowledge, but clearl
                     logger.info(f"Using legacy author: {author_names}")
                 
                 return {
+                    "title": book_data['title'] or filename.replace('.pdf', ''),  # Add title field
                     "author": author_names,
                     "mc_press_url": book_data['mc_press_url'] or "",
                     "article_url": book_data['article_url'],

@@ -9,10 +9,11 @@
 
 Based on user feedback, we have the following remaining issues to fix:
 
-### 1. **Document Count Issue** ❌
+### 1. **Document Count Issue** ✅ **FIXED**
 - **Problem**: Frontend shows "200 documents loaded" instead of 6,270+
-- **Root Cause**: The `/documents` endpoint returns data from `books` table, but frontend expects data from `documents` table
-- **Impact**: Users see incorrect document count
+- **Root Cause**: Missing LIMIT clause removal in `list_documents()` method
+- **Solution**: Removed LIMIT clause in `backend/vector_store_postgres.py`
+- **Status**: ✅ **DEPLOYED AND WORKING** - Now shows 6,270 documents
 
 ### 2. **Article Titles Show ID Numbers** ❌  
 - **Problem**: Articles display "4247", "5765", "5805" instead of proper article titles
@@ -80,11 +81,11 @@ Based on user feedback, we have the following remaining issues to fix:
 
 ## Execution Order
 
-1. **Fix URL Typo** (Quick database fix)
-2. **Fix Document Count** (Backend endpoint fix)  
-3. **Investigate Article Titles/Authors** (Check enrichment data)
-4. **Fix Author Button Dropdown** (Frontend CSS fix)
-5. **Test All Fixes** (Comprehensive verification)
+1. ✅ **Fix URL Typo** (COMPLETED)
+2. ✅ **Fix Document Count** (COMPLETED - Shows 6,270 documents)  
+3. 🔧 **Investigate Article Titles/Authors** (NEXT)
+4. **Fix Author Button Dropdown** 
+5. **Test All Fixes**
 
 ---
 

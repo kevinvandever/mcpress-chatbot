@@ -13,6 +13,7 @@ interface Source {
   filename: string
   page: string | number
   distance?: number
+  title?: string
   author?: string
   mc_press_url?: string
   article_url?: string
@@ -30,9 +31,11 @@ export default function CompactSources({ sources }: CompactSourcesProps) {
   // Group sources by filename and preserve metadata
   const groupedSources = sources.reduce((acc, source) => {
     const filename = source.filename.replace('.pdf', '')
+    const displayTitle = source.title || filename  // Use title if available, fallback to filename
     if (!acc[filename]) {
       acc[filename] = {
         pages: [],
+        title: displayTitle,
         author: source.author || 'Unknown Author',
         mc_press_url: source.mc_press_url || '',
         article_url: source.article_url || '',
@@ -44,6 +47,7 @@ export default function CompactSources({ sources }: CompactSourcesProps) {
     return acc
   }, {} as Record<string, { 
     pages: (string | number)[], 
+    title: string,
     author: string, 
     mc_press_url: string,
     article_url: string,
@@ -76,8 +80,8 @@ export default function CompactSources({ sources }: CompactSourcesProps) {
             <div key={filename} className="bg-white p-2 rounded border border-gray-100">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-xs text-gray-900 truncate" title={filename}>
-                    {filename}
+                  <div className="font-medium text-xs text-gray-900 truncate" title={sourceData.title}>
+                    {sourceData.title}
                   </div>
                   <div className="text-xs text-gray-500 mt-0.5">
                     by {sourceData.authors.length > 0 ? (
