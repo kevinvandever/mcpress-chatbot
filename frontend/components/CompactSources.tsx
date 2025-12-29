@@ -105,32 +105,53 @@ export default function CompactSources({ sources }: CompactSourcesProps) {
                 <div className="flex gap-1">
                   {/* Author website button - shows when any author has a website */}
                   {sourceData.authors.some(author => author.site_url) && (
-                    <div className="relative group">
-                      <button className="flex-shrink-0 text-xs bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded transition-colors">
-                        Author
-                      </button>
-                      {/* Dropdown with author websites */}
-                      <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-20 min-w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none group-hover:pointer-events-auto">
-                        <div className="py-1">
-                          {sourceData.authors
-                            .filter(author => author.site_url)
-                            .map((author) => (
-                              <a
-                                key={author.id}
-                                href={author.site_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="block px-3 py-2 text-xs text-gray-700 hover:bg-gray-100 transition-colors"
-                                title={`Visit ${author.name}'s website`}
-                              >
-                                <div className="font-medium text-gray-900">{author.name}</div>
-                                <div className="text-gray-500 truncate text-xs mt-0.5">{author.site_url}</div>
-                              </a>
-                            ))
-                          }
+                    (() => {
+                      const authorsWithSites = sourceData.authors.filter(author => author.site_url);
+                      
+                      // If only one author with website, make it a direct link like Read/Buy buttons
+                      if (authorsWithSites.length === 1) {
+                        return (
+                          <a
+                            href={authorsWithSites[0].site_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-shrink-0 text-xs bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded transition-colors"
+                            title={`Visit ${authorsWithSites[0].name}'s website`}
+                          >
+                            Author
+                          </a>
+                        );
+                      }
+                      
+                      // If multiple authors with websites, show dropdown
+                      return (
+                        <div className="relative group">
+                          <button className="flex-shrink-0 text-xs bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded transition-colors">
+                            Authors
+                          </button>
+                          {/* Dropdown with author websites - includes hover bridge */}
+                          <div className="absolute right-0 top-full bg-white border border-gray-200 rounded-md shadow-lg z-20 min-w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none group-hover:pointer-events-auto">
+                            {/* Invisible bridge to prevent dropdown from disappearing */}
+                            <div className="absolute -top-1 right-0 w-full h-1 bg-transparent"></div>
+                            <div className="py-1">
+                              {authorsWithSites.map((author) => (
+                                <a
+                                  key={author.id}
+                                  href={author.site_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="block px-3 py-2 text-xs text-gray-700 hover:bg-gray-100 transition-colors"
+                                  title={`Visit ${author.name}'s website`}
+                                >
+                                  <div className="font-medium text-gray-900">{author.name}</div>
+                                  <div className="text-gray-500 truncate text-xs mt-0.5">{author.site_url}</div>
+                                </a>
+                              ))}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
+                      );
+                    })()
                   )}
                   
                   {/* Show article link for articles */}
