@@ -97,6 +97,60 @@ railway shell
 python3 -m pytest backend/test_file.py
 ```
 
+## CRITICAL: When to Deploy to Railway
+
+**ALWAYS DEPLOY FIRST** when any of these files are modified:
+
+### Backend Files (Require Railway Deployment)
+- `backend/*.py` - All Python backend code
+- `requirements.txt` - Python dependencies
+- `Procfile` - Railway startup configuration
+- `runtime.txt` - Python version specification
+- Any database migration files
+
+### Frontend Files (Require Netlify Deployment)
+- `frontend/**/*` - All frontend code
+- `package.json` - Node.js dependencies
+- `netlify.toml` - Netlify configuration
+
+### Deployment Process
+```bash
+# 1. Commit and push changes
+git add .
+git commit -m "Description of changes"
+git push origin main
+
+# 2. Wait for deployment (10-15 minutes for Railway, 2-3 minutes for Netlify)
+# Monitor at: https://railway.app/dashboard
+
+# 3. THEN run tests on Railway
+railway run python3 your_test_script.py
+```
+
+### Files That DON'T Require Deployment
+- Root-level test scripts (e.g., `test_*.py`, `check_*.py`, `debug_*.py`)
+- Documentation files (`.md` files)
+- Configuration examples (`.env.example`)
+- Data files (`.csv`, `.json`)
+
+### How to Tell if Deployment is Needed
+**If you modify code that the application imports or executes, you MUST deploy first.**
+
+Examples:
+- ✅ Modified `backend/excel_import_service.py` → **DEPLOY FIRST**
+- ✅ Modified `frontend/components/ChatInterface.tsx` → **DEPLOY FIRST**  
+- ❌ Created `test_new_feature.py` in root → **No deployment needed**
+- ❌ Updated `README.md` → **No deployment needed**
+
+### Testing Workflow
+1. **Make code changes**
+2. **Deploy if needed** (see rules above)
+3. **Wait for deployment to complete**
+4. **Run tests on Railway** (not locally)
+5. **Verify functionality**
+
+**Remember: This project has NO local development environment. All testing must be done on Railway after deployment.**
+
 ### Local Development Limitations
 - **No FastAPI server**: Cannot run `uvicorn` locally due to missing dependencies
 - **No database access**: All database operations must be done on Railway

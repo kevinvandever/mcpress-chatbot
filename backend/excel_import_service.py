@@ -871,6 +871,7 @@ class ExcelImportService:
             errors = []
             
             await self._ensure_pool()
+
     async def import_article_metadata(self, file_path: str) -> ImportResult:
         """
         Import article metadata from article-links.xlsm (export_subset sheet) with proper transaction handling
