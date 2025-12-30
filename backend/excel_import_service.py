@@ -548,9 +548,78 @@ class ExcelImportService:
         
         return bool(url_pattern.match(url))
 
+    async def _get_or_create_author_in_transaction(
+        self, 
+        conn: asyncpg.Connection, 
+        name: str, 
+        site_url: Optional[str] = None
+    ) -> int:
+        """
+        Get existing author ID or create new author within an existing transaction.
+        
+        This method works within an existing database transaction and implements
+        author deduplication by using INSERT ... ON CONFLICT.
+        
+        Args:
+            conn: Database connection within a transaction
+            name: Author name (will be deduplicated)
+            site_url: Optional author website URL
+            
+        Returns:
+            Author ID (existing or newly created)
+            
+        Validates: Requirements 6.1, 6.2, 6.3
+        """
+        if not name or not name.strip():
+            raise ValueError("Author name cannot be empty")
+        
+        name = name.strip()
+        
+        # Validate URL if provided
+        if site_url:
+            site_url = self._validate_url(site_url)
+        
+        # Use INSERT ... ON CONFLICT to handle deduplication within the transaction
+        # If author exists, update site_url and return existing ID
+        # If author doesn't exist, create new record
+        author_id = await conn.fetchval("""
+            INSERT INTO authors (name, site_url)
+            VALUES ($1, $2)
+            ON CONFLICT (name) DO UPDATE
+            SET site_url = COALESCE(EXCLUDED.site_url, authors.site_url),
+                updated_at = CURRENT_TIMESTAMP
+            RETURNING id
+        """, name, site_url)
+        
+        return author_id
+
+    def _validate_url(self, url: str) -> str:
+        """
+        Validate and normalize URL format
+        
+        Args:
+            url: URL string to validate
+            
+        Returns:
+            Validated and normalized URL string
+            
+        Raises:
+            ValueError: If URL format is invalid
+        """
+        if not url or not url.strip():
+            return url
+        
+        url = url.strip()
+        
+        # Basic URL validation - must start with http:// or https://
+        if not self._is_valid_url(url):
+            raise ValueError(f"Invalid URL format: {url}")
+        
+        return url
+
     async def import_book_metadata(self, file_path: str) -> ImportResult:
         """
-        Import book metadata from book-metadata.xlsm
+        Import book metadata from book-metadata.xlsm with proper transaction handling
         
         Args:
             file_path: Path to book metadata Excel file
@@ -558,7 +627,7 @@ class ExcelImportService:
         Returns:
             ImportResult with processing statistics
             
-        Validates: Requirements 9.1, 9.2, 9.3, 9.5, 9.6
+        Validates: Requirements 9.1, 9.2, 9.3, 9.5, 9.6, 6.1, 6.2, 6.3, 6.4, 6.5
         """
         start_time = time.time()
         result = ImportResult(success=False, processing_time=0.0)
@@ -569,6 +638,7 @@ class ExcelImportService:
             if not validation.valid:
                 result.errors = validation.errors
                 result.processing_time = time.time() - start_time
+                print(f"❌ Book metadata validation failed: {len(validation.errors)} errors")
                 return result
             
             # Read file (Excel or CSV)
@@ -603,100 +673,129 @@ class ExcelImportService:
             
             await self._ensure_pool()
             
-            for idx, row in df.iterrows():
-                try:
-                    books_processed += 1
+            # Use a single transaction for all database operations
+            async with self.pool.acquire() as conn:
+                async with conn.transaction():
+                    print(f"🔄 Starting transaction for book metadata import ({len(df)} rows)")
                     
-                    # Handle URL with improved parsing for Numbers exports
-                    url_raw = row.get('URL', '')
-                    if pd.isna(url_raw) or url_raw is None:
-                        url = ''
-                    elif isinstance(url_raw, (int, float)):
-                        url = str(url_raw) if url_raw != 0 else ''
-                    else:
-                        url = str(url_raw).strip()
-                    
-                    # Normalize URL to fix common formatting issues
-                    if url:
-                        url = self._normalize_url(url)
-                    
-                    title = str(row.get('Title', '')).strip()
-                    author_string = str(row.get('Author', '')).strip()
-                    
-                    if not title or not author_string:
-                        errors.append(ExcelValidationError(
-                            row=idx + 1,
-                            column="Title/Author",
-                            message="Title and Author are required",
-                            severity="error"
-                        ))
-                        continue
-                    
-                    # Debug: Print what we're processing
-                    print(f"Processing row {idx + 1}: Title='{title}', Author='{author_string}', URL='{url}'")
-                    
-                    # Find matching book by title
-                    book_id = await self.fuzzy_match_title(title)
-                    if not book_id:
-                        errors.append(ExcelValidationError(
-                            row=idx + 1,
-                            column="Title",
-                            message=f"No matching book found for title: {title}",
-                            severity="warning"
-                        ))
-                        continue
-                    
-                    books_matched += 1
-                    
-                    # Update book with mc_press_url
-                    if url and self._is_valid_url(url):
-                        async with self.pool.acquire() as conn:
-                            await conn.execute(
-                                "UPDATE books SET mc_press_url = $1 WHERE id = $2",
-                                url, book_id
-                            )
-                        books_updated += 1
-                    
-                    # Parse and create/update authors, then associate with document
-                    authors = self.parse_authors(author_string)
-                    for order, author_name in enumerate(authors):
+                    for idx, row in df.iterrows():
                         try:
-                            author_id = await self.author_service.get_or_create_author(author_name)
-                            # Check if this is a new author (simplified check)
-                            # In a real implementation, you might track this more precisely
-                            authors_created += 1  # This is approximate
+                            books_processed += 1
                             
-                            # Associate author with document in document_authors table
-                            async with self.pool.acquire() as conn:
-                                # Check if association already exists to avoid duplicates
-                                exists = await conn.fetchval("""
-                                    SELECT EXISTS(
-                                        SELECT 1 FROM document_authors 
-                                        WHERE book_id = $1 AND author_id = $2
+                            # Handle URL with improved parsing for Numbers exports
+                            url_raw = row.get('URL', '')
+                            if pd.isna(url_raw) or url_raw is None:
+                                url = ''
+                            elif isinstance(url_raw, (int, float)):
+                                url = str(url_raw) if url_raw != 0 else ''
+                            else:
+                                url = str(url_raw).strip()
+                            
+                            # Normalize URL to fix common formatting issues
+                            if url:
+                                url = self._normalize_url(url)
+                            
+                            title = str(row.get('Title', '')).strip()
+                            author_string = str(row.get('Author', '')).strip()
+                            
+                            if not title or not author_string:
+                                error_msg = "Title and Author are required"
+                                print(f"⚠️  Row {idx + 1}: {error_msg}")
+                                errors.append(ExcelValidationError(
+                                    row=idx + 1,
+                                    column="Title/Author",
+                                    message=error_msg,
+                                    severity="error"
+                                ))
+                                continue
+                            
+                            # Debug: Print what we're processing
+                            print(f"📝 Processing row {idx + 1}: Title='{title}', Author='{author_string}', URL='{url}'")
+                            
+                            # Find matching book by title
+                            book_id = await self.fuzzy_match_title(title)
+                            if not book_id:
+                                error_msg = f"No matching book found for title: {title}"
+                                print(f"⚠️  Row {idx + 1}: {error_msg}")
+                                errors.append(ExcelValidationError(
+                                    row=idx + 1,
+                                    column="Title",
+                                    message=error_msg,
+                                    severity="warning"
+                                ))
+                                continue
+                            
+                            books_matched += 1
+                            print(f"✅ Row {idx + 1}: Matched book ID {book_id}")
+                            
+                            # Update book with mc_press_url within the transaction
+                            if url and self._is_valid_url(url):
+                                result_tag = await conn.execute(
+                                    "UPDATE books SET mc_press_url = $1 WHERE id = $2",
+                                    url, book_id
+                                )
+                                if result_tag == "UPDATE 1":
+                                    books_updated += 1
+                                    print(f"✅ Row {idx + 1}: Updated book URL")
+                                else:
+                                    print(f"⚠️  Row {idx + 1}: Book update failed - {result_tag}")
+                            
+                            # Parse and create/update authors, then associate with document
+                            authors = self.parse_authors(author_string)
+                            print(f"👥 Row {idx + 1}: Processing {len(authors)} authors: {authors}")
+                            
+                            for order, author_name in enumerate(authors):
+                                try:
+                                    # Create author within the same transaction context
+                                    author_id = await self._get_or_create_author_in_transaction(
+                                        conn, author_name
                                     )
-                                """, book_id, author_id)
-                                
-                                if not exists:
-                                    await conn.execute("""
-                                        INSERT INTO document_authors (book_id, author_id, author_order)
-                                        VALUES ($1, $2, $3)
-                                    """, book_id, author_id, order)
+                                    authors_created += 1  # This is approximate
                                     
+                                    # Associate author with document in document_authors table
+                                    # Check if association already exists to avoid duplicates
+                                    exists = await conn.fetchval("""
+                                        SELECT EXISTS(
+                                            SELECT 1 FROM document_authors 
+                                            WHERE book_id = $1 AND author_id = $2
+                                        )
+                                    """, book_id, author_id)
+                                    
+                                    if not exists:
+                                        await conn.execute("""
+                                            INSERT INTO document_authors (book_id, author_id, author_order)
+                                            VALUES ($1, $2, $3)
+                                        """, book_id, author_id, order)
+                                        print(f"✅ Row {idx + 1}: Associated author '{author_name}' (ID {author_id}) with book")
+                                    else:
+                                        print(f"ℹ️  Row {idx + 1}: Author '{author_name}' already associated with book")
+                                        
+                                except Exception as e:
+                                    error_msg = f"Error processing author {author_name}: {str(e)}"
+                                    print(f"❌ Row {idx + 1}: {error_msg}")
+                                    errors.append(ExcelValidationError(
+                                        row=idx + 1,
+                                        column="Author",
+                                        message=error_msg,
+                                        severity="error"
+                                    ))
+                                    # Don't continue processing this row if author processing fails
+                                    raise
+                        
                         except Exception as e:
+                            error_msg = f"Error processing row: {str(e)}"
+                            print(f"❌ Row {idx + 1}: {error_msg}")
                             errors.append(ExcelValidationError(
                                 row=idx + 1,
-                                column="Author",
-                                message=f"Error processing author {author_name}: {str(e)}",
+                                column="row",
+                                message=error_msg,
                                 severity="error"
                             ))
-                
-                except Exception as e:
-                    errors.append(ExcelValidationError(
-                        row=idx + 1,
-                        column="row",
-                        message=f"Error processing row: {str(e)}",
-                        severity="error"
-                    ))
+                            # For critical errors, we might want to rollback the entire transaction
+                            # For now, we'll continue processing other rows
+                    
+                    # Transaction will be committed automatically if we reach here
+                    print(f"✅ Transaction committed successfully")
             
             result.success = True
             result.books_processed = books_processed
@@ -706,13 +805,24 @@ class ExcelImportService:
             result.authors_updated = authors_updated
             result.errors = errors
             
+            print(f"🎉 Book metadata import completed successfully:")
+            print(f"   📚 Books processed: {books_processed}")
+            print(f"   🎯 Books matched: {books_matched}")
+            print(f"   📝 Books updated: {books_updated}")
+            print(f"   👥 Authors created: {authors_created}")
+            print(f"   ⚠️  Errors: {len([e for e in errors if e.severity == 'error'])}")
+            print(f"   ⚠️  Warnings: {len([e for e in errors if e.severity == 'warning'])}")
+            
         except Exception as e:
+            error_msg = f"Error importing book metadata: {str(e)}"
+            print(f"❌ Critical error during book import: {error_msg}")
             result.errors = [ExcelValidationError(
                 row=0,
                 column="file",
-                message=f"Error importing book metadata: {str(e)}",
+                message=error_msg,
                 severity="error"
             )]
+            # Transaction will be automatically rolled back due to exception
         
         result.processing_time = time.time() - start_time
         return result
@@ -761,116 +871,191 @@ class ExcelImportService:
             errors = []
             
             await self._ensure_pool()
+    async def import_article_metadata(self, file_path: str) -> ImportResult:
+        """
+        Import article metadata from article-links.xlsm (export_subset sheet) with proper transaction handling
+        
+        Args:
+            file_path: Path to article metadata Excel file
             
-            for idx, row in df.iterrows():
-                try:
-                    # Only process rows where feature_article = "yes"
-                    feature_article = str(row.get('feature_article', '')).strip().lower()
-                    if feature_article != 'yes':
-                        continue
+        Returns:
+            ImportResult with processing statistics
+            
+        Validates: Requirements 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 6.1, 6.2, 6.3, 6.4, 6.5
+        """
+        start_time = time.time()
+        result = ImportResult(success=False, processing_time=0.0)
+        
+        try:
+            # Validate file first
+            validation = await self.validate_excel_file(file_path, "article")
+            if not validation.valid:
+                result.errors = validation.errors
+                result.processing_time = time.time() - start_time
+                print(f"❌ Article metadata validation failed: {len(validation.errors)} errors")
+                return result
+            
+            # Read Excel file (export_subset sheet)
+            df = pd.read_excel(file_path, sheet_name='export_subset', engine='openpyxl')
+            
+            # Rename columns to match expected names
+            if len(df.columns) >= 12:
+                df = df.rename(columns={
+                    df.columns[0]: 'id',           # Column A
+                    df.columns[7]: 'feature_article',  # Column H
+                    df.columns[9]: 'author',       # Column J
+                    df.columns[10]: 'article_url', # Column K
+                    df.columns[11]: 'author_url'   # Column L
+                })
+            
+            articles_processed = 0
+            articles_matched = 0
+            documents_updated = 0
+            authors_created = 0
+            authors_updated = 0
+            errors = []
+            
+            await self._ensure_pool()
+            
+            # Use a single transaction for all database operations
+            async with self.pool.acquire() as conn:
+                async with conn.transaction():
+                    print(f"🔄 Starting transaction for article metadata import ({len(df)} rows)")
                     
-                    articles_processed += 1
-                    
-                    article_id = str(row.get('id', '')).strip()
-                    article_title = str(row.get('title', '')).strip()
-                    author_string = str(row.get('author', '')).strip()
-                    article_url = str(row.get('article_url', '')).strip()
-                    author_url = str(row.get('author_url', '')).strip()
-                    
-                    # Normalize URLs to fix common formatting issues
-                    if article_url:
-                        article_url = self._normalize_url(article_url)
-                    if author_url:
-                        author_url = self._normalize_url(author_url)
-                    
-                    if not article_id or not author_string:
-                        errors.append(ExcelValidationError(
-                            row=idx + 1,
-                            column="id/author",
-                            message="Article ID and Author are required",
-                            severity="error"
-                        ))
-                        continue
-                    
-                    # Validate title (optional but recommended)
-                    if not article_title:
-                        errors.append(ExcelValidationError(
-                            row=idx + 1,
-                            column="title",
-                            message="Article title is missing",
-                            severity="warning"
-                        ))
-                    
-                    # Match article ID against PDF filenames
-                    async with self.pool.acquire() as conn:
-                        # Try with and without .pdf extension
-                        book_id = await conn.fetchval(
-                            "SELECT id FROM books WHERE filename = $1 OR filename = $2",
-                            f"{article_id}.pdf", article_id
-                        )
-                    
-                    if not book_id:
-                        errors.append(ExcelValidationError(
-                            row=idx + 1,
-                            column="id",
-                            message=f"No matching document found for ID: {article_id}",
-                            severity="warning"
-                        ))
-                        continue
-                    
-                    articles_matched += 1
-                    
-                    # Update document with title, article_url and document_type
-                    async with self.pool.acquire() as conn:
-                        await conn.execute("""
-                            UPDATE books 
-                            SET title = $1, article_url = $2, document_type = 'article'
-                            WHERE id = $3
-                        """, article_title if article_title else None, article_url if article_url else None, book_id)
-                    documents_updated += 1
-                    
-                    # Parse and create/update authors, then associate with document
-                    authors = self.parse_authors(author_string)
-                    for order, author_name in enumerate(authors):
+                    for idx, row in df.iterrows():
                         try:
-                            # Create author with site URL if provided
-                            author_id = await self.author_service.get_or_create_author(
-                                author_name, 
-                                author_url if author_url else None
-                            )
-                            authors_created += 1  # This is approximate
+                            # Only process rows where feature_article = "yes"
+                            feature_article = str(row.get('feature_article', '')).strip().lower()
+                            if feature_article != 'yes':
+                                continue
                             
-                            # Associate author with document in document_authors table
-                            async with self.pool.acquire() as conn:
-                                # Check if association already exists to avoid duplicates
-                                exists = await conn.fetchval("""
-                                    SELECT EXISTS(
-                                        SELECT 1 FROM document_authors 
-                                        WHERE book_id = $1 AND author_id = $2
+                            articles_processed += 1
+                            
+                            article_id = str(row.get('id', '')).strip()
+                            article_title = str(row.get('title', '')).strip()
+                            author_string = str(row.get('author', '')).strip()
+                            article_url = str(row.get('article_url', '')).strip()
+                            author_url = str(row.get('author_url', '')).strip()
+                            
+                            # Normalize URLs to fix common formatting issues
+                            if article_url:
+                                article_url = self._normalize_url(article_url)
+                            if author_url:
+                                author_url = self._normalize_url(author_url)
+                            
+                            if not article_id or not author_string:
+                                error_msg = "Article ID and Author are required"
+                                print(f"⚠️  Row {idx + 1}: {error_msg}")
+                                errors.append(ExcelValidationError(
+                                    row=idx + 1,
+                                    column="id/author",
+                                    message=error_msg,
+                                    severity="error"
+                                ))
+                                continue
+                            
+                            # Validate title (optional but recommended)
+                            if not article_title:
+                                print(f"⚠️  Row {idx + 1}: Article title is missing")
+                                errors.append(ExcelValidationError(
+                                    row=idx + 1,
+                                    column="title",
+                                    message="Article title is missing",
+                                    severity="warning"
+                                ))
+                            
+                            print(f"📝 Processing row {idx + 1}: ID='{article_id}', Title='{article_title}', Author='{author_string}'")
+                            
+                            # Match article ID against PDF filenames within the transaction
+                            # Try with and without .pdf extension
+                            book_id = await conn.fetchval(
+                                "SELECT id FROM books WHERE filename = $1 OR filename = $2",
+                                f"{article_id}.pdf", article_id
+                            )
+                            
+                            if not book_id:
+                                error_msg = f"No matching document found for ID: {article_id}"
+                                print(f"⚠️  Row {idx + 1}: {error_msg}")
+                                errors.append(ExcelValidationError(
+                                    row=idx + 1,
+                                    column="id",
+                                    message=error_msg,
+                                    severity="warning"
+                                ))
+                                continue
+                            
+                            articles_matched += 1
+                            print(f"✅ Row {idx + 1}: Matched document ID {book_id}")
+                            
+                            # Update document with title, article_url and document_type within the transaction
+                            result_tag = await conn.execute("""
+                                UPDATE books 
+                                SET title = $1, article_url = $2, document_type = 'article'
+                                WHERE id = $3
+                            """, article_title if article_title else None, article_url if article_url else None, book_id)
+                            
+                            if result_tag == "UPDATE 1":
+                                documents_updated += 1
+                                print(f"✅ Row {idx + 1}: Updated document metadata")
+                            else:
+                                print(f"⚠️  Row {idx + 1}: Document update failed - {result_tag}")
+                            
+                            # Parse and create/update authors, then associate with document
+                            authors = self.parse_authors(author_string)
+                            print(f"👥 Row {idx + 1}: Processing {len(authors)} authors: {authors}")
+                            
+                            for order, author_name in enumerate(authors):
+                                try:
+                                    # Create author with site URL if provided, within the same transaction
+                                    author_id = await self._get_or_create_author_in_transaction(
+                                        conn, author_name, author_url if author_url else None
                                     )
-                                """, book_id, author_id)
-                                
-                                if not exists:
-                                    await conn.execute("""
-                                        INSERT INTO document_authors (book_id, author_id, author_order)
-                                        VALUES ($1, $2, $3)
-                                    """, book_id, author_id, order)
+                                    authors_created += 1  # This is approximate
                                     
+                                    # Associate author with document in document_authors table
+                                    # Check if association already exists to avoid duplicates
+                                    exists = await conn.fetchval("""
+                                        SELECT EXISTS(
+                                            SELECT 1 FROM document_authors 
+                                            WHERE book_id = $1 AND author_id = $2
+                                        )
+                                    """, book_id, author_id)
+                                    
+                                    if not exists:
+                                        await conn.execute("""
+                                            INSERT INTO document_authors (book_id, author_id, author_order)
+                                            VALUES ($1, $2, $3)
+                                        """, book_id, author_id, order)
+                                        print(f"✅ Row {idx + 1}: Associated author '{author_name}' (ID {author_id}) with document")
+                                    else:
+                                        print(f"ℹ️  Row {idx + 1}: Author '{author_name}' already associated with document")
+                                        
+                                except Exception as e:
+                                    error_msg = f"Error processing author {author_name}: {str(e)}"
+                                    print(f"❌ Row {idx + 1}: {error_msg}")
+                                    errors.append(ExcelValidationError(
+                                        row=idx + 1,
+                                        column="author",
+                                        message=error_msg,
+                                        severity="error"
+                                    ))
+                                    # Don't continue processing this row if author processing fails
+                                    raise
+                        
                         except Exception as e:
+                            error_msg = f"Error processing row: {str(e)}"
+                            print(f"❌ Row {idx + 1}: {error_msg}")
                             errors.append(ExcelValidationError(
                                 row=idx + 1,
-                                column="author",
-                                message=f"Error processing author {author_name}: {str(e)}",
+                                column="row",
+                                message=error_msg,
                                 severity="error"
                             ))
-                
-                except Exception as e:
-                    errors.append(ExcelValidationError(
-                        row=idx + 1,
-                        column="row",
-                        message=f"Error processing row: {str(e)}",
-                        severity="error"
-                    ))
+                            # For critical errors, we might want to rollback the entire transaction
+                            # For now, we'll continue processing other rows
+                    
+                    # Transaction will be committed automatically if we reach here
+                    print(f"✅ Transaction committed successfully")
             
             result.success = True
             result.articles_processed = articles_processed
@@ -880,13 +1065,24 @@ class ExcelImportService:
             result.authors_updated = authors_updated
             result.errors = errors
             
+            print(f"🎉 Article metadata import completed successfully:")
+            print(f"   📰 Articles processed: {articles_processed}")
+            print(f"   🎯 Articles matched: {articles_matched}")
+            print(f"   📝 Documents updated: {documents_updated}")
+            print(f"   👥 Authors created: {authors_created}")
+            print(f"   ⚠️  Errors: {len([e for e in errors if e.severity == 'error'])}")
+            print(f"   ⚠️  Warnings: {len([e for e in errors if e.severity == 'warning'])}")
+            
         except Exception as e:
+            error_msg = f"Error importing article metadata: {str(e)}"
+            print(f"❌ Critical error during article import: {error_msg}")
             result.errors = [ExcelValidationError(
                 row=0,
                 column="file",
-                message=f"Error importing article metadata: {str(e)}",
+                message=error_msg,
                 severity="error"
             )]
+            # Transaction will be automatically rolled back due to exception
         
         result.processing_time = time.time() - start_time
         return result

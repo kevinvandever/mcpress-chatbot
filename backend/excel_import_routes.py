@@ -128,7 +128,7 @@ async def import_book_metadata(
     file: UploadFile = File(...)
 ):
     """
-    Import book metadata from book-metadata.xlsm or .xlsx file
+    Import book metadata from book-metadata.xlsm or .xlsx file with improved transaction handling
     
     Args:
         file: Excel file containing book metadata (URL, Title, Author columns)
@@ -136,14 +136,16 @@ async def import_book_metadata(
     Returns:
         ImportResult with processing statistics and any errors
         
-    Validates: Requirements 9.1, 9.2, 9.3, 9.5, 9.6
+    Validates: Requirements 9.1, 9.2, 9.3, 9.5, 9.6, 6.1, 6.2, 6.3, 6.4, 6.5
     """
     if not excel_service:
+        logger.error("Excel import service not available")
         raise HTTPException(status_code=500, detail="Excel import service not available")
     
     # Check file extension - allow Excel and CSV for book files
     allowed_extensions = ['.xlsm', '.xlsx', '.csv']
     if not file.filename or not any(file.filename.lower().endswith(ext) for ext in allowed_extensions):
+        logger.error(f"Invalid file format: {file.filename}")
         raise HTTPException(
             status_code=400,
             detail="File must be .xlsm, .xlsx, or .csv format"
@@ -161,38 +163,61 @@ async def import_book_metadata(
             temp_file.write(content)
             temp_file.flush()
             
-            # Import book metadata
+            logger.info(f"Saved uploaded file to temporary location: {temp_file.name}")
+            
+            # Import book metadata with transaction handling
             result = await excel_service.import_book_metadata(temp_file.name)
             
-            # Log import results
-            logger.info(
-                f"Book import complete - Success: {result.success}, "
-                f"Processed: {result.books_processed}, "
-                f"Matched: {result.books_matched}, "
-                f"Updated: {result.books_updated}, "
-                f"Authors created: {result.authors_created}, "
-                f"Processing time: {result.processing_time:.2f}s"
-            )
+            # Log import results with detailed information
+            if result.success:
+                logger.info(
+                    f"Book import SUCCESS - "
+                    f"Processed: {result.books_processed}, "
+                    f"Matched: {result.books_matched}, "
+                    f"Updated: {result.books_updated}, "
+                    f"Authors created: {result.authors_created}, "
+                    f"Processing time: {result.processing_time:.2f}s"
+                )
+            else:
+                logger.error(
+                    f"Book import FAILED - "
+                    f"Processed: {result.books_processed}, "
+                    f"Errors: {len([e for e in result.errors if e.severity == 'error'])}"
+                )
             
             if result.errors:
                 error_count = len([e for e in result.errors if e.severity == "error"])
                 warning_count = len([e for e in result.errors if e.severity == "warning"])
                 logger.warning(f"Import had {error_count} errors and {warning_count} warnings")
+                
+                # Log first few errors for debugging
+                for i, error in enumerate(result.errors[:5]):  # Log first 5 errors
+                    logger.warning(f"Import error {i+1}: Row {error.row}, Column {error.column}: {error.message}")
             
-            return result
+            # Return detailed result including transaction status
+            return {
+                **result.dict(),
+                "transaction_committed": result.success,
+                "detailed_logging": True
+            }
             
         except Exception as e:
-            logger.error(f"Error importing book metadata from {file.filename}: {str(e)}")
+            logger.error(f"Critical error importing book metadata from {file.filename}: {str(e)}", exc_info=True)
             raise HTTPException(
                 status_code=500,
-                detail=f"Error importing book metadata: {str(e)}"
+                detail={
+                    "error": f"Error importing book metadata: {str(e)}",
+                    "transaction_committed": False,
+                    "file_processed": False
+                }
             )
         finally:
             # Clean up temporary file
             try:
                 os.unlink(temp_file.name)
-            except OSError:
-                pass
+                logger.debug(f"Cleaned up temporary file: {temp_file.name}")
+            except OSError as e:
+                logger.warning(f"Failed to clean up temporary file {temp_file.name}: {e}")
 
 
 @router.post("/import/articles")
@@ -200,7 +225,7 @@ async def import_article_metadata(
     file: UploadFile = File(...)
 ):
     """
-    Import article metadata from article-links.xlsm file (export_subset sheet)
+    Import article metadata from article-links.xlsm file (export_subset sheet) with improved transaction handling
     
     Args:
         file: Excel file containing article metadata
@@ -208,13 +233,15 @@ async def import_article_metadata(
     Returns:
         ImportResult with processing statistics and any errors
         
-    Validates: Requirements 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7
+    Validates: Requirements 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 6.1, 6.2, 6.3, 6.4, 6.5
     """
     if not excel_service:
+        logger.error("Excel import service not available")
         raise HTTPException(status_code=500, detail="Excel import service not available")
     
     # Check file extension
     if not file.filename or not file.filename.lower().endswith('.xlsm'):
+        logger.error(f"Invalid file format for articles: {file.filename}")
         raise HTTPException(
             status_code=400,
             detail="File must be .xlsm format"
@@ -231,38 +258,61 @@ async def import_article_metadata(
             temp_file.write(content)
             temp_file.flush()
             
-            # Import article metadata
+            logger.info(f"Saved uploaded file to temporary location: {temp_file.name}")
+            
+            # Import article metadata with transaction handling
             result = await excel_service.import_article_metadata(temp_file.name)
             
-            # Log import results
-            logger.info(
-                f"Article import complete - Success: {result.success}, "
-                f"Processed: {result.articles_processed}, "
-                f"Matched: {result.articles_matched}, "
-                f"Updated: {result.documents_updated}, "
-                f"Authors created: {result.authors_created}, "
-                f"Processing time: {result.processing_time:.2f}s"
-            )
+            # Log import results with detailed information
+            if result.success:
+                logger.info(
+                    f"Article import SUCCESS - "
+                    f"Processed: {result.articles_processed}, "
+                    f"Matched: {result.articles_matched}, "
+                    f"Updated: {result.documents_updated}, "
+                    f"Authors created: {result.authors_created}, "
+                    f"Processing time: {result.processing_time:.2f}s"
+                )
+            else:
+                logger.error(
+                    f"Article import FAILED - "
+                    f"Processed: {result.articles_processed}, "
+                    f"Errors: {len([e for e in result.errors if e.severity == 'error'])}"
+                )
             
             if result.errors:
                 error_count = len([e for e in result.errors if e.severity == "error"])
                 warning_count = len([e for e in result.errors if e.severity == "warning"])
                 logger.warning(f"Import had {error_count} errors and {warning_count} warnings")
+                
+                # Log first few errors for debugging
+                for i, error in enumerate(result.errors[:5]):  # Log first 5 errors
+                    logger.warning(f"Import error {i+1}: Row {error.row}, Column {error.column}: {error.message}")
             
-            return result
+            # Return detailed result including transaction status
+            return {
+                **result.dict(),
+                "transaction_committed": result.success,
+                "detailed_logging": True
+            }
             
         except Exception as e:
-            logger.error(f"Error importing article metadata from {file.filename}: {str(e)}")
+            logger.error(f"Critical error importing article metadata from {file.filename}: {str(e)}", exc_info=True)
             raise HTTPException(
                 status_code=500,
-                detail=f"Error importing article metadata: {str(e)}"
+                detail={
+                    "error": f"Error importing article metadata: {str(e)}",
+                    "transaction_committed": False,
+                    "file_processed": False
+                }
             )
         finally:
             # Clean up temporary file
             try:
                 os.unlink(temp_file.name)
-            except OSError:
-                pass
+                logger.debug(f"Cleaned up temporary file: {temp_file.name}")
+            except OSError as e:
+                logger.warning(f"Failed to clean up temporary file {temp_file.name}: {e}")
 
 
 # Health check endpoint for Excel import service
