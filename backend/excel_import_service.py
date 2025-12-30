@@ -829,51 +829,6 @@ class ExcelImportService:
 
     async def import_article_metadata(self, file_path: str) -> ImportResult:
         """
-        Import article metadata from article-links.xlsm (export_subset sheet)
-        
-        Args:
-            file_path: Path to article metadata Excel file
-            
-        Returns:
-            ImportResult with processing statistics
-            
-        Validates: Requirements 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7
-        """
-        start_time = time.time()
-        result = ImportResult(success=False, processing_time=0.0)
-        
-        try:
-            # Validate file first
-            validation = await self.validate_excel_file(file_path, "article")
-            if not validation.valid:
-                result.errors = validation.errors
-                result.processing_time = time.time() - start_time
-                return result
-            
-            # Read Excel file (export_subset sheet)
-            df = pd.read_excel(file_path, sheet_name='export_subset', engine='openpyxl')
-            
-            # Rename columns to match expected names
-            if len(df.columns) >= 12:
-                df = df.rename(columns={
-                    df.columns[0]: 'id',           # Column A
-                    df.columns[7]: 'feature_article',  # Column H
-                    df.columns[9]: 'author',       # Column J
-                    df.columns[10]: 'article_url', # Column K
-                    df.columns[11]: 'author_url'   # Column L
-                })
-            
-            articles_processed = 0
-            articles_matched = 0
-            documents_updated = 0
-            authors_created = 0
-            authors_updated = 0
-            errors = []
-            
-            await self._ensure_pool()
-
-    async def import_article_metadata(self, file_path: str) -> ImportResult:
-        """
         Import article metadata from article-links.xlsm (export_subset sheet) with proper transaction handling
         
         Args:
