@@ -391,16 +391,43 @@ class PostgresVectorStore:
             """)
             
             if books_exists:
-                # Use new books table - get all documents (removed LIMIT to show correct count)
-                rows = await conn.fetch("""
-                    SELECT 
-                        id,
-                        filename,
-                        title,
-                        author,
-                        category
+                # Check which columns exist in the books table
+                columns_result = await conn.fetch("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'books'
+                """)
+                existing_columns = {row['column_name'] for row in columns_result}
+                
+                # Build dynamic SELECT query based on available columns
+                base_columns = ['id', 'filename', 'title', 'author', 'category']
+                optional_columns = ['mc_press_url', 'article_url', 'document_type', 'total_pages']
+                
+                select_columns = base_columns.copy()
+                for col in optional_columns:
+                    if col in existing_columns:
+                        select_columns.append(col)
+                
+                query = f"""
+                    SELECT {', '.join(select_columns)}
                     FROM books 
                     ORDER BY id DESC
+                """
+                rows = await conn.fetch(query)
+                
+                # Check if authors and document_authors tables exist
+                authors_table_exists = await conn.fetchval("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_name = 'authors'
+                    )
+                """)
+                
+                document_authors_exists = await conn.fetchval("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_name = 'document_authors'
+                    )
                 """)
                 
                 documents = []
@@ -410,17 +437,49 @@ class PostgresVectorStore:
                         SELECT COUNT(*) FROM documents WHERE filename = $1
                     """, row['filename'])
                     
+                    # Get authors with their website URLs from multi-author tables
+                    authors_list = []
+                    if authors_table_exists and document_authors_exists:
+                        author_rows = await conn.fetch("""
+                            SELECT a.id, a.name, a.site_url
+                            FROM authors a
+                            JOIN document_authors da ON a.id = da.author_id
+                            WHERE da.book_id = $1
+                            ORDER BY da.author_order
+                        """, row['id'])
+                        
+                        for author_row in author_rows:
+                            authors_list.append({
+                                'id': author_row['id'],
+                                'name': author_row['name'],
+                                'site_url': author_row['site_url']
+                            })
+                    
+                    # Fallback to legacy author field if no multi-author data
+                    if not authors_list:
+                        legacy_author = row['author'] or 'Unknown'
+                        authors_list = [{'id': None, 'name': legacy_author, 'site_url': None}]
+                    
+                    # Build author names string for legacy compatibility
+                    author_names = ', '.join([a['name'] for a in authors_list])
+                    
+                    # Safely get optional columns with defaults
+                    doc_type = row.get('document_type', 'book') if 'document_type' in existing_columns else 'book'
+                    mc_url = row.get('mc_press_url') if 'mc_press_url' in existing_columns else None
+                    art_url = row.get('article_url') if 'article_url' in existing_columns else None
+                    pages = row.get('total_pages') if 'total_pages' in existing_columns else None
+                    
                     documents.append({
                         'id': row['id'],
                         'filename': row['filename'],
                         'title': row['title'] or row['filename'].replace('.pdf', ''),
-                        'author': row['author'] or 'Unknown',  # Legacy field for compatibility
-                        'authors': [row['author']] if row['author'] else ['Unknown'],
+                        'author': author_names,  # Legacy field for compatibility
+                        'authors': authors_list,  # Full author objects with site_url
                         'category': row['category'] or 'Uncategorized',
-                        'document_type': 'book',  # Default
-                        'mc_press_url': None,
-                        'article_url': None,
-                        'total_pages': 'N/A',
+                        'document_type': doc_type or 'book',
+                        'mc_press_url': mc_url,
+                        'article_url': art_url,
+                        'total_pages': pages or 'N/A',
                         'chunk_count': chunk_count or 0,
                         'uploaded_at': None
                     })

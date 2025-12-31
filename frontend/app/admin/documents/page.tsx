@@ -5,14 +5,23 @@ import AdminLayout from '@/components/AdminLayout';
 import apiClient from '../../../config/axios';
 import { API_URL } from '../../../config/api';
 
+interface Author {
+  id: number | null;
+  name: string;
+  site_url?: string | null;
+}
+
 interface Document {
   filename: string;
   title: string;
   author?: string;
+  authors?: Author[];
   category?: string;
   total_pages?: string | number;
   uploaded_at?: string;
   mc_press_url?: string;
+  article_url?: string;
+  document_type?: 'book' | 'article';
   chunk_count?: number;
 }
 
@@ -221,7 +230,7 @@ export default function DocumentsManagement() {
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Documents Management</h2>
             <p className="mt-1 text-sm text-gray-600">
-              Edit book titles, authors, and purchase links
+              View and manage document metadata including authors, URLs, and purchase links
             </p>
           </div>
         </div>
@@ -333,7 +342,13 @@ export default function DocumentsManagement() {
                       onClick={() => handleSort('author')}
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     >
-                      Author {sortField === 'author' && (sortDirection === 'asc' ? '↑' : '↓')}
+                      Authors {sortField === 'author' && (sortDirection === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Author URLs
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Article URL
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       MC Press URL
@@ -366,6 +381,15 @@ export default function DocumentsManagement() {
                           <div>
                             <div className="text-sm font-medium text-gray-900">{doc.title}</div>
                             <div className="text-sm text-gray-500">{doc.filename}</div>
+                            {doc.document_type && (
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium mt-1 ${
+                                doc.document_type === 'article' 
+                                  ? 'bg-purple-100 text-purple-800' 
+                                  : 'bg-blue-100 text-blue-800'
+                              }`}>
+                                {doc.document_type}
+                              </span>
+                            )}
                           </div>
                         )}
                       </td>
@@ -378,8 +402,63 @@ export default function DocumentsManagement() {
                             className="w-full rounded-md border-gray-300 text-sm"
                           />
                         ) : (
-                          <div className="text-sm text-gray-900">{doc.author || '-'}</div>
+                          <div className="text-sm text-gray-900">
+                            {doc.authors && doc.authors.length > 0 ? (
+                              <div className="space-y-1">
+                                {doc.authors.map((author, idx) => (
+                                  <div key={idx}>{author.name}</div>
+                                ))}
+                              </div>
+                            ) : (
+                              doc.author || '-'
+                            )}
+                          </div>
                         )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm">
+                          {doc.authors && doc.authors.length > 0 ? (
+                            <div className="space-y-1">
+                              {doc.authors.map((author, idx) => (
+                                <div key={idx}>
+                                  {author.site_url ? (
+                                    <a 
+                                      href={author.site_url} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer" 
+                                      className="text-blue-600 hover:underline"
+                                      title={author.site_url}
+                                    >
+                                      {author.name}
+                                    </a>
+                                  ) : (
+                                    <span className="text-gray-400">-</span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900">
+                          {doc.document_type === 'article' && doc.article_url ? (
+                            <a 
+                              href={doc.article_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="text-blue-600 hover:underline"
+                            >
+                              Read Article
+                            </a>
+                          ) : doc.document_type === 'article' ? (
+                            <span className="text-gray-400">Not Available</span>
+                          ) : (
+                            <span className="text-gray-400">N/A (Book)</span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         {editingId === doc.filename ? (
@@ -394,10 +473,10 @@ export default function DocumentsManagement() {
                           <div className="text-sm text-gray-900">
                             {doc.mc_press_url ? (
                               <a href={doc.mc_press_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                                Link
+                                Buy Book
                               </a>
                             ) : (
-                              '-'
+                              <span className="text-gray-400">Not Available</span>
                             )}
                           </div>
                         )}
