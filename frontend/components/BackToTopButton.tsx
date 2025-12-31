@@ -14,6 +14,9 @@ interface BackToTopButtonProps {
  * and smoothly scrolls to the top of the page when clicked.
  * 
  * Follows MC Press design system and accessibility standards.
+ * 
+ * This component uses event capturing to detect scroll events on any
+ * scrollable element on the page, making it work with various layout patterns.
  */
 export default function BackToTopButton({ 
   threshold = 300,
@@ -22,32 +25,62 @@ export default function BackToTopButton({
   const [isVisible, setIsVisible] = useState(false)
   const [isScrolling, setIsScrolling] = useState(false)
 
-  // Handle scroll position detection
-  const handleScroll = useCallback(() => {
-    const scrollTop = window.pageYOffset || document.documentElement.scrollTop
-    setIsVisible(scrollTop > threshold)
+  // Handle scroll position detection - checks all scrollable elements
+  const handleScroll = useCallback((event?: Event) => {
+    // Check window scroll
+    const windowScrollTop = window.pageYOffset || document.documentElement.scrollTop
+    
+    // Check if the event target is a scrollable element
+    let elementScrollTop = 0
+    if (event?.target && event.target instanceof Element) {
+      elementScrollTop = (event.target as Element).scrollTop || 0
+    }
+    
+    // Also check for any scrollable containers with the scrollbar-thin class
+    const scrollableContainers = document.querySelectorAll('.scrollbar-thin, [class*="overflow-y-auto"], [class*="overflow-auto"]')
+    let maxScrollTop = Math.max(windowScrollTop, elementScrollTop)
+    
+    scrollableContainers.forEach((container) => {
+      if (container.scrollTop > maxScrollTop) {
+        maxScrollTop = container.scrollTop
+      }
+    })
+    
+    setIsVisible(maxScrollTop > threshold)
   }, [threshold])
 
-  // Set up scroll listener
+  // Set up scroll listener using capture phase to catch all scroll events
   useEffect(() => {
     // Check initial scroll position
     handleScroll()
     
-    // Add scroll event listener with passive option for better performance
+    // Use capture phase to catch scroll events on any element
+    document.addEventListener('scroll', handleScroll, { capture: true, passive: true })
     window.addEventListener('scroll', handleScroll, { passive: true })
     
     return () => {
+      document.removeEventListener('scroll', handleScroll, { capture: true })
       window.removeEventListener('scroll', handleScroll)
     }
   }, [handleScroll])
 
-  // Smooth scroll to top functionality
+  // Smooth scroll to top functionality - scrolls all scrollable elements
   const scrollToTop = useCallback(() => {
     setIsScrolling(true)
     
+    // Scroll the window
     window.scrollTo({
       top: 0,
       behavior: 'smooth'
+    })
+    
+    // Also scroll any scrollable containers
+    const scrollableContainers = document.querySelectorAll('.scrollbar-thin, [class*="overflow-y-auto"], [class*="overflow-auto"]')
+    scrollableContainers.forEach((container) => {
+      container.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      })
     })
     
     // Reset scrolling state after animation completes
