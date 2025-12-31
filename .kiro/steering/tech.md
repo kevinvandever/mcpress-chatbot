@@ -151,6 +151,122 @@ Examples:
 
 **Remember: This project has NO local development environment. All testing must be done on Railway after deployment.**
 
+## Running Scripts on Railway
+
+### Overview
+Since this project has no local development environment, all scripts that import backend modules must be run on Railway where dependencies are available.
+
+### Method 1: Railway Run (Recommended)
+```bash
+# Basic command execution
+railway run python3 script_name.py
+
+# With timeout (for longer scripts)
+railway run python3 script_name.py
+# Note: Use executeBash timeout parameter in Kiro for long-running scripts
+```
+
+### Method 2: Railway Shell (Interactive)
+```bash
+# Enter Railway shell environment
+railway shell
+
+# Once in shell, run commands normally
+python3 script_name.py
+exit  # to leave shell
+```
+
+### Method 3: API Testing (Alternative)
+For scripts that test backend functionality, create API-based tests instead:
+```python
+# Instead of importing backend modules directly
+import requests
+api_url = "https://mcpress-chatbot-production.up.railway.app"
+response = requests.get(f"{api_url}/api/endpoint")
+```
+
+### Common Issues and Solutions
+
+#### Issue: "No module named 'pandas'" or similar import errors
+**Cause**: Script is running locally instead of on Railway
+**Solution**: Use `railway run python3 script.py` instead of `python3 script.py`
+
+#### Issue: Railway run fails with import errors
+**Cause**: Backend modules may have dependency issues
+**Solutions**:
+1. Check if deployment completed successfully
+2. Try API-based testing instead
+3. Use Railway shell for interactive debugging
+
+#### Issue: Script hangs or times out
+**Cause**: Long-running operations
+**Solutions**:
+1. Add timeout parameter to executeBash in Kiro
+2. Break script into smaller chunks
+3. Use Railway shell for manual execution
+
+### Script Categories
+
+#### ✅ Can Run Locally
+- API testing scripts (using requests)
+- Simple utility scripts without backend imports
+- Data analysis scripts using only standard libraries
+
+#### ❌ Must Run on Railway
+- Scripts importing from `backend.*` modules
+- Scripts requiring pandas, asyncpg, or other backend dependencies
+- Database migration scripts
+- Scripts using ExcelImportService, AuthorService, etc.
+
+### Best Practices
+
+1. **Always check deployment status** before running Railway scripts
+2. **Use API tests when possible** - they're more reliable than module imports
+3. **Add timeouts** for long-running scripts in Kiro
+4. **Test with simple scripts first** to verify Railway environment
+5. **Use descriptive script names** to identify purpose quickly
+
+### Example Patterns
+
+#### Good: API-based test
+```python
+import requests
+def test_service():
+    response = requests.get("https://mcpress-chatbot-production.up.railway.app/api/health")
+    return response.status_code == 200
+```
+
+#### Problematic: Direct module import
+```python
+# This will fail locally but work on Railway
+from backend.excel_import_service import ExcelImportService
+```
+
+#### Solution: Railway-specific script
+```python
+#!/usr/bin/env python3
+"""
+This script must be run on Railway: railway run python3 script.py
+"""
+try:
+    from backend.excel_import_service import ExcelImportService
+    # ... rest of script
+except ImportError as e:
+    print(f"❌ Import error: {e}")
+    print("This script must be run on Railway where dependencies are available.")
+    sys.exit(1)
+```
+
+### Debugging Railway Scripts
+
+1. **Check Railway logs**: `railway logs`
+2. **Verify deployment**: Ensure latest code is deployed
+3. **Test basic imports**: Start with simple import tests
+4. **Use Railway shell**: For interactive debugging
+5. **Check environment variables**: Ensure DATABASE_URL etc. are set
+
+This documentation should eliminate the trial-and-error process for running scripts on Railway.
+
 ### Local Development Limitations
 - **No FastAPI server**: Cannot run `uvicorn` locally due to missing dependencies
 - **No database access**: All database operations must be done on Railway

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import ChatInterface, { ChatInterfaceRef } from '@/components/ChatInterface'
+import BackToTopButton from '@/components/BackToTopButton'
 import { API_URL } from '@/config/api'
 
 export default function Home() {
@@ -262,6 +263,9 @@ export default function Home() {
           </p>
         </div>
       </footer>
+
+      {/* Back to Top Button - Floating navigation */}
+      <BackToTopButton threshold={300} />
     </div>
   )
 }
