@@ -1357,6 +1357,7 @@ class UpdateMetadataRequest(BaseModel):
     author: str
     category: Optional[str] = None
     mc_press_url: Optional[str] = None
+    article_url: Optional[str] = None
 
 @app.post("/complete-upload")
 async def complete_upload_with_metadata(request: CompleteUploadRequest):
@@ -1421,18 +1422,56 @@ async def complete_upload_with_metadata(request: CompleteUploadRequest):
 
 @app.put("/documents/{filename}/metadata")
 async def update_document_metadata(filename: str, request: UpdateMetadataRequest):
-    """Update the title, author, category, and MC Press URL metadata for a document"""
+    """Update the title, author, category, MC Press URL, and article URL metadata for a document"""
+    global _cache_timestamp
+    
+    # Input validation
+    if not request.title or not request.title.strip():
+        raise HTTPException(status_code=400, detail="Title is required and cannot be empty")
+    
+    # Validate URL formats if provided
+    if request.mc_press_url and request.mc_press_url.strip():
+        url = request.mc_press_url.strip()
+        if not (url.startswith('http://') or url.startswith('https://')):
+            raise HTTPException(status_code=400, detail="MC Press URL must start with http:// or https://")
+    
+    if request.article_url and request.article_url.strip():
+        url = request.article_url.strip()
+        if not (url.startswith('http://') or url.startswith('https://')):
+            raise HTTPException(status_code=400, detail="Article URL must start with http:// or https://")
+    
     try:
-        await vector_store.update_document_metadata(filename, request.title, request.author, request.category, request.mc_press_url)
+        # Decode filename if it was URL-encoded
+        decoded_filename = filename
+        
+        await vector_store.update_document_metadata(
+            decoded_filename, 
+            request.title.strip(), 
+            request.author.strip() if request.author else '', 
+            request.category.strip() if request.category else None, 
+            request.mc_press_url.strip() if request.mc_press_url else None,
+            request.article_url.strip() if request.article_url else None
+        )
+        
+        # Invalidate the documents cache so changes are visible immediately
+        _cache_timestamp = 0
+        print(f"✅ Updated metadata for {decoded_filename} - cache invalidated")
+        
         return {
             "status": "success",
-            "message": f"Successfully updated metadata for {filename}",
-            "title": request.title,
-            "author": request.author,
-            "category": request.category
+            "message": f"Successfully updated metadata for {decoded_filename}",
+            "title": request.title.strip(),
+            "author": request.author.strip() if request.author else '',
+            "category": request.category.strip() if request.category else None,
+            "mc_press_url": request.mc_press_url.strip() if request.mc_press_url else None,
+            "article_url": request.article_url.strip() if request.article_url else None
         }
+    except ValueError as e:
+        # Validation errors from vector_store
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"❌ Error updating metadata for {filename}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update document: {str(e)}")
 
 @app.post("/chat")
 async def chat(

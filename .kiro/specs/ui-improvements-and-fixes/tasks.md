@@ -36,7 +36,7 @@ This implementation plan addresses comprehensive UI improvements and fixes for t
   - Test button positioning and styling
   - **Validates: Requirements 2.4, 2.5**
 
-- [ ] 3. Update Admin Dashboard Metadata Display
+- [x] 3. Update Admin Dashboard Metadata Display
   - Add author website URLs column to documents table
   - Add article URL column for article-type documents
   - Enhance document fetching to include complete author information
@@ -54,7 +54,7 @@ This implementation plan addresses comprehensive UI improvements and fixes for t
   - **Property 5: Search Functionality Preservation**
   - **Validates: Requirements 3.4**
 
-- [ ] 4. Fix Author Display System
+- [x] 4. Fix Author Display System
   - Update source enrichment to properly join author tables
   - Ensure chat interface uses authors and document_authors tables
   - Fix "Unknown Author" display to show actual author names

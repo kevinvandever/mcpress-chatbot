@@ -39,6 +39,9 @@ export default function DocumentsManagement() {
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingData, setEditingData] = useState<Partial<Document>>({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<keyof Document>('title');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -136,15 +139,43 @@ export default function DocumentsManagement() {
       author: doc.author,
       mc_press_url: doc.mc_press_url,
     });
+    setSaveError(null);
+    setSaveSuccess(null);
   };
 
   const cancelEditing = () => {
     setEditingId(null);
     setEditingData({});
+    setSaveError(null);
+    setSaveSuccess(null);
+  };
+
+  const validateEditData = (): string | null => {
+    if (!editingData.title || !editingData.title.trim()) {
+      return 'Title is required';
+    }
+    if (editingData.mc_press_url && editingData.mc_press_url.trim()) {
+      const url = editingData.mc_press_url.trim();
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        return 'MC Press URL must start with http:// or https://';
+      }
+    }
+    return null;
   };
 
   const saveEditing = async () => {
     if (!editingId) return;
+
+    // Client-side validation
+    const validationError = validateEditData();
+    if (validationError) {
+      setSaveError(validationError);
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveError(null);
+    setSaveSuccess(null);
 
     try {
       // Use the /documents/{filename}/metadata endpoint
@@ -152,16 +183,29 @@ export default function DocumentsManagement() {
       const encodedFilename = encodeURIComponent(editingId);
       await apiClient.put(`${API_URL}/documents/${encodedFilename}/metadata`, {
         filename: editingId,
-        title: editingData.title || '',
-        author: editingData.author || '',
+        title: editingData.title?.trim() || '',
+        author: editingData.author?.trim() || '',
         category: null,
-        mc_press_url: editingData.mc_press_url || null,
+        mc_press_url: editingData.mc_press_url?.trim() || null,
       });
+      
+      // Show success message briefly
+      setSaveSuccess('Changes saved successfully!');
+      
+      // Refresh the documents list to show updated data
       await fetchDocuments();
-      cancelEditing();
-    } catch (err) {
-      setError('Error updating document');
+      
+      // Clear editing state after a short delay to show success
+      setTimeout(() => {
+        cancelEditing();
+      }, 1000);
+    } catch (err: any) {
+      // Extract error message from response
+      const errorMessage = err.response?.data?.detail || err.message || 'Error updating document';
+      setSaveError(errorMessage);
       console.error('Update error:', err);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -483,19 +527,53 @@ export default function DocumentsManagement() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         {editingId === doc.filename ? (
-                          <div className="space-x-2">
-                            <button
-                              onClick={saveEditing}
-                              className="text-green-600 hover:text-green-900"
-                            >
-                              Save
-                            </button>
-                            <button
-                              onClick={cancelEditing}
-                              className="text-gray-600 hover:text-gray-900"
-                            >
-                              Cancel
-                            </button>
+                          <div className="space-y-2">
+                            {/* Error message */}
+                            {saveError && (
+                              <div className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded">
+                                {saveError}
+                              </div>
+                            )}
+                            {/* Success message */}
+                            {saveSuccess && (
+                              <div className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
+                                {saveSuccess}
+                              </div>
+                            )}
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={saveEditing}
+                                disabled={isSaving}
+                                className={`${
+                                  isSaving 
+                                    ? 'text-gray-400 cursor-not-allowed' 
+                                    : 'text-green-600 hover:text-green-900'
+                                }`}
+                              >
+                                {isSaving ? (
+                                  <span className="flex items-center">
+                                    <svg className="animate-spin -ml-1 mr-1 h-3 w-3 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Saving...
+                                  </span>
+                                ) : (
+                                  'Save'
+                                )}
+                              </button>
+                              <button
+                                onClick={cancelEditing}
+                                disabled={isSaving}
+                                className={`${
+                                  isSaving 
+                                    ? 'text-gray-300 cursor-not-allowed' 
+                                    : 'text-gray-600 hover:text-gray-900'
+                                }`}
+                              >
+                                Cancel
+                              </button>
+                            </div>
                           </div>
                         ) : (
                           <div className="space-x-2">

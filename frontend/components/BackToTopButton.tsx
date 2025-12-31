@@ -56,8 +56,6 @@ export default function BackToTopButton({
 
   // Smooth scroll to top functionality - scrolls all scrollable elements
   const scrollToTop = () => {
-    console.log('BackToTopButton clicked - scrolling to top')
-    
     // Scroll the window
     window.scrollTo({
       top: 0,
@@ -66,10 +64,7 @@ export default function BackToTopButton({
     
     // Also scroll any scrollable containers
     const scrollableContainers = document.querySelectorAll('.scrollbar-thin, [class*="overflow-y-auto"], [class*="overflow-auto"]')
-    console.log('Found scrollable containers:', scrollableContainers.length)
-    
-    scrollableContainers.forEach((container, index) => {
-      console.log(`Scrolling container ${index} from ${container.scrollTop} to 0`)
+    scrollableContainers.forEach((container) => {
       container.scrollTo({
         top: 0,
         behavior: 'smooth'
