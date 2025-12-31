@@ -12,6 +12,7 @@ interface Author {
 }
 
 interface Document {
+  id?: number;
   filename: string;
   title: string;
   author?: string;
@@ -34,53 +35,70 @@ interface PaginationInfo {
 
 export default function DocumentsManagement() {
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingData, setEditingData] = useState<Partial<Document>>({});
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<keyof Document>('title');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
-    perPage: 20,
+    perPage: 25,
     total: 0,
     totalPages: 0,
   });
+  
+  // Edit form state
+  const [editForm, setEditForm] = useState({
+    title: '',
+    author: '',
+    mc_press_url: '',
+    article_url: '',
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+  
+  // Delete state
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<string | 'bulk' | null>(null);
-  const [bulkAction, setBulkAction] = useState('');
-  const [bulkValue, setBulkValue] = useState('');
 
   useEffect(() => {
     fetchDocuments();
   }, [pagination.page, searchTerm, sortField, sortDirection]);
 
+  // Update edit form when selected document changes
+  useEffect(() => {
+    if (selectedDoc) {
+      setEditForm({
+        title: selectedDoc.title || '',
+        author: selectedDoc.author || '',
+        mc_press_url: selectedDoc.mc_press_url || '',
+        article_url: selectedDoc.article_url || '',
+      });
+      setSaveError(null);
+      setSaveSuccess(null);
+    }
+  }, [selectedDoc]);
+
   const fetchDocuments = async () => {
     try {
       setLoading(true);
-
-      // TEMP FIX: Skip broken /admin/documents endpoint, use /documents directly
-      // TODO: Fix books table schema and re-enable /admin/documents
-      const fallbackResponse = await apiClient.get(`${API_URL}/documents`);
-      const data = fallbackResponse.data;
+      const response = await apiClient.get(`${API_URL}/documents`);
+      const data = response.data;
       const docs = data.documents || [];
 
       // Apply client-side filtering and sorting
       let filteredDocs = docs;
       if (searchTerm) {
-        filteredDocs = filteredDocs.filter((doc: any) =>
+        filteredDocs = filteredDocs.filter((doc: Document) =>
           doc.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          doc.author?.toLowerCase().includes(searchTerm.toLowerCase())
+          doc.author?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          doc.filename?.toLowerCase().includes(searchTerm.toLowerCase())
         );
       }
 
       // Sort documents
-      filteredDocs.sort((a: any, b: any) => {
+      filteredDocs.sort((a: Document, b: Document) => {
         const aVal = a[sortField] || '';
         const bVal = b[sortField] || '';
         const comparison = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
@@ -114,60 +132,33 @@ export default function DocumentsManagement() {
     }
   };
 
-  const handleSelectAll = () => {
-    if (selectedIds.size === documents.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(documents.map(doc => doc.filename)));
-    }
+  const selectDocument = (doc: Document) => {
+    setSelectedDoc(doc);
   };
 
-  const handleSelectOne = (filename: string) => {
-    const newSelected = new Set(selectedIds);
-    if (newSelected.has(filename)) {
-      newSelected.delete(filename);
-    } else {
-      newSelected.add(filename);
-    }
-    setSelectedIds(newSelected);
-  };
-
-  const startEditing = (doc: Document) => {
-    setEditingId(doc.filename);
-    setEditingData({
-      title: doc.title,
-      author: doc.author,
-      mc_press_url: doc.mc_press_url,
-    });
+  const closePanel = () => {
+    setSelectedDoc(null);
     setSaveError(null);
     setSaveSuccess(null);
   };
 
-  const cancelEditing = () => {
-    setEditingId(null);
-    setEditingData({});
-    setSaveError(null);
-    setSaveSuccess(null);
-  };
-
-  const validateEditData = (): string | null => {
-    if (!editingData.title || !editingData.title.trim()) {
+  const validateForm = (): string | null => {
+    if (!editForm.title.trim()) {
       return 'Title is required';
     }
-    if (editingData.mc_press_url && editingData.mc_press_url.trim()) {
-      const url = editingData.mc_press_url.trim();
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        return 'MC Press URL must start with http:// or https://';
-      }
+    if (editForm.mc_press_url.trim() && !editForm.mc_press_url.startsWith('http')) {
+      return 'MC Press URL must start with http:// or https://';
+    }
+    if (editForm.article_url.trim() && !editForm.article_url.startsWith('http')) {
+      return 'Article URL must start with http:// or https://';
     }
     return null;
   };
 
-  const saveEditing = async () => {
-    if (!editingId) return;
+  const saveChanges = async () => {
+    if (!selectedDoc) return;
 
-    // Client-side validation
-    const validationError = validateEditData();
+    const validationError = validateForm();
     if (validationError) {
       setSaveError(validationError);
       return;
@@ -178,29 +169,29 @@ export default function DocumentsManagement() {
     setSaveSuccess(null);
 
     try {
-      // Use the /documents/{filename}/metadata endpoint
-      // Encode filename to handle special characters (periods, spaces, etc.)
-      const encodedFilename = encodeURIComponent(editingId);
+      const encodedFilename = encodeURIComponent(selectedDoc.filename);
       await apiClient.put(`${API_URL}/documents/${encodedFilename}/metadata`, {
-        filename: editingId,
-        title: editingData.title?.trim() || '',
-        author: editingData.author?.trim() || '',
+        filename: selectedDoc.filename,
+        title: editForm.title.trim(),
+        author: editForm.author.trim(),
         category: null,
-        mc_press_url: editingData.mc_press_url?.trim() || null,
+        mc_press_url: editForm.mc_press_url.trim() || null,
+        article_url: editForm.article_url.trim() || null,
       });
       
-      // Show success message briefly
       setSaveSuccess('Changes saved successfully!');
-      
-      // Refresh the documents list to show updated data
       await fetchDocuments();
       
-      // Clear editing state after a short delay to show success
-      setTimeout(() => {
-        cancelEditing();
-      }, 1000);
+      // Update selected doc with new values
+      setSelectedDoc(prev => prev ? {
+        ...prev,
+        title: editForm.title.trim(),
+        author: editForm.author.trim(),
+        mc_press_url: editForm.mc_press_url.trim() || undefined,
+        article_url: editForm.article_url.trim() || undefined,
+      } : null);
+      
     } catch (err: any) {
-      // Extract error message from response
       const errorMessage = err.response?.data?.detail || err.message || 'Error updating document';
       setSaveError(errorMessage);
       console.error('Update error:', err);
@@ -210,440 +201,317 @@ export default function DocumentsManagement() {
   };
 
   const handleDelete = async () => {
+    if (!selectedDoc) return;
+    
     try {
-      if (deleteTarget === 'bulk') {
-        // Delete selected files one by one
-        for (const filename of selectedIds) {
-          const encodedFilename = encodeURIComponent(filename);
-          await apiClient.delete(`${API_URL}/documents/${encodedFilename}`);
-        }
-        setSelectedIds(new Set());
-        await fetchDocuments();
-      } else if (typeof deleteTarget === 'string') {
-        // Single delete
-        const encodedFilename = encodeURIComponent(deleteTarget);
-        await apiClient.delete(`${API_URL}/documents/${encodedFilename}`);
-        await fetchDocuments();
-      }
-    } catch (err) {
-      setError('Error deleting documents');
-      console.error('Delete error:', err);
-    } finally {
+      const encodedFilename = encodeURIComponent(selectedDoc.filename);
+      await apiClient.delete(`${API_URL}/documents/${encodedFilename}`);
       setShowDeleteDialog(false);
-      setDeleteTarget(null);
-    }
-  };
-
-  const handleBulkAction = async () => {
-    if (!bulkAction || selectedIds.size === 0) return;
-
-    try {
-      // Update each document one by one
-      for (const filename of selectedIds) {
-        const encodedFilename = encodeURIComponent(filename);
-
-        // Find current document to preserve other fields
-        const currentDoc = documents.find(d => d.filename === filename);
-        if (!currentDoc) continue;
-
-        const updateData: any = {
-          filename: filename,
-          title: currentDoc.title || '',
-          author: bulkAction === 'author' ? bulkValue : (currentDoc.author || ''),
-          category: null,
-          mc_press_url: currentDoc.mc_press_url || null
-        };
-
-        await apiClient.put(`${API_URL}/documents/${encodedFilename}/metadata`, updateData);
-      }
-      setSelectedIds(new Set());
-      setBulkAction('');
-      setBulkValue('');
+      setSelectedDoc(null);
       await fetchDocuments();
     } catch (err) {
-      setError('Error performing bulk action');
-      console.error('Bulk action error:', err);
+      setError('Error deleting document');
+      console.error('Delete error:', err);
     }
   };
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="sm:flex sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Documents Management</h2>
-            <p className="mt-1 text-sm text-gray-600">
-              View and manage document metadata including authors, URLs, and purchase links
-            </p>
-          </div>
-        </div>
+      <div className="flex h-full">
+        {/* Main List Panel */}
+        <div className={`flex-1 ${selectedDoc ? 'pr-4' : ''}`}>
+          <div className="space-y-4">
+            {/* Header */}
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Documents</h2>
+              <p className="text-sm text-gray-600">Click a document to view and edit details</p>
+            </div>
 
-        {/* Filters */}
-        <div className="bg-white shadow rounded-lg p-4">
-          <div>
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700">
-              Search
-            </label>
-            <input
-              type="text"
-              id="search"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              placeholder="Search by title or author..."
-            />
-          </div>
-        </div>
+            {/* Search */}
+            <div>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                placeholder="Search by title, author, or filename..."
+              />
+            </div>
 
-        {/* Bulk Actions */}
-        {selectedIds.size > 0 && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-blue-700">
-                {selectedIds.size} document(s) selected
-              </span>
-              <div className="flex items-center space-x-2">
-                <select
-                  value={bulkAction}
-                  onChange={(e) => setBulkAction(e.target.value)}
-                  className="rounded-md border-gray-300 text-sm"
-                >
-                  <option value="">Select Action</option>
-                  <option value="author">Update Author</option>
-                  <option value="delete">Delete Selected</option>
-                </select>
-                {bulkAction && bulkAction !== 'delete' && (
-                  <>
-                    <input
-                      type="text"
-                      value={bulkValue}
-                      onChange={(e) => setBulkValue(e.target.value)}
-                      placeholder={`New ${bulkAction}...`}
-                      className="rounded-md border-gray-300 text-sm"
-                    />
-                    <button
-                      onClick={handleBulkAction}
-                      className="inline-flex items-center justify-center rounded-md bg-blue-600 px-3 py-1 text-sm font-medium text-white hover:bg-blue-700"
-                    >
-                      Apply
-                    </button>
-                  </>
-                )}
-                {bulkAction === 'delete' && (
-                  <button
-                    onClick={() => {
-                      setDeleteTarget('bulk');
-                      setShowDeleteDialog(true);
-                    }}
-                    className="inline-flex items-center justify-center rounded-md bg-red-600 px-3 py-1 text-sm font-medium text-white hover:bg-red-700"
-                  >
-                    Delete Selected
+            {/* Documents List */}
+            <div className="bg-white shadow rounded-lg overflow-hidden">
+              {loading ? (
+                <div className="p-8 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-2 text-gray-600 text-sm">Loading...</p>
+                </div>
+              ) : error ? (
+                <div className="p-8 text-center">
+                  <p className="text-red-600">{error}</p>
+                  <button onClick={fetchDocuments} className="mt-2 text-blue-600 hover:text-blue-500 text-sm">
+                    Try Again
                   </button>
+                </div>
+              ) : (
+                <>
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th
+                          onClick={() => handleSort('title')}
+                          className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                        >
+                          Title {sortField === 'title' && (sortDirection === 'asc' ? '↑' : '↓')}
+                        </th>
+                        <th
+                          onClick={() => handleSort('author')}
+                          className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                        >
+                          Author {sortField === 'author' && (sortDirection === 'asc' ? '↑' : '↓')}
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Type
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {documents.map((doc) => (
+                        <tr
+                          key={doc.filename}
+                          onClick={() => selectDocument(doc)}
+                          className={`cursor-pointer hover:bg-blue-50 ${
+                            selectedDoc?.filename === doc.filename ? 'bg-blue-100' : ''
+                          }`}
+                        >
+                          <td className="px-4 py-3">
+                            <div className="text-sm font-medium text-gray-900 truncate max-w-xs">
+                              {doc.title}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="text-sm text-gray-600 truncate max-w-xs">
+                              {doc.authors && doc.authors.length > 0
+                                ? doc.authors.map(a => a.name).join(', ')
+                                : doc.author || '-'}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
+                              doc.document_type === 'article'
+                                ? 'bg-purple-100 text-purple-800'
+                                : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {doc.document_type || 'book'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {/* Pagination */}
+                  <div className="bg-gray-50 px-4 py-3 border-t border-gray-200 flex items-center justify-between">
+                    <span className="text-sm text-gray-700">
+                      {pagination.total} documents
+                    </span>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
+                        disabled={pagination.page === 1}
+                        className="px-3 py-1 text-sm border rounded disabled:opacity-50"
+                      >
+                        Prev
+                      </button>
+                      <span className="px-3 py-1 text-sm">
+                        {pagination.page} / {pagination.totalPages || 1}
+                      </span>
+                      <button
+                        onClick={() => setPagination(prev => ({ ...prev, page: Math.min(prev.totalPages, prev.page + 1) }))}
+                        disabled={pagination.page >= pagination.totalPages}
+                        className="px-3 py-1 text-sm border rounded disabled:opacity-50"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Detail Panel */}
+        {selectedDoc && (
+          <div className="w-96 bg-white shadow-lg rounded-lg border-l border-gray-200 overflow-y-auto">
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
+              <h3 className="font-semibold text-gray-900">Document Details</h3>
+              <button
+                onClick={closePanel}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-4 space-y-4">
+              {/* Status Messages */}
+              {saveError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                  {saveError}
+                </div>
+              )}
+              {saveSuccess && (
+                <div className="p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+                  {saveSuccess}
+                </div>
+              )}
+
+              {/* Filename (read-only) */}
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase mb-1">
+                  Filename
+                </label>
+                <div className="text-sm text-gray-900 bg-gray-50 p-2 rounded break-all">
+                  {selectedDoc.filename}
+                </div>
+              </div>
+
+              {/* Document Type (read-only) */}
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase mb-1">
+                  Type
+                </label>
+                <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${
+                  selectedDoc.document_type === 'article'
+                    ? 'bg-purple-100 text-purple-800'
+                    : 'bg-blue-100 text-blue-800'
+                }`}>
+                  {selectedDoc.document_type || 'book'}
+                </span>
+              </div>
+
+              {/* Title (editable) */}
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase mb-1">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  value={editForm.title}
+                  onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                  className="w-full rounded border-gray-300 text-sm"
+                />
+              </div>
+
+              {/* Author (editable) */}
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase mb-1">
+                  Author
+                </label>
+                <input
+                  type="text"
+                  value={editForm.author}
+                  onChange={(e) => setEditForm({ ...editForm, author: e.target.value })}
+                  className="w-full rounded border-gray-300 text-sm"
+                  placeholder="Author name"
+                />
+                {selectedDoc.authors && selectedDoc.authors.length > 0 && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    Multi-author: {selectedDoc.authors.map(a => a.name).join(', ')}
+                  </p>
                 )}
+              </div>
+
+              {/* Author URLs (read-only for now) */}
+              {selectedDoc.authors && selectedDoc.authors.some(a => a.site_url) && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 uppercase mb-1">
+                    Author URLs
+                  </label>
+                  <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded space-y-1">
+                    {selectedDoc.authors.map((author, idx) => (
+                      <div key={idx} className="break-all">
+                        <span className="font-medium">{author.name}:</span>{' '}
+                        {author.site_url || '-'}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Article URL (editable for articles) */}
+              {selectedDoc.document_type === 'article' && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 uppercase mb-1">
+                    Article URL
+                  </label>
+                  <input
+                    type="url"
+                    value={editForm.article_url}
+                    onChange={(e) => setEditForm({ ...editForm, article_url: e.target.value })}
+                    className="w-full rounded border-gray-300 text-sm"
+                    placeholder="https://..."
+                  />
+                </div>
+              )}
+
+              {/* MC Press URL (editable) */}
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase mb-1">
+                  MC Press URL
+                </label>
+                <input
+                  type="url"
+                  value={editForm.mc_press_url}
+                  onChange={(e) => setEditForm({ ...editForm, mc_press_url: e.target.value })}
+                  className="w-full rounded border-gray-300 text-sm"
+                  placeholder="https://mcpress.link/..."
+                />
+              </div>
+
+              {/* Additional Info (read-only) */}
+              <div className="pt-2 border-t border-gray-200">
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span className="text-gray-500">Pages:</span>{' '}
+                    <span className="text-gray-900">{selectedDoc.total_pages || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Chunks:</span>{' '}
+                    <span className="text-gray-900">{selectedDoc.chunk_count || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Category:</span>{' '}
+                    <span className="text-gray-900">{selectedDoc.category || 'N/A'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-4 border-t border-gray-200 space-y-2">
+                <button
+                  onClick={saveChanges}
+                  disabled={isSaving}
+                  className={`w-full py-2 px-4 rounded font-medium text-white ${
+                    isSaving
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
+                >
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+                <button
+                  onClick={() => setShowDeleteDialog(true)}
+                  className="w-full py-2 px-4 rounded font-medium text-red-600 border border-red-300 hover:bg-red-50"
+                >
+                  Delete Document
+                </button>
               </div>
             </div>
           </div>
         )}
-
-        {/* Documents Table */}
-        <div className="bg-white shadow rounded-lg overflow-hidden">
-          {loading ? (
-            <div className="p-8 text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-4 text-gray-600">Loading documents...</p>
-            </div>
-          ) : error ? (
-            <div className="p-8 text-center">
-              <p className="text-red-600">{error}</p>
-              <button
-                onClick={fetchDocuments}
-                className="mt-4 text-blue-600 hover:text-blue-500"
-              >
-                Try Again
-              </button>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.size === documents.length && documents.length > 0}
-                        onChange={handleSelectAll}
-                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                    </th>
-                    <th
-                      onClick={() => handleSort('title')}
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                    >
-                      Title {sortField === 'title' && (sortDirection === 'asc' ? '↑' : '↓')}
-                    </th>
-                    <th
-                      onClick={() => handleSort('author')}
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                    >
-                      Authors {sortField === 'author' && (sortDirection === 'asc' ? '↑' : '↓')}
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Author URLs
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Article URL
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      MC Press URL
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {documents.map((doc) => (
-                    <tr key={doc.filename} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.has(doc.filename)}
-                          onChange={() => handleSelectOne(doc.filename)}
-                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                      </td>
-                      <td className="px-6 py-4">
-                        {editingId === doc.filename ? (
-                          <input
-                            type="text"
-                            value={editingData.title || ''}
-                            onChange={(e) => setEditingData({ ...editingData, title: e.target.value })}
-                            className="w-full rounded-md border-gray-300 text-sm"
-                          />
-                        ) : (
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">{doc.title}</div>
-                            <div className="text-sm text-gray-500">{doc.filename}</div>
-                            {doc.document_type && (
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium mt-1 ${
-                                doc.document_type === 'article' 
-                                  ? 'bg-purple-100 text-purple-800' 
-                                  : 'bg-blue-100 text-blue-800'
-                              }`}>
-                                {doc.document_type}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        {editingId === doc.filename ? (
-                          <input
-                            type="text"
-                            value={editingData.author || ''}
-                            onChange={(e) => setEditingData({ ...editingData, author: e.target.value })}
-                            className="w-full rounded-md border-gray-300 text-sm"
-                          />
-                        ) : (
-                          <div className="text-sm text-gray-900">
-                            {doc.authors && doc.authors.length > 0 ? (
-                              <div className="space-y-1">
-                                {doc.authors.map((author, idx) => (
-                                  <div key={idx}>{author.name}</div>
-                                ))}
-                              </div>
-                            ) : (
-                              doc.author || '-'
-                            )}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-500">
-                          {doc.authors && doc.authors.length > 0 ? (
-                            <div className="space-y-1">
-                              {doc.authors.map((author, idx) => (
-                                <div key={idx} className="truncate max-w-xs" title={author.site_url || ''}>
-                                  {author.site_url || '-'}
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-500 truncate max-w-xs" title={doc.article_url || ''}>
-                          {doc.document_type === 'article' && doc.article_url ? (
-                            doc.article_url
-                          ) : doc.document_type === 'article' ? (
-                            <span className="text-gray-400">-</span>
-                          ) : (
-                            <span className="text-gray-400">N/A</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        {editingId === doc.filename ? (
-                          <input
-                            type="url"
-                            value={editingData.mc_press_url || ''}
-                            onChange={(e) => setEditingData({ ...editingData, mc_press_url: e.target.value })}
-                            placeholder="https://mcpress.link/..."
-                            className="w-full rounded-md border-gray-300 text-sm"
-                          />
-                        ) : (
-                          <div className="text-sm text-gray-900">
-                            {doc.mc_press_url ? (
-                              <a href={doc.mc_press_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                                Buy Book
-                              </a>
-                            ) : (
-                              <span className="text-gray-400">Not Available</span>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        {editingId === doc.filename ? (
-                          <div className="space-y-2">
-                            {/* Error message */}
-                            {saveError && (
-                              <div className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded">
-                                {saveError}
-                              </div>
-                            )}
-                            {/* Success message */}
-                            {saveSuccess && (
-                              <div className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
-                                {saveSuccess}
-                              </div>
-                            )}
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={saveEditing}
-                                disabled={isSaving}
-                                className={`${
-                                  isSaving 
-                                    ? 'text-gray-400 cursor-not-allowed' 
-                                    : 'text-green-600 hover:text-green-900'
-                                }`}
-                              >
-                                {isSaving ? (
-                                  <span className="flex items-center">
-                                    <svg className="animate-spin -ml-1 mr-1 h-3 w-3 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    Saving...
-                                  </span>
-                                ) : (
-                                  'Save'
-                                )}
-                              </button>
-                              <button
-                                onClick={cancelEditing}
-                                disabled={isSaving}
-                                className={`${
-                                  isSaving 
-                                    ? 'text-gray-300 cursor-not-allowed' 
-                                    : 'text-gray-600 hover:text-gray-900'
-                                }`}
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="space-x-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                startEditing(doc);
-                              }}
-                              className="text-blue-600 hover:text-blue-900"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDeleteTarget(doc.filename);
-                                setShowDeleteDialog(true);
-                              }}
-                              className="text-red-600 hover:text-red-900"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Pagination */}
-          {!loading && documents.length > 0 && (
-            <div className="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
-              <div className="flex items-center justify-between">
-                <div className="flex-1 flex justify-between sm:hidden">
-                  <button
-                    onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
-                    disabled={pagination.page === 1}
-                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    onClick={() => setPagination(prev => ({ ...prev, page: Math.min(prev.totalPages, prev.page + 1) }))}
-                    disabled={pagination.page === pagination.totalPages}
-                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    Next
-                  </button>
-                </div>
-                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm text-gray-700">
-                      Showing{' '}
-                      <span className="font-medium">{(pagination.page - 1) * pagination.perPage + 1}</span>
-                      {' '}to{' '}
-                      <span className="font-medium">
-                        {Math.min(pagination.page * pagination.perPage, pagination.total)}
-                      </span>
-                      {' '}of{' '}
-                      <span className="font-medium">{pagination.total}</span>
-                      {' '}documents
-                    </p>
-                  </div>
-                  <div>
-                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                      <button
-                        onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
-                        disabled={pagination.page === 1}
-                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                      >
-                        Previous
-                      </button>
-                      <button
-                        onClick={() => setPagination(prev => ({ ...prev, page: Math.min(prev.totalPages, prev.page + 1) }))}
-                        disabled={pagination.page === pagination.totalPages}
-                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                      >
-                        Next
-                      </button>
-                    </nav>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
 
         {/* Delete Confirmation Dialog */}
         {showDeleteDialog && (
@@ -651,22 +519,17 @@ export default function DocumentsManagement() {
             <div className="bg-white rounded-lg p-6 max-w-md w-full">
               <h3 className="text-lg font-medium text-gray-900">Confirm Delete</h3>
               <p className="mt-2 text-sm text-gray-500">
-                {deleteTarget === 'bulk'
-                  ? `Are you sure you want to delete ${selectedIds.size} document(s)? This action cannot be undone.`
-                  : 'Are you sure you want to delete this document? This action cannot be undone.'}
+                Are you sure you want to delete "{selectedDoc?.title}"? This action cannot be undone.
               </p>
               <div className="mt-4 flex space-x-3">
                 <button
                   onClick={handleDelete}
-                  className="flex-1 inline-flex justify-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+                  className="flex-1 inline-flex justify-center rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
                 >
                   Delete
                 </button>
                 <button
-                  onClick={() => {
-                    setShowDeleteDialog(false);
-                    setDeleteTarget(null);
-                  }}
+                  onClick={() => setShowDeleteDialog(false)}
                   className="flex-1 inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
@@ -675,7 +538,6 @@ export default function DocumentsManagement() {
             </div>
           </div>
         )}
-
       </div>
     </AdminLayout>
   );

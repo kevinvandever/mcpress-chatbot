@@ -555,7 +555,7 @@ class PostgresVectorStore:
             logger.info(f"Deleted {deleted_count} chunks for {filename}")
 
     async def update_document_metadata(self, filename: str, title: str, author: str, category: str = None, mc_press_url: str = None, article_url: str = None):
-        """Update document metadata in both books table and documents table metadata JSONB"""
+        """Update document metadata in books table, documents table, and optionally authors table"""
         # Only init if pool doesn't exist
         if not self.pool:
             await self.init_database()
@@ -589,7 +589,7 @@ class PostgresVectorStore:
         }
 
         async with self.pool.acquire() as conn:
-            # Use a transaction to ensure both updates succeed or fail together
+            # Use a transaction to ensure all updates succeed or fail together
             async with conn.transaction():
                 # Check if books table exists
                 books_exists = await conn.fetchval("""
@@ -600,9 +600,14 @@ class PostgresVectorStore:
                 """)
                 
                 rows_updated = 0
+                book_id = None
                 
                 if books_exists:
-                    # Update the books table (primary source for list_documents)
+                    # Get the book ID first
+                    book_id = await conn.fetchval("""
+                        SELECT id FROM books WHERE filename = $1
+                    """, filename)
+                    
                     # Check which columns exist
                     columns_result = await conn.fetch("""
                         SELECT column_name 
@@ -639,6 +644,55 @@ class PostgresVectorStore:
                     result = await conn.execute(query, *params)
                     rows_updated = int(result.split()[-1])
                     logger.info(f"Updated books table for {filename}: {rows_updated} rows affected")
+                
+                # If author is provided and book_id exists, update the primary author in authors table
+                if author and book_id:
+                    # Check if document_authors table exists
+                    doc_authors_exists = await conn.fetchval("""
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.tables 
+                            WHERE table_name = 'document_authors'
+                        )
+                    """)
+                    
+                    if doc_authors_exists:
+                        # Get the primary author (order 0) for this book
+                        primary_author = await conn.fetchrow("""
+                            SELECT da.author_id, a.name
+                            FROM document_authors da
+                            JOIN authors a ON a.id = da.author_id
+                            WHERE da.book_id = $1
+                            ORDER BY da.author_order
+                            LIMIT 1
+                        """, book_id)
+                        
+                        if primary_author:
+                            # Update the existing author's name
+                            await conn.execute("""
+                                UPDATE authors SET name = $1 WHERE id = $2
+                            """, author, primary_author['author_id'])
+                            logger.info(f"Updated primary author name to '{author}' for book_id {book_id}")
+                        else:
+                            # No author association exists, create one
+                            # First check if author exists
+                            existing_author_id = await conn.fetchval("""
+                                SELECT id FROM authors WHERE name = $1
+                            """, author)
+                            
+                            if not existing_author_id:
+                                # Create new author
+                                existing_author_id = await conn.fetchval("""
+                                    INSERT INTO authors (name) VALUES ($1) RETURNING id
+                                """, author)
+                                logger.info(f"Created new author '{author}' with id {existing_author_id}")
+                            
+                            # Create document_authors association
+                            await conn.execute("""
+                                INSERT INTO document_authors (book_id, author_id, author_order)
+                                VALUES ($1, $2, 0)
+                                ON CONFLICT (book_id, author_id) DO NOTHING
+                            """, book_id, existing_author_id)
+                            logger.info(f"Created author association for book_id {book_id}")
                 
                 # Also update the documents table metadata JSONB for consistency
                 doc_result = await conn.execute("""
