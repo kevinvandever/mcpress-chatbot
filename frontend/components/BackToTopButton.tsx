@@ -14,31 +14,21 @@ interface BackToTopButtonProps {
  * and smoothly scrolls to the top of the page when clicked.
  * 
  * Follows MC Press design system and accessibility standards.
- * 
- * This component uses event capturing to detect scroll events on any
- * scrollable element on the page, making it work with various layout patterns.
  */
 export default function BackToTopButton({ 
   threshold = 300,
   className = ''
 }: BackToTopButtonProps) {
   const [isVisible, setIsVisible] = useState(false)
-  const [isScrolling, setIsScrolling] = useState(false)
 
   // Handle scroll position detection - checks all scrollable elements
-  const handleScroll = useCallback((event?: Event) => {
+  const handleScroll = useCallback(() => {
     // Check window scroll
     const windowScrollTop = window.pageYOffset || document.documentElement.scrollTop
     
-    // Check if the event target is a scrollable element
-    let elementScrollTop = 0
-    if (event?.target && event.target instanceof Element) {
-      elementScrollTop = (event.target as Element).scrollTop || 0
-    }
-    
-    // Also check for any scrollable containers with the scrollbar-thin class
+    // Also check for any scrollable containers
     const scrollableContainers = document.querySelectorAll('.scrollbar-thin, [class*="overflow-y-auto"], [class*="overflow-auto"]')
-    let maxScrollTop = Math.max(windowScrollTop, elementScrollTop)
+    let maxScrollTop = windowScrollTop
     
     scrollableContainers.forEach((container) => {
       if (container.scrollTop > maxScrollTop) {
@@ -65,8 +55,8 @@ export default function BackToTopButton({
   }, [handleScroll])
 
   // Smooth scroll to top functionality - scrolls all scrollable elements
-  const scrollToTop = useCallback(() => {
-    setIsScrolling(true)
+  const scrollToTop = () => {
+    console.log('BackToTopButton clicked - scrolling to top')
     
     // Scroll the window
     window.scrollTo({
@@ -76,26 +66,16 @@ export default function BackToTopButton({
     
     // Also scroll any scrollable containers
     const scrollableContainers = document.querySelectorAll('.scrollbar-thin, [class*="overflow-y-auto"], [class*="overflow-auto"]')
-    scrollableContainers.forEach((container) => {
+    console.log('Found scrollable containers:', scrollableContainers.length)
+    
+    scrollableContainers.forEach((container, index) => {
+      console.log(`Scrolling container ${index} from ${container.scrollTop} to 0`)
       container.scrollTo({
         top: 0,
         behavior: 'smooth'
       })
     })
-    
-    // Reset scrolling state after animation completes
-    setTimeout(() => {
-      setIsScrolling(false)
-    }, 500)
-  }, [])
-
-  // Handle keyboard navigation
-  const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLButtonElement>) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault()
-      scrollToTop()
-    }
-  }, [scrollToTop])
+  }
 
   // Don't render if not visible
   if (!isVisible) {
@@ -104,44 +84,45 @@ export default function BackToTopButton({
 
   return (
     <button
-      onClick={scrollToTop}
-      onKeyDown={handleKeyDown}
+      type="button"
+      onClick={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        scrollToTop()
+      }}
       className={`
-        fixed bottom-6 right-6 z-50
-        w-12 h-12 rounded-full
+        fixed bottom-6 right-6 z-[9999]
+        w-14 h-14 rounded-full
         flex items-center justify-center
-        shadow-lg hover:shadow-xl
+        shadow-xl hover:shadow-2xl
         transition-all duration-300 ease-in-out
-        transform hover:scale-110
+        transform hover:scale-110 active:scale-95
         focus:outline-none focus:ring-4 focus:ring-offset-2
-        disabled:opacity-50 disabled:cursor-not-allowed
-        ${isScrolling ? 'animate-pulse' : ''}
+        cursor-pointer
         ${className}
       `}
       style={{
-        backgroundColor: 'var(--mc-blue)',
+        backgroundColor: 'var(--mc-blue, #878DBC)',
         color: 'white',
-        // Focus ring uses MC Press blue
-        '--tw-ring-color': 'var(--mc-blue-light)',
+        '--tw-ring-color': 'var(--mc-blue-light, #A5AACF)',
       } as React.CSSProperties}
       aria-label="Scroll to top of page"
       title="Back to top"
-      disabled={isScrolling}
       tabIndex={0}
-      role="button"
     >
       {/* Up Arrow Icon */}
       <svg 
-        className="w-6 h-6" 
+        className="w-7 h-7" 
         fill="none" 
         stroke="currentColor" 
         viewBox="0 0 24 24"
         aria-hidden="true"
+        style={{ pointerEvents: 'none' }}
       >
         <path 
           strokeLinecap="round" 
           strokeLinejoin="round" 
-          strokeWidth={2} 
+          strokeWidth={2.5} 
           d="M5 10l7-7m0 0l7 7m-7-7v18" 
         />
       </svg>
