@@ -460,24 +460,12 @@ export default function DocumentsManagement() {
                         )}
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm">
+                        <div className="text-sm text-gray-500">
                           {doc.authors && doc.authors.length > 0 ? (
                             <div className="space-y-1">
                               {doc.authors.map((author, idx) => (
-                                <div key={idx}>
-                                  {author.site_url ? (
-                                    <a 
-                                      href={author.site_url} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer" 
-                                      className="text-blue-600 hover:underline"
-                                      title={author.site_url}
-                                    >
-                                      {author.name}
-                                    </a>
-                                  ) : (
-                                    <span className="text-gray-400">-</span>
-                                  )}
+                                <div key={idx} className="truncate max-w-xs" title={author.site_url || ''}>
+                                  {author.site_url || '-'}
                                 </div>
                               ))}
                             </div>
@@ -487,20 +475,13 @@ export default function DocumentsManagement() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">
+                        <div className="text-sm text-gray-500 truncate max-w-xs" title={doc.article_url || ''}>
                           {doc.document_type === 'article' && doc.article_url ? (
-                            <a 
-                              href={doc.article_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer" 
-                              className="text-blue-600 hover:underline"
-                            >
-                              Read Article
-                            </a>
+                            doc.article_url
                           ) : doc.document_type === 'article' ? (
-                            <span className="text-gray-400">Not Available</span>
+                            <span className="text-gray-400">-</span>
                           ) : (
-                            <span className="text-gray-400">N/A (Book)</span>
+                            <span className="text-gray-400">N/A</span>
                           )}
                         </div>
                       </td>

@@ -554,26 +554,105 @@ class PostgresVectorStore:
             deleted_count = int(result.split()[-1])
             logger.info(f"Deleted {deleted_count} chunks for {filename}")
 
-    async def update_document_metadata(self, filename: str, title: str, author: str, category: str = None, mc_press_url: str = None):
-        """Update document metadata for all chunks of a specific filename"""
+    async def update_document_metadata(self, filename: str, title: str, author: str, category: str = None, mc_press_url: str = None, article_url: str = None):
+        """Update document metadata in both books table and documents table metadata JSONB"""
         # Only init if pool doesn't exist
         if not self.pool:
             await self.init_database()
+
+        # Input validation
+        if not filename or not filename.strip():
+            raise ValueError("Filename is required")
+        if not title or not title.strip():
+            raise ValueError("Title is required")
+        
+        # Normalize inputs
+        filename = filename.strip()
+        title = title.strip()
+        author = author.strip() if author else None
+        category = category.strip() if category else None
+        mc_press_url = mc_press_url.strip() if mc_press_url else None
+        article_url = article_url.strip() if article_url else None
+        
+        # Validate URL format if provided
+        if mc_press_url and not (mc_press_url.startswith('http://') or mc_press_url.startswith('https://')):
+            raise ValueError("MC Press URL must start with http:// or https://")
+        if article_url and not (article_url.startswith('http://') or article_url.startswith('https://')):
+            raise ValueError("Article URL must start with http:// or https://")
 
         metadata = {
             'title': title,
             'author': author,
             'category': category,
-            'mc_press_url': mc_press_url
+            'mc_press_url': mc_press_url,
+            'article_url': article_url
         }
 
         async with self.pool.acquire() as conn:
-            await conn.execute("""
-                UPDATE documents
-                SET metadata = $2::jsonb
-                WHERE filename = $1
-            """, filename, json.dumps(metadata))
-            logger.info(f"Updated metadata for {filename}: {metadata}")
+            # Use a transaction to ensure both updates succeed or fail together
+            async with conn.transaction():
+                # Check if books table exists
+                books_exists = await conn.fetchval("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_name = 'books'
+                    )
+                """)
+                
+                rows_updated = 0
+                
+                if books_exists:
+                    # Update the books table (primary source for list_documents)
+                    # Check which columns exist
+                    columns_result = await conn.fetch("""
+                        SELECT column_name 
+                        FROM information_schema.columns 
+                        WHERE table_name = 'books'
+                    """)
+                    existing_columns = {row['column_name'] for row in columns_result}
+                    
+                    # Build dynamic UPDATE query based on available columns
+                    update_parts = ["title = $2", "author = $3"]
+                    params = [filename, title, author]
+                    param_idx = 4
+                    
+                    if 'category' in existing_columns and category is not None:
+                        update_parts.append(f"category = ${param_idx}")
+                        params.append(category)
+                        param_idx += 1
+                    
+                    if 'mc_press_url' in existing_columns:
+                        update_parts.append(f"mc_press_url = ${param_idx}")
+                        params.append(mc_press_url)
+                        param_idx += 1
+                    
+                    if 'article_url' in existing_columns:
+                        update_parts.append(f"article_url = ${param_idx}")
+                        params.append(article_url)
+                        param_idx += 1
+                    
+                    query = f"""
+                        UPDATE books 
+                        SET {', '.join(update_parts)}
+                        WHERE filename = $1
+                    """
+                    result = await conn.execute(query, *params)
+                    rows_updated = int(result.split()[-1])
+                    logger.info(f"Updated books table for {filename}: {rows_updated} rows affected")
+                
+                # Also update the documents table metadata JSONB for consistency
+                doc_result = await conn.execute("""
+                    UPDATE documents
+                    SET metadata = $2::jsonb
+                    WHERE filename = $1
+                """, filename, json.dumps(metadata))
+                doc_rows = int(doc_result.split()[-1])
+                logger.info(f"Updated documents table metadata for {filename}: {doc_rows} chunks affected")
+                
+                if rows_updated == 0 and doc_rows == 0:
+                    raise ValueError(f"No document found with filename: {filename}")
+                
+                logger.info(f"Successfully updated metadata for {filename}: title='{title}', author='{author}', mc_press_url='{mc_press_url}', article_url='{article_url}'")
 
     async def get_document_count(self) -> int:
         """Get total number of document chunks"""
