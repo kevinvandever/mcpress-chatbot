@@ -99,7 +99,12 @@ async def list_documents(
 
                 logger.info("Migration complete")
 
-            # Check if multi-author tables exist
+            # TEMPORARY FIX: Force simple query to get basic functionality working
+            # The multi-author tables exist but have incompatible structure
+            # TODO: Fix multi-author table structure in future update
+            use_simple_query = True
+            
+            # Check if multi-author tables exist (for future reference)
             authors_table_exists = await conn.fetchval("""
                 SELECT EXISTS (
                     SELECT FROM information_schema.tables
@@ -116,8 +121,8 @@ async def list_documents(
                 )
             """)
 
-            # Use different query based on whether multi-author tables exist
-            if authors_table_exists and document_authors_table_exists:
+            # FORCE SIMPLE QUERY FOR NOW - multi-author tables have wrong structure
+            if False:  # Disabled multi-author query until table structure is fixed
                 # Multi-author query with JOINs
                 logger.info("Using multi-author query with JOINs")
                 query = """
