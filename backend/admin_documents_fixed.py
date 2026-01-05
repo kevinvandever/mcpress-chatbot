@@ -71,10 +71,13 @@ async def list_documents(
                         description TEXT,
                         tags TEXT[],
                         mc_press_url TEXT,
+                        article_url TEXT,
+                        document_type TEXT DEFAULT 'book',
                         year INTEGER,
                         total_pages INTEGER,
                         file_hash TEXT,
-                        processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 """)
 
@@ -96,9 +99,13 @@ async def list_documents(
 
                 logger.info("Migration complete")
 
-            # Build query with filters
+            # Build query with filters - only select columns that actually exist
             query = """
-                SELECT id, filename, title, author, category, document_type, mc_press_url, article_url
+                SELECT id, filename, title, author, category, 
+                       COALESCE(document_type, 'book') as document_type, 
+                       mc_press_url, 
+                       COALESCE(article_url, '') as article_url,
+                       created_at
                 FROM books
                 WHERE 1=1
             """
@@ -154,10 +161,9 @@ async def list_documents(
                     'title': row['title'] or row['filename'].replace('.pdf', ''),
                     'author': row['author'] or 'Unknown',
                     'document_type': row['document_type'] or 'book',
-                    'processed_at': row['processed_at'].isoformat() if row['processed_at'] else None,
                     'mc_press_url': row['mc_press_url'],
                     'article_url': row['article_url'],
-                    'created_at': row['created_at'].isoformat() if row['created_at'] else None
+                    'created_at': row['created_at'].isoformat() if row.get('created_at') else None
                 })
 
             return {
