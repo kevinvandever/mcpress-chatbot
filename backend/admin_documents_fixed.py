@@ -99,32 +99,106 @@ async def list_documents(
 
                 logger.info("Migration complete")
 
-            # Build query with proper author joins for multi-author support
-            query = """
-                SELECT DISTINCT b.id, b.filename, b.title, b.category, 
-                       COALESCE(b.document_type, 'book') as document_type, 
-                       b.mc_press_url, 
-                       COALESCE(b.article_url, '') as article_url,
-                       b.created_at,
-                       COALESCE(a.name, b.author, 'Unknown Author') as author_name,
-                       a.site_url as author_site_url,
-                       da.author_order
-                FROM books b
-                LEFT JOIN document_authors da ON b.id = da.document_id
-                LEFT JOIN authors a ON da.author_id = a.id
-                WHERE 1=1
-            """
+            # Check if multi-author tables exist
+            authors_table_exists = await conn.fetchval("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables
+                    WHERE table_schema = 'public'
+                    AND table_name = 'authors'
+                )
+            """)
+            
+            document_authors_table_exists = await conn.fetchval("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables
+                    WHERE table_schema = 'public'
+                    AND table_name = 'document_authors'
+                )
+            """)
+
+            # Use different query based on whether multi-author tables exist
+            if authors_table_exists and document_authors_table_exists:
+                # Multi-author query with JOINs
+                logger.info("Using multi-author query with JOINs")
+                query = """
+                    SELECT DISTINCT b.id, b.filename, b.title, b.category, 
+                           COALESCE(b.document_type, 'book') as document_type, 
+                           b.mc_press_url, 
+                           COALESCE(b.article_url, '') as article_url,
+                           b.created_at,
+                           COALESCE(a.name, b.author, 'Unknown Author') as author_name,
+                           a.site_url as author_site_url,
+                           da.author_order
+                    FROM books b
+                    LEFT JOIN document_authors da ON b.id = da.document_id
+                    LEFT JOIN authors a ON da.author_id = a.id
+                    WHERE 1=1
+                """
+                
+                count_query = """
+                    SELECT COUNT(DISTINCT b.id) FROM books b
+                    LEFT JOIN document_authors da ON b.id = da.document_id
+                    LEFT JOIN authors a ON da.author_id = a.id
+                    WHERE 1=1
+                """
+                
+                sort_field_map = {
+                    'id': 'b.id',
+                    'title': 'b.title', 
+                    'author': 'COALESCE(a.name, b.author)',
+                    'author_name': 'COALESCE(a.name, b.author)',
+                    'document_type': 'b.document_type'
+                }
+                
+                use_multi_author = True
+            else:
+                # Simple query without JOINs (current state)
+                logger.info("Using simple query without multi-author JOINs")
+                query = """
+                    SELECT b.id, b.filename, b.title, b.category, 
+                           COALESCE(b.document_type, 'book') as document_type, 
+                           b.mc_press_url, 
+                           COALESCE(b.article_url, '') as article_url,
+                           b.created_at,
+                           COALESCE(b.author, 'Unknown Author') as author_name
+                    FROM books b
+                    WHERE 1=1
+                """
+                
+                count_query = """
+                    SELECT COUNT(*) FROM books b
+                    WHERE 1=1
+                """
+                
+                sort_field_map = {
+                    'id': 'b.id',
+                    'title': 'b.title', 
+                    'author': 'b.author',
+                    'author_name': 'b.author',
+                    'document_type': 'b.document_type'
+                }
+                
+                use_multi_author = False
+
             params = []
             param_count = 0
 
+            # Add search filter
             if search:
                 param_count += 1
-                query += f" AND (LOWER(b.title) LIKE LOWER(${param_count}) OR LOWER(COALESCE(a.name, b.author)) LIKE LOWER(${param_count}))"
+                if use_multi_author:
+                    query += f" AND (LOWER(b.title) LIKE LOWER(${param_count}) OR LOWER(COALESCE(a.name, b.author)) LIKE LOWER(${param_count}))"
+                    count_query += f" AND (LOWER(b.title) LIKE LOWER('%{search}%') OR LOWER(COALESCE(a.name, b.author)) LIKE LOWER('%{search}%'))"
+                else:
+                    query += f" AND (LOWER(b.title) LIKE LOWER(${param_count}) OR LOWER(b.author) LIKE LOWER(${param_count}))"
+                    count_query += f" AND (LOWER(b.title) LIKE LOWER('%{search}%') OR LOWER(b.author) LIKE LOWER('%{search}%'))"
                 params.append(f"%{search}%")
 
+            # Add category filter
             if category:
                 param_count += 1
                 query += f" AND b.category = ${param_count}"
+                count_query += f" AND b.category = '{category}'"
                 params.append(category)
 
             # Add sorting
@@ -132,31 +206,15 @@ async def list_documents(
             if sort_by not in valid_sort_fields:
                 sort_by = 'title'
             
-            # Map frontend field names to database field names
-            sort_field_map = {
-                'id': 'b.id',
-                'title': 'b.title', 
-                'author': 'COALESCE(a.name, b.author)',
-                'author_name': 'COALESCE(a.name, b.author)',
-                'document_type': 'b.document_type'
-            }
-            
             db_sort_field = sort_field_map.get(sort_by, 'b.title')
             sort_dir = 'DESC' if sort_direction == 'desc' else 'ASC'
-            query += f" ORDER BY {db_sort_field} {sort_dir}, da.author_order ASC"
+            
+            if use_multi_author:
+                query += f" ORDER BY {db_sort_field} {sort_dir}, da.author_order ASC"
+            else:
+                query += f" ORDER BY {db_sort_field} {sort_dir}"
 
-            # Get total count before pagination - count distinct books
-            count_query = """
-                SELECT COUNT(DISTINCT b.id) FROM books b
-                LEFT JOIN document_authors da ON b.id = da.document_id
-                LEFT JOIN authors a ON da.author_id = a.id
-                WHERE 1=1
-            """
-            if search:
-                count_query += f" AND (LOWER(b.title) LIKE LOWER('%{search}%') OR LOWER(COALESCE(a.name, b.author)) LIKE LOWER('%{search}%'))"
-            if category:
-                count_query += f" AND b.category = '{category}'"
-
+            # Get total count before pagination
             total = await conn.fetchval(count_query)
 
             # Add pagination
@@ -171,13 +229,53 @@ async def list_documents(
             # Execute query
             rows = await conn.fetch(query, *params)
 
-            # Group authors by document since we have one row per document-author pair
-            documents_dict = {}
-            for row in rows:
-                doc_id = row['id']
-                if doc_id not in documents_dict:
-                    documents_dict[doc_id] = {
-                        'id': doc_id,
+            # Process results
+            if use_multi_author:
+                # Group authors by document since we have one row per document-author pair
+                documents_dict = {}
+                for row in rows:
+                    doc_id = row['id']
+                    if doc_id not in documents_dict:
+                        documents_dict[doc_id] = {
+                            'id': doc_id,
+                            'filename': row['filename'],
+                            'title': row['title'] or row['filename'].replace('.pdf', ''),
+                            'category': row['category'],
+                            'document_type': row['document_type'] or 'book',
+                            'mc_press_url': row['mc_press_url'],
+                            'article_url': row['article_url'],
+                            'created_at': row['created_at'].isoformat() if row.get('created_at') else None,
+                            'authors': []
+                        }
+                    
+                    # Add author info if available
+                    if row['author_name']:
+                        author_info = {
+                            'name': row['author_name'],
+                            'site_url': row.get('author_site_url'),
+                            'order': row.get('author_order', 0) or 0
+                        }
+                        documents_dict[doc_id]['authors'].append(author_info)
+                
+                # Convert to list and sort authors by order
+                documents = []
+                for doc in documents_dict.values():
+                    # Sort authors by order
+                    doc['authors'].sort(key=lambda x: x['order'])
+                    
+                    # Set primary author for backward compatibility
+                    if doc['authors']:
+                        doc['author'] = doc['authors'][0]['name']
+                    else:
+                        doc['author'] = 'Unknown Author'
+                    
+                    documents.append(doc)
+            else:
+                # Simple processing without multi-author support
+                documents = []
+                for row in rows:
+                    doc = {
+                        'id': row['id'],
                         'filename': row['filename'],
                         'title': row['title'] or row['filename'].replace('.pdf', ''),
                         'category': row['category'],
@@ -185,31 +283,10 @@ async def list_documents(
                         'mc_press_url': row['mc_press_url'],
                         'article_url': row['article_url'],
                         'created_at': row['created_at'].isoformat() if row.get('created_at') else None,
-                        'authors': []
+                        'author': row['author_name'],
+                        'authors': [{'name': row['author_name'], 'site_url': None, 'order': 0}] if row['author_name'] else []
                     }
-                
-                # Add author info if available
-                if row['author_name']:
-                    author_info = {
-                        'name': row['author_name'],
-                        'site_url': row['author_site_url'],
-                        'order': row['author_order'] or 0
-                    }
-                    documents_dict[doc_id]['authors'].append(author_info)
-            
-            # Convert to list and sort authors by order
-            documents = []
-            for doc in documents_dict.values():
-                # Sort authors by order
-                doc['authors'].sort(key=lambda x: x['order'])
-                
-                # Set primary author for backward compatibility
-                if doc['authors']:
-                    doc['author'] = doc['authors'][0]['name']
-                else:
-                    doc['author'] = 'Unknown Author'
-                
-                documents.append(doc)
+                    documents.append(doc)
 
             return {
                 "documents": documents,
