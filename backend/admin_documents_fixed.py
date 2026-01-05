@@ -98,9 +98,7 @@ async def list_documents(
 
             # Build query with filters
             query = """
-                SELECT id, filename, title, author, category, subcategory,
-                       total_pages, file_hash, processed_at, mc_press_url,
-                       description, tags, year
+                SELECT id, filename, title, author, category, document_type, mc_press_url, article_url
                 FROM books
                 WHERE 1=1
             """
@@ -118,7 +116,7 @@ async def list_documents(
                 params.append(category)
 
             # Add sorting
-            valid_sort_fields = ['id', 'title', 'author', 'category', 'total_pages', 'processed_at']
+            valid_sort_fields = ['id', 'title', 'author', 'document_type']
             if sort_by not in valid_sort_fields:
                 sort_by = 'title'
 
@@ -155,15 +153,11 @@ async def list_documents(
                     'filename': row['filename'],
                     'title': row['title'] or row['filename'].replace('.pdf', ''),
                     'author': row['author'] or 'Unknown',
-                    'category': row['category'] or 'General',
-                    'subcategory': row['subcategory'],
-                    'total_pages': row['total_pages'] or 0,
-                    'file_hash': row['file_hash'],
+                    'document_type': row['document_type'] or 'book',
                     'processed_at': row['processed_at'].isoformat() if row['processed_at'] else None,
                     'mc_press_url': row['mc_press_url'],
-                    'description': row['description'],
-                    'tags': row['tags'] or [],
-                    'year': row['year']
+                    'article_url': row['article_url'],
+                    'created_at': row['created_at'].isoformat() if row['created_at'] else None
                 })
 
             return {
