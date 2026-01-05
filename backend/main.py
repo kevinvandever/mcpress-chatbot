@@ -67,14 +67,14 @@ except ImportError:
 try:
     # Try Railway-style import first
     try:
-        from admin_documents_fixed import router as admin_docs_router, set_vector_store
+        from admin_documents_minimal import router as admin_docs_router, set_vector_store
         admin_docs_available = True
-        print("✅ Using fixed admin documents endpoints")
+        print("✅ Using minimal admin documents endpoints")
     except ImportError:
         # Fallback to local development import
-        from backend.admin_documents_fixed import router as admin_docs_router, set_vector_store
+        from backend.admin_documents_minimal import router as admin_docs_router, set_vector_store
         admin_docs_available = True
-        print("✅ Using fixed admin documents endpoints (local)")
+        print("✅ Using minimal admin documents endpoints (local)")
 except Exception as e:
     print(f"⚠️ Admin documents not available: {e}")
     admin_docs_router = None
