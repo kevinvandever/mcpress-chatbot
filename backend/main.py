@@ -1618,17 +1618,24 @@ async def upload_debug():
 async def list_documents():
     """List all documents with intelligent caching - fast response for frontend"""
     try:
-        # Try to serve from cache first for instant response
-        if _documents_cache is not None:
-            print(f"⚡ Serving cached documents immediately")
-            # Trigger background refresh if cache is stale
-            current_time = time.time()
-            if (current_time - _cache_timestamp) > CACHE_TTL:
-                asyncio.create_task(get_cached_documents(force_refresh=True))
-            return _documents_cache
+        current_time = time.time()
+        cache_invalidated = _cache_timestamp == 0
+        cache_expired = (current_time - _cache_timestamp) > CACHE_TTL
+        
+        # If cache was explicitly invalidated (timestamp=0), force refresh
+        # This ensures edits are visible immediately after save
+        if cache_invalidated or _documents_cache is None:
+            print(f"🔄 Cache invalidated or empty - forcing refresh")
+            return await get_cached_documents(force_refresh=True)
+        
+        # Serve from cache, trigger background refresh if stale
+        if cache_expired:
+            print(f"⚡ Serving cached documents, triggering background refresh")
+            asyncio.create_task(get_cached_documents(force_refresh=True))
         else:
-            # First load - do it sync
-            return await get_cached_documents()
+            print(f"⚡ Serving cached documents ({len(_documents_cache.get('documents', []))} docs)")
+        
+        return _documents_cache
     except Exception as e:
         print(f"❌ Error getting documents: {e}")
         # Return empty list so frontend doesn't break
