@@ -67,6 +67,7 @@ async def list_documents(
                         title TEXT,
                         author TEXT,
                         category TEXT,
+                        subcategory TEXT,
                         description TEXT,
                         tags TEXT[],
                         mc_press_url TEXT,
@@ -97,7 +98,7 @@ async def list_documents(
 
             # Build query with filters
             query = """
-                SELECT id, filename, title, author, category,
+                SELECT id, filename, title, author, category, subcategory,
                        total_pages, file_hash, processed_at, mc_press_url,
                        description, tags, year
                 FROM books
