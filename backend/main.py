@@ -380,6 +380,18 @@ if admin_docs_available:
     try:
         if set_vector_store:
             set_vector_store(vector_store)
+        
+        # Set global cache invalidator for admin documents
+        try:
+            from admin_documents_fixed import set_global_cache_invalidator
+            set_global_cache_invalidator(invalidate_global_documents_cache)
+        except ImportError:
+            try:
+                from backend.admin_documents_fixed import set_global_cache_invalidator
+                set_global_cache_invalidator(invalidate_global_documents_cache)
+            except ImportError:
+                print("⚠️ Could not set global cache invalidator for admin documents")
+        
         app.include_router(admin_docs_router)
         print("✅ Admin documents endpoints enabled at /admin/documents")
     except Exception as e:
@@ -738,6 +750,13 @@ if CODE_UPLOAD_AVAILABLE and code_upload_router:
 _documents_cache = None
 _cache_timestamp = 0
 CACHE_TTL = 300  # 5 minutes
+
+def invalidate_global_documents_cache():
+    """Invalidate the global documents cache"""
+    global _documents_cache, _cache_timestamp
+    _documents_cache = None
+    _cache_timestamp = 0
+    print("📤 Global documents cache invalidated")
 
 async def get_cached_documents(force_refresh: bool = False):
     """Get documents with intelligent caching"""

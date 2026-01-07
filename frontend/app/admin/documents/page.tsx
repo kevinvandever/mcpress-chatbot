@@ -62,15 +62,54 @@ export default function DocumentsManagement() {
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  const fetchDocuments = useCallback(async (forceRefresh = false) => {
+  // Debounced search to avoid too many API calls
+  const [searchInput, setSearchInput] = useState('');
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInput !== searchTerm) {
+        setSearchTerm(searchInput);
+        setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page when searching
+      }
+    }, 300); // 300ms debounce
+    
+    return () => clearTimeout(timer);
+  }, [searchInput, searchTerm]);
+
+  const fetchDocuments = useCallback(async (forceRefresh = false, page = 1, search = '', sortField = 'title', sortDirection = 'asc') => {
     try {
       console.log('PAGINATION_FIX_ACTIVE_v2');
       setLoading(true);
-      // Use refresh parameter to bypass cache
-      const endpoint = `${API_URL}/admin/documents${forceRefresh ? '?refresh=true' : ''}`;
+      setError(null);
+      
+      // Build query parameters for server-side pagination
+      const params = new URLSearchParams();
+      params.append('page', page.toString());
+      params.append('per_page', pagination.perPage.toString());
+      if (search) params.append('search', search);
+      params.append('sort_by', sortField);
+      params.append('sort_direction', sortDirection);
+      if (forceRefresh) params.append('refresh', 'true');
+      
+      const endpoint = `${API_URL}/admin/documents?${params.toString()}`;
+      console.log(`📡 Fetching documents from: ${endpoint}${forceRefresh ? ' (cache bypass)' : ''}`);
+      
       const response = await apiClient.get(endpoint);
       const data = response.data;
       const docs = data.documents || [];
+      
+      console.log(`✅ Fetched ${docs.length} documents (page ${page})${forceRefresh ? ' (fresh from database)' : ''}`);
+      
+      // Update documents and pagination info from server response
+      setDocuments(docs);
+      setPagination({
+        page: data.page || page,
+        perPage: data.per_page || pagination.perPage,
+        total: data.total || 0,
+        totalPages: data.total_pages || 1,
+      });
+      
+      // For compatibility, also set allDocuments (though we won't use it for pagination anymore)
       setAllDocuments(docs);
     } catch (err) {
       setError('Failed to fetch documents from server');
@@ -78,52 +117,22 @@ export default function DocumentsManagement() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [pagination.perPage]);
 
   // Initial load
   useEffect(() => {
-    fetchDocuments();
-  }, [fetchDocuments]);
+    fetchDocuments(false, 1, '', sortField, sortDirection);
+  }, []); // Only run once on mount
 
-  // Filter, sort, and paginate documents when dependencies change
+  // Fetch documents when pagination, search, or sort changes (but not on initial render)
   useEffect(() => {
-    let filteredDocs = [...allDocuments];
-    
-    // Apply search filter
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filteredDocs = filteredDocs.filter((doc: Document) =>
-        doc.title?.toLowerCase().includes(term) ||
-        doc.filename?.toLowerCase().includes(term) ||
-        doc.author?.toLowerCase().includes(term) ||
-        doc.authors?.some(author => author.name.toLowerCase().includes(term))
-      );
+    // Skip if this is the initial state (page 1, no search, default sort)
+    if (pagination.page === 1 && searchTerm === '' && sortField === 'title' && sortDirection === 'asc') {
+      return;
     }
-
-    // Sort documents
-    filteredDocs.sort((a: Document, b: Document) => {
-      const aVal = String(a[sortField] || '').toLowerCase();
-      const bVal = String(b[sortField] || '').toLowerCase();
-      const comparison = aVal.localeCompare(bVal);
-      return sortDirection === 'asc' ? comparison : -comparison;
-    });
-
-    // Calculate pagination info
-    const totalPages = Math.ceil(filteredDocs.length / pagination.perPage);
-    const currentPage = Math.min(pagination.page, totalPages || 1);
     
-    // Paginate
-    const start = (currentPage - 1) * pagination.perPage;
-    const paginatedDocs = filteredDocs.slice(start, start + pagination.perPage);
-
-    setDocuments(paginatedDocs);
-    setPagination(prev => ({
-      ...prev,
-      page: currentPage,
-      total: filteredDocs.length,
-      totalPages,
-    }));
-  }, [allDocuments, searchTerm, sortField, sortDirection, pagination.perPage]);
+    fetchDocuments(false, pagination.page, searchTerm, sortField, sortDirection);
+  }, [pagination.page, searchTerm, sortField, sortDirection]);
 
   // Update edit form when selected document changes
   useEffect(() => {
@@ -144,12 +153,14 @@ export default function DocumentsManagement() {
   }, [selectedDoc]);
 
   const handleSort = (field: keyof Document) => {
+    let newDirection: 'asc' | 'desc' = 'asc';
     if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
+      newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
     }
+    
+    setSortField(field);
+    setSortDirection(newDirection);
+    setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page when sorting
   };
 
   const selectDocument = (doc: Document) => {
@@ -218,14 +229,16 @@ export default function DocumentsManagement() {
 
       setSaveSuccess('Changes saved successfully!');
       
-      // Force refresh to get updated data
-      await fetchDocuments(true);
+      // Force refresh to get updated data with cache bypass
+      console.log('🔄 Forcing cache refresh after successful save...');
+      await fetchDocuments(true, pagination.page, searchTerm, sortField, sortDirection);
       
       // Find and update the selected document to reflect changes
       setTimeout(() => {
         setAllDocuments(prev => {
           const updatedDoc = prev.find(d => d.filename === selectedDoc.filename);
           if (updatedDoc) {
+            console.log('📝 Updated selected document with fresh data');
             setSelectedDoc(updatedDoc);
           }
           return prev;
@@ -251,7 +264,10 @@ export default function DocumentsManagement() {
       await apiClient.delete(`${API_URL}/documents/${encodedFilename}`);
       setShowDeleteDialog(false);
       setSelectedDoc(null);
-      await fetchDocuments(true);
+      
+      // Force refresh to get updated data with cache bypass
+      console.log('🔄 Forcing cache refresh after successful deletion...');
+      await fetchDocuments(true, pagination.page, searchTerm, sortField, sortDirection);
     } catch (err) {
       setError('Error deleting document');
       console.error('Delete error:', err);
@@ -284,18 +300,36 @@ export default function DocumentsManagement() {
           </p>
         </div>
 
-        {/* Search */}
-        <div className="flex-shrink-0 mb-4">
+        {/* Search and Refresh */}
+        <div className="flex-shrink-0 mb-4 flex gap-3">
           <input
             type="text"
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setPagination(prev => ({ ...prev, page: 1 }));
-            }}
-            className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
             placeholder="Search by title, author, or filename..."
           />
+          <button
+            onClick={() => {
+              console.log('🔄 Manual refresh requested');
+              fetchDocuments(true, pagination.page, searchTerm, sortField, sortDirection);
+            }}
+            disabled={loading}
+            className={`px-4 py-2 text-sm font-medium rounded-md border ${
+              loading
+                ? 'bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500'
+            }`}
+            title="Refresh document list"
+          >
+            {loading ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            )}
+          </button>
         </div>
 
         {/* Main Content Area */}
@@ -380,7 +414,10 @@ export default function DocumentsManagement() {
               </span>
               <div className="flex items-center space-x-2">
                 <button
-                  onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
+                  onClick={() => {
+                    const newPage = Math.max(1, pagination.page - 1);
+                    setPagination(prev => ({ ...prev, page: newPage }));
+                  }}
                   disabled={pagination.page <= 1}
                   className="px-3 py-1 text-sm border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -390,7 +427,10 @@ export default function DocumentsManagement() {
                   {pagination.page} / {pagination.totalPages || 1}
                 </span>
                 <button
-                  onClick={() => setPagination(prev => ({ ...prev, page: Math.min(prev.totalPages, prev.page + 1) }))}
+                  onClick={() => {
+                    const newPage = Math.min(pagination.totalPages, pagination.page + 1);
+                    setPagination(prev => ({ ...prev, page: newPage }));
+                  }}
                   disabled={pagination.page >= pagination.totalPages}
                   className="px-3 py-1 text-sm border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 >

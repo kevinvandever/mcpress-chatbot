@@ -10,10 +10,51 @@ import json
 import csv
 import io
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+# Global reference to vector store (will be set by main.py)
+_vector_store = None
+
+# Global cache invalidation function (will be set by main.py)
+_global_cache_invalidator = None
+
+def set_global_cache_invalidator(invalidator_func):
+    """Set the global cache invalidation function"""
+    global _global_cache_invalidator
+    _global_cache_invalidator = invalidator_func
+    logger.info("✅ Global cache invalidator set for admin documents")
+
+# Cache invalidation tracking
+_cache_invalidation_timestamp = 0
+
+def invalidate_cache():
+    """Mark cache as invalid by updating timestamp"""
+    global _cache_invalidation_timestamp, _global_cache_invalidator
+    _cache_invalidation_timestamp = time.time()
+    logger.info(f"📤 Cache invalidated at {_cache_invalidation_timestamp}")
+    
+    # Also invalidate global cache if available
+    if _global_cache_invalidator:
+        try:
+            _global_cache_invalidator()
+        except Exception as e:
+            logger.warning(f"Failed to invalidate global cache: {e}")
+
+def should_refresh_cache(refresh: bool = False) -> bool:
+    """Determine if cache should be refreshed based on refresh parameter or invalidation"""
+    global _cache_invalidation_timestamp
+    
+    if refresh:
+        logger.info("🔄 Explicit cache refresh requested")
+        return True
+    
+    # For now, we'll always refresh since we don't have a persistent cache
+    # In the future, this could check against a cache timestamp
+    return True
 
 # Global reference to vector store (will be set by main.py)
 _vector_store = None
@@ -41,10 +82,16 @@ async def list_documents(
     search: str = Query(""),
     category: str = Query(""),
     sort_by: str = Query("title"),
-    sort_direction: str = Query("asc")
+    sort_direction: str = Query("asc"),
+    refresh: bool = Query(False, description="Force refresh cache and bypass any caching mechanisms")
 ):
     """List all documents from books table with proper IDs and metadata"""
     try:
+        # Check if we should refresh cache
+        force_refresh = should_refresh_cache(refresh)
+        if force_refresh:
+            logger.info("🔄 Cache refresh requested - bypassing any caching mechanisms")
+        
         pool = await get_db_connection()
 
         async with pool.acquire() as conn:
@@ -435,6 +482,10 @@ async def update_document(doc_id: int, updates: Dict[str, Any]):
                         VALUES ($1, $2, $3, 'admin')
                     """, doc_id, field, str(new_value))
 
+            # Invalidate cache after successful update
+            invalidate_cache()
+            logger.info(f"📝 Document {doc_id} updated, cache invalidated")
+
             return {
                 'id': row['id'],
                 'filename': row['filename'],
@@ -507,6 +558,10 @@ async def bulk_update_documents(ids: List[int], updates: Dict[str, Any]):
                             VALUES ($1, $2, $3, 'admin')
                         """, doc_id, field, str(value))
 
+            # Invalidate cache after successful bulk update
+            invalidate_cache()
+            logger.info(f"📝 Bulk update of {updated_count} documents completed, cache invalidated")
+
             return {
                 "updated": updated_count,
                 "ids": [row['id'] for row in result]
@@ -544,6 +599,10 @@ async def delete_document(doc_id: int):
             )
 
             chunks_deleted = int(result.split()[-1])
+
+            # Invalidate cache after successful deletion
+            invalidate_cache()
+            logger.info(f"🗑️ Document {doc_id} ({filename}) deleted, cache invalidated")
 
             return {
                 "deleted": True,
@@ -585,6 +644,10 @@ async def bulk_delete_documents(ids: List[int]):
             )
 
             chunks_deleted = int(result.split()[-1])
+
+            # Invalidate cache after successful bulk deletion
+            invalidate_cache()
+            logger.info(f"🗑️ Bulk delete of {len(rows)} documents completed, cache invalidated")
 
             return {
                 "deleted": len(rows),
@@ -723,6 +786,11 @@ async def import_documents_csv(file_content: str):
                     result = await conn.execute(query, *params)
                     if '1' in result:
                         updated_count += 1
+
+        # Invalidate cache after successful import
+        if updated_count > 0:
+            invalidate_cache()
+            logger.info(f"📥 CSV import completed, {updated_count} documents updated, cache invalidated")
 
         return {
             "imported": len(updates),
