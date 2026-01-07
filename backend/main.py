@@ -375,6 +375,46 @@ if VectorStoreClass.__name__ == "PostgresVectorStore":
         print(f"⚠️ Could not verify pgvector status: {e}")
         print("="*60)
 
+# Global cache for documents - define functions before using them
+_documents_cache = None
+_cache_timestamp = 0
+CACHE_TTL = 300  # 5 minutes
+
+def invalidate_global_documents_cache():
+    """Invalidate the global documents cache"""
+    global _documents_cache, _cache_timestamp
+    _documents_cache = None
+    _cache_timestamp = 0
+    print("📤 Global documents cache invalidated")
+
+async def get_cached_documents(force_refresh: bool = False):
+    """Get documents with intelligent caching"""
+    global _documents_cache, _cache_timestamp
+    
+    current_time = time.time()
+    cache_expired = (current_time - _cache_timestamp) > CACHE_TTL
+    
+    if _documents_cache is None or cache_expired or force_refresh:
+        print(f"📊 Refreshing documents cache...")
+        start_time = time.time()
+        _documents_cache = await vector_store.list_documents()
+        _cache_timestamp = current_time
+        elapsed = time.time() - start_time
+        
+        # Defensive: ensure cache is always a dict with 'documents' key
+        if not isinstance(_documents_cache, dict):
+            print(f"⚠️ Vector store returned unexpected format: {type(_documents_cache)}")
+            _documents_cache = {'documents': [] if _documents_cache is None else _documents_cache}
+        elif 'documents' not in _documents_cache:
+            print(f"⚠️ Vector store missing 'documents' key, fixing...")
+            _documents_cache = {'documents': []}
+        
+        print(f"✅ Cache refreshed in {elapsed:.1f}s - {len(_documents_cache.get('documents', []))} documents")
+    else:
+        print(f"⚡ Serving cached documents ({len(_documents_cache.get('documents', []))} documents)")
+    
+    return _documents_cache
+
 # Set vector store for admin_documents if available
 if admin_docs_available:
     try:
@@ -745,46 +785,6 @@ if CODE_UPLOAD_AVAILABLE and code_upload_router:
         print("✅ Code upload endpoints enabled at /api/code/*")
     except Exception as e:
         print(f"⚠️ Could not enable code upload endpoints: {e}")
-
-# Global cache for documents - define functions before using them
-_documents_cache = None
-_cache_timestamp = 0
-CACHE_TTL = 300  # 5 minutes
-
-def invalidate_global_documents_cache():
-    """Invalidate the global documents cache"""
-    global _documents_cache, _cache_timestamp
-    _documents_cache = None
-    _cache_timestamp = 0
-    print("📤 Global documents cache invalidated")
-
-async def get_cached_documents(force_refresh: bool = False):
-    """Get documents with intelligent caching"""
-    global _documents_cache, _cache_timestamp
-    
-    current_time = time.time()
-    cache_expired = (current_time - _cache_timestamp) > CACHE_TTL
-    
-    if _documents_cache is None or cache_expired or force_refresh:
-        print(f"📊 Refreshing documents cache...")
-        start_time = time.time()
-        _documents_cache = await vector_store.list_documents()
-        _cache_timestamp = current_time
-        elapsed = time.time() - start_time
-        
-        # Defensive: ensure cache is always a dict with 'documents' key
-        if not isinstance(_documents_cache, dict):
-            print(f"⚠️ Vector store returned unexpected format: {type(_documents_cache)}")
-            _documents_cache = {'documents': [] if _documents_cache is None else _documents_cache}
-        elif 'documents' not in _documents_cache:
-            print(f"⚠️ Vector store missing 'documents' key, fixing...")
-            _documents_cache = {'documents': []}
-        
-        print(f"✅ Cache refreshed in {elapsed:.1f}s - {len(_documents_cache.get('documents', []))} documents")
-    else:
-        print(f"⚡ Serving cached documents ({len(_documents_cache.get('documents', []))} documents)")
-    
-    return _documents_cache
 
 # Initialize the database on startup
 @app.on_event("startup")
