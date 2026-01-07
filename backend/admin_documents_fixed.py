@@ -81,30 +81,72 @@ async def list_documents(
                     )
                 """)
 
-                # Migrate data from documents table
+                # Migrate data from documents table with better author extraction
                 logger.info("Migrating data from documents to books table...")
                 await conn.execute("""
                     INSERT INTO books (filename, title, author, category, total_pages, processed_at)
                     SELECT DISTINCT ON (filename)
                         filename,
                         COALESCE((metadata->>'title')::text, REPLACE(filename, '.pdf', '')),
-                        COALESCE((metadata->>'author')::text, 'Unknown'),
+                        CASE 
+                            WHEN (metadata->>'author')::text IS NOT NULL 
+                                 AND (metadata->>'author')::text != '' 
+                                 AND (metadata->>'author')::text != 'Unknown'
+                            THEN (metadata->>'author')::text
+                            ELSE 'Unknown Author'
+                        END,
                         COALESCE((metadata->>'category')::text, 'General'),
                         MAX(page_number) OVER (PARTITION BY filename),
                         MIN(created_at) OVER (PARTITION BY filename)
                     FROM documents
                     WHERE filename IS NOT NULL
-                    ON CONFLICT (filename) DO NOTHING
+                    ON CONFLICT (filename) DO UPDATE SET
+                        author = CASE 
+                            WHEN (EXCLUDED.author != 'Unknown Author' AND EXCLUDED.author IS NOT NULL)
+                            THEN EXCLUDED.author
+                            ELSE books.author
+                        END,
+                        title = CASE 
+                            WHEN (EXCLUDED.title IS NOT NULL AND EXCLUDED.title != '')
+                            THEN EXCLUDED.title
+                            ELSE books.title
+                        END
                 """)
 
                 logger.info("Migration complete")
+                
+                # Update existing books with better author data if they currently have "Unknown Author"
+                logger.info("Updating existing books with better author data...")
+                updated_count = await conn.fetchval("""
+                    UPDATE books 
+                    SET author = subq.real_author
+                    FROM (
+                        SELECT DISTINCT ON (filename)
+                            filename,
+                            CASE 
+                                WHEN (metadata->>'author')::text IS NOT NULL 
+                                     AND (metadata->>'author')::text != '' 
+                                     AND (metadata->>'author')::text != 'Unknown'
+                                THEN (metadata->>'author')::text
+                                ELSE NULL
+                            END as real_author
+                        FROM documents
+                        WHERE filename IS NOT NULL
+                        AND (metadata->>'author')::text IS NOT NULL 
+                        AND (metadata->>'author')::text != '' 
+                        AND (metadata->>'author')::text != 'Unknown'
+                    ) subq
+                    WHERE books.filename = subq.filename
+                    AND (books.author = 'Unknown Author' OR books.author IS NULL)
+                    AND subq.real_author IS NOT NULL
+                    RETURNING books.id
+                """)
+                
+                if updated_count:
+                    logger.info(f"Updated {len(updated_count) if isinstance(updated_count, list) else 'some'} books with real author data")
 
-            # TEMPORARY FIX: Force simple query to get basic functionality working
-            # The multi-author tables exist but have incompatible structure
-            # TODO: Fix multi-author table structure in future update
-            use_simple_query = True
-            
-            # Check if multi-author tables exist (for future reference)
+            # FIXED: Use proper multi-author query structure like chat system
+            # Check if multi-author tables exist and have correct structure
             authors_table_exists = await conn.fetchval("""
                 SELECT EXISTS (
                     SELECT FROM information_schema.tables
@@ -121,10 +163,26 @@ async def list_documents(
                 )
             """)
 
-            # FORCE SIMPLE QUERY FOR NOW - multi-author tables have wrong structure
-            if False:  # Disabled multi-author query until table structure is fixed
-                # Multi-author query with JOINs
-                logger.info("Using multi-author query with JOINs")
+            # Check if document_authors has the correct column structure
+            has_correct_structure = False
+            if document_authors_table_exists:
+                try:
+                    # Test if the expected columns exist
+                    await conn.fetchval("""
+                        SELECT book_id, author_id, author_order 
+                        FROM document_authors 
+                        LIMIT 1
+                    """)
+                    has_correct_structure = True
+                    logger.info("✅ Multi-author tables have correct structure")
+                except Exception as e:
+                    logger.info(f"❌ Multi-author tables exist but have wrong structure: {e}")
+                    has_correct_structure = False
+
+            # Use multi-author query if tables exist and have correct structure
+            if authors_table_exists and document_authors_table_exists and has_correct_structure:
+                # Multi-author query with correct column names (book_id, not document_id)
+                logger.info("Using multi-author query with correct column structure")
                 query = """
                     SELECT DISTINCT b.id, b.filename, b.title, b.category, 
                            COALESCE(b.document_type, 'book') as document_type, 
@@ -135,14 +193,14 @@ async def list_documents(
                            a.site_url as author_site_url,
                            da.author_order
                     FROM books b
-                    LEFT JOIN document_authors da ON b.id = da.document_id
+                    LEFT JOIN document_authors da ON b.id = da.book_id
                     LEFT JOIN authors a ON da.author_id = a.id
                     WHERE 1=1
                 """
                 
                 count_query = """
                     SELECT COUNT(DISTINCT b.id) FROM books b
-                    LEFT JOIN document_authors da ON b.id = da.document_id
+                    LEFT JOIN document_authors da ON b.id = da.book_id
                     LEFT JOIN authors a ON da.author_id = a.id
                     WHERE 1=1
                 """
