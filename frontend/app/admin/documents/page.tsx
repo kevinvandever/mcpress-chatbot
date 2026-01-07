@@ -64,6 +64,7 @@ export default function DocumentsManagement() {
 
   const fetchDocuments = useCallback(async (forceRefresh = false) => {
     try {
+      console.log('PAGINATION_FIX_ACTIVE_v2');
       setLoading(true);
       // Use refresh parameter to bypass cache
       const endpoint = `${API_URL}/admin/documents${forceRefresh ? '?refresh=true' : ''}`;
