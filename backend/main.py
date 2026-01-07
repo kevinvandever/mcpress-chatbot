@@ -746,7 +746,7 @@ if CODE_UPLOAD_AVAILABLE and code_upload_router:
     except Exception as e:
         print(f"⚠️ Could not enable code upload endpoints: {e}")
 
-# Global cache for documents
+# Global cache for documents - define functions before using them
 _documents_cache = None
 _cache_timestamp = 0
 CACHE_TTL = 300  # 5 minutes
