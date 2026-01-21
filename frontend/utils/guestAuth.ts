@@ -24,27 +24,15 @@ function generateUUID(): string {
 /**
  * Get or create guest user ID
  *
- * On first visit, generates a new UUID and stores in localStorage.
- * On subsequent visits, retrieves the existing guest ID.
+ * For this admin-only app, we use a consistent 'guest' user ID
+ * so all conversations are accessible regardless of browser/session.
  *
- * @returns Guest user ID (UUID)
+ * @returns Guest user ID ('guest')
  */
 export function getOrCreateGuestId(): string {
-  if (typeof window === 'undefined') {
-    // Server-side rendering - return temporary ID
-    return 'ssr-temp-id';
-  }
-
-  let guestId = localStorage.getItem(GUEST_USER_ID_KEY);
-
-  if (!guestId) {
-    // First visit - generate new guest ID
-    guestId = generateUUID();
-    localStorage.setItem(GUEST_USER_ID_KEY, guestId);
-    console.log('🆔 New guest user ID created:', guestId);
-  }
-
-  return guestId;
+  // Use consistent 'guest' user ID for admin-only app
+  // This ensures all conversations are accessible regardless of browser/session
+  return 'guest';
 }
 
 /**
