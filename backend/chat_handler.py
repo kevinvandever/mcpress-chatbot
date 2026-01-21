@@ -180,6 +180,7 @@ class ChatHandler:
 
                 SCOPE RESTRICTIONS - IMPORTANT:
                 - You specialize in IBM i, RPG, ILE, CL, DB2, AS/400, iSeries, and related IBM midrange technologies
+                - PLATFORM NAME SYNONYMS: "IBM i", "AS/400", "iSeries", "System i", "i5/OS", and "OS/400" all refer to the same IBM midrange platform. Treat questions using any of these names as equivalent.
                 - If a question is CLEARLY outside this technical domain (e.g., tennis tournaments, cooking, sports, entertainment, politics), you MUST refuse to answer
                 - For off-topic questions, respond: "I'm specialized in IBM i, RPG, ILE, CL, DB2, and related IBM midrange technologies based on MC Press documentation. I cannot help with questions about [topic]. Please ask questions related to IBM i development, system administration, or related technologies."
 

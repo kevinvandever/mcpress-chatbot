@@ -224,7 +224,7 @@ export default function Home() {
                         <span className="group-hover:animate-pulse">🔧</span> "RPG programming best practices"
                       </button>
                       <button
-                        onClick={() => chatInterfaceRef.current?.setInputValue("AS/400 system administration")}
+                        onClick={() => chatInterfaceRef.current?.setInputValue("IBM i system administration")}
                         className="group px-4 py-2 rounded-full text-xs font-medium transition-all transform hover:scale-105 hover:shadow-md focus:ring-2 focus:outline-none text-white"
                         style={{
                           backgroundColor: 'var(--mc-gray)'
@@ -232,7 +232,7 @@ export default function Home() {
                         onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-gray-dark)'}
                         onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-gray)'}
                       >
-                        <span className="group-hover:animate-pulse">⚙️</span> "AS/400 system administration"
+                        <span className="group-hover:animate-pulse">⚙️</span> "IBM i system administration"
                       </button>
                       <button
                         onClick={() => chatInterfaceRef.current?.setInputValue("Show me code examples for JSON handling")}
