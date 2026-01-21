@@ -215,7 +215,7 @@ export default function CompactSources({ sources }: CompactSourcesProps) {
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
-              Show {sourceKeys.length - 2} more book{sourceKeys.length - 2 !== 1 ? 's' : ''}
+              Show {sourceKeys.length - 2} more resource{sourceKeys.length - 2 !== 1 ? 's' : ''}
             </>
           )}
         </button>
