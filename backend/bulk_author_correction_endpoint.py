@@ -24,12 +24,13 @@ def parse_csv_authors(author_str: str) -> List[str]:
     return [a for a in authors if a]
 
 @router.post("/api/fix-book-authors-from-csv")
-async def fix_book_authors_from_csv(dry_run: bool = True):
+async def fix_book_authors_from_csv(dry_run: bool = True, limit: int = 0):
     """
     Fix book authors based on book-metadata.csv (authoritative source).
     
     Parameters:
     - dry_run: If True, only report what would be changed without making changes
+    - limit: Maximum number of books to process (default 0 = all books)
     
     Returns detailed report of corrections made/planned.
     """
@@ -78,8 +79,12 @@ async def fix_book_authors_from_csv(dry_run: bool = True):
             
             corrections = []
             errors = []
+            processed_count = 0
             
             for db_book in db_books:
+                # Apply limit if specified
+                if limit > 0 and processed_count >= limit:
+                    break
                 url = db_book['mc_press_url']
                 if url not in csv_books:
                     continue
@@ -142,10 +147,14 @@ async def fix_book_authors_from_csv(dry_run: bool = True):
                         'new_authors': csv_authors,
                         'action': 'would_fix' if dry_run else 'fixed'
                     })
+                    
+                    processed_count += 1
             
             result = {
                 'dry_run': dry_run,
-                'total_books_checked': len(db_books),
+                'limit_applied': limit if limit > 0 else None,
+                'total_books_in_db': len(db_books),
+                'books_processed': processed_count,
                 'corrections_made': len(corrections),
                 'errors': errors,
                 'corrections': corrections[:50],  # Limit to first 50 for response size

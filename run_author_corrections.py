@@ -13,14 +13,28 @@ def main():
     print("🔧 Bulk Author Correction Script")
     print("="*80)
     
+    # Ask about batch size
+    print("\n⚙️  Processing Options:")
+    print("   1. Process in small batches (10 books at a time) - RECOMMENDED")
+    print("   2. Process all books at once (may timeout)")
+    
+    choice = input("\nChoose option (1 or 2): ").strip()
+    
+    if choice == "1":
+        batch_size = 10
+        print(f"\n✅ Will process {batch_size} books at a time")
+    else:
+        batch_size = 0
+        print("\n⚠️  Will process all books at once (may take a while)")
+    
     # First, run in dry-run mode to see what would be changed
     print("\n📋 Step 1: DRY RUN - Checking what would be corrected...")
-    print(f"📡 Calling: {API_URL}/api/fix-book-authors-from-csv?dry_run=true")
+    print(f"📡 Calling: {API_URL}/api/fix-book-authors-from-csv?dry_run=true&limit={batch_size}")
     
     try:
         response = requests.post(
             f"{API_URL}/api/fix-book-authors-from-csv",
-            params={"dry_run": True},
+            params={"dry_run": True, "limit": batch_size},
             timeout=180  # 3 minute timeout
         )
         
@@ -32,7 +46,8 @@ def main():
         dry_run_results = response.json()
         
         print(f"\n✅ Dry run complete!")
-        print(f"   Total books checked: {dry_run_results['total_books_checked']}")
+        print(f"   Total books in database: {dry_run_results['total_books_in_db']}")
+        print(f"   Books processed: {dry_run_results['books_processed']}")
         print(f"   Corrections needed: {dry_run_results['corrections_made']}")
         
         if dry_run_results['corrections_made'] == 0:
@@ -64,11 +79,11 @@ def main():
         
         # Run actual corrections
         print("\n📋 Step 2: APPLYING CORRECTIONS...")
-        print(f"📡 Calling: {API_URL}/api/fix-book-authors-from-csv?dry_run=false")
+        print(f"📡 Calling: {API_URL}/api/fix-book-authors-from-csv?dry_run=false&limit={batch_size}")
         
         response = requests.post(
             f"{API_URL}/api/fix-book-authors-from-csv",
-            params={"dry_run": False},
+            params={"dry_run": False, "limit": batch_size},
             timeout=180
         )
         
@@ -80,15 +95,24 @@ def main():
         results = response.json()
         
         print(f"\n✅ Corrections applied!")
-        print(f"   Total corrections made: {results['corrections_made']}")
+        print(f"   Books processed: {results['books_processed']}")
+        print(f"   Corrections made: {results['corrections_made']}")
         
         # Save results
         with open('author_corrections_results.json', 'w') as f:
             json.dump(results, f, indent=2)
         print(f"\n💾 Results saved to: author_corrections_results.json")
         
+        # Check if there are more books to process
+        if batch_size > 0 and results['books_processed'] < results['total_books_in_db']:
+            remaining = results['total_books_in_db'] - results['books_processed']
+            print(f"\n⚠️  Note: {remaining} books remaining. Run script again to process next batch.")
+        
         print("\n" + "="*80)
-        print("✅ DONE - All book authors have been corrected!")
+        if batch_size == 0 or results['books_processed'] >= results['total_books_in_db']:
+            print("✅ DONE - All book authors have been corrected!")
+        else:
+            print(f"✅ Batch complete - {results['corrections_made']} corrections made")
         print("="*80)
         
     except requests.exceptions.Timeout:
