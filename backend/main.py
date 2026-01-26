@@ -299,6 +299,18 @@ try:
 except Exception as e:
     print(f"⚠️ CSV comparison endpoint not available: {e}")
 
+# Bulk author correction endpoint
+try:
+    try:
+        from bulk_author_correction_endpoint import router as bulk_correction_router
+    except ImportError:
+        from backend.bulk_author_correction_endpoint import router as bulk_correction_router
+    
+    app.include_router(bulk_correction_router)
+    print("✅ Bulk author correction endpoint enabled at /api/fix-book-authors-from-csv")
+except Exception as e:
+    print(f"⚠️ Bulk author correction endpoint not available: {e}")
+
 # Debug endpoint for books schema
 try:
     try:
