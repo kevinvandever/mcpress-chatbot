@@ -83,7 +83,7 @@ async def fix_book_urls_from_csv(dry_run: bool = True, limit: int = 0):
                         if not dry_run:
                             update_query = """
                                 UPDATE books
-                                SET mc_press_url = $1, updated_at = CURRENT_TIMESTAMP
+                                SET mc_press_url = $1
                                 WHERE id = $2
                             """
                             await conn.execute(update_query, csv_url, book_id)
