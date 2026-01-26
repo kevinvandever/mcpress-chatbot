@@ -287,6 +287,18 @@ try:
 except Exception as e:
     print(f"⚠️ Fix authors endpoints not available: {e}")
 
+# CSV comparison endpoint
+try:
+    try:
+        from csv_comparison_endpoint import router as csv_comparison_router
+    except ImportError:
+        from backend.csv_comparison_endpoint import router as csv_comparison_router
+    
+    app.include_router(csv_comparison_router)
+    print("✅ CSV comparison endpoint enabled at /api/compare-csv-database")
+except Exception as e:
+    print(f"⚠️ CSV comparison endpoint not available: {e}")
+
 # Debug endpoint for books schema
 try:
     try:
