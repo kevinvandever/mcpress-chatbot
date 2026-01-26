@@ -311,6 +311,18 @@ try:
 except Exception as e:
     print(f"⚠️ Bulk author correction endpoint not available: {e}")
 
+# Bulk URL correction endpoint
+try:
+    try:
+        from bulk_url_correction_endpoint import router as bulk_url_router
+    except ImportError:
+        from backend.bulk_url_correction_endpoint import router as bulk_url_router
+    
+    app.include_router(bulk_url_router)
+    print("✅ Bulk URL correction endpoint enabled at /api/fix-book-urls-from-csv")
+except Exception as e:
+    print(f"⚠️ Bulk URL correction endpoint not available: {e}")
+
 # Debug endpoint for books schema
 try:
     try:
