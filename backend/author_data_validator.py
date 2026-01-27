@@ -87,8 +87,7 @@ class AuthorDataValidator:
                     b.filename,
                     b.title,
                     b.document_type,
-                    b.category,
-                    b.subcategory
+                    b.category
                 FROM books b
                 LEFT JOIN document_authors da ON b.id = da.book_id
                 WHERE da.book_id IS NULL
@@ -101,8 +100,7 @@ class AuthorDataValidator:
                     'filename': row['filename'],
                     'title': row['title'],
                     'document_type': row['document_type'],
-                    'category': row['category'],
-                    'subcategory': row['subcategory']
+                    'category': row['category']
                 }
                 for row in rows
             ]
