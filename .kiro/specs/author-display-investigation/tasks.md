@@ -24,7 +24,7 @@ This implementation plan provides a systematic approach to investigating and fix
 
 ## Tasks
 
-- [-] 1. Create diagnostic tools for author data validation
+- [x] 1. Create diagnostic tools for author data validation
   - [x] 1.1 Implement AuthorDataValidator class
     - Create `backend/author_data_validator.py` with methods to find books without authors, placeholder authors, orphaned authors, and invalid references
     - Implement `generate_data_quality_report()` method that returns structured data about all issues
@@ -38,13 +38,13 @@ This implementation plan provides a systematic approach to investigating and fix
     - **Property 2: Placeholder Detection Accuracy**
     - **Validates: Requirements 1.2, 4.2, 5.5**
   
-  - [ ] 1.4 Create diagnostic script to run validation
+  - [x] 1.4 Create diagnostic script to run validation
     - Create `diagnose_author_issues.py` that uses AuthorDataValidator to generate and display a comprehensive report
     - Output should include counts and examples of each issue type
     - _Requirements: 4.5_
 
-- [ ] 2. Create association checker for data integrity verification
-  - [ ] 2.1 Implement AssociationChecker class
+- [x] 2. Create association checker for data integrity verification
+  - [x] 2.1 Implement AssociationChecker class
     - Create `backend/association_checker.py` with methods to check author ordering, multi-author completeness, and duplicate associations
     - Implement `compare_with_excel()` method to find mismatches between Excel source and database
     - _Requirements: 1.3, 1.4, 4.4_
@@ -57,12 +57,12 @@ This implementation plan provides a systematic approach to investigating and fix
     - **Property 4: Referential Integrity**
     - **Validates: Requirements 1.4, 10.2**
   
-  - [ ] 2.4 Create verification script for Excel comparison
+  - [x] 2.4 Create verification script for Excel comparison
     - Create `verify_excel_import.py` that compares Excel file with database records
     - Report mismatches with book titles and expected vs actual authors
     - _Requirements: 4.4_
 
-- [ ] 3. Checkpoint - Run diagnostics and review findings
+- [x] 3. Checkpoint - Run diagnostics and review findings
   - Run diagnostic scripts on Railway to identify all author issues
   - Review the data quality report and Excel comparison results
   - Document specific books that need correction
@@ -181,8 +181,8 @@ This implementation plan provides a systematic approach to investigating and fix
     - Validation errors collected and reported
     - _Requirements: 10.2, 10.3_
 
-- [ ] 10. Frontend author display fixes needed
-  - [ ] 10.1 Fix CompactSources multi-author button behavior
+- [x] 10. Frontend author display fixes needed
+  - [x] 10.1 Fix CompactSources multi-author button behavior
     - **BUG**: When multiple authors have websites, button shows "Author" (singular) and links to first author instead of showing "Authors" (plural) with dropdown
     - Update logic to correctly detect multiple authors with websites
     - Ensure button text is "Authors" (plural) when multiple authors have websites

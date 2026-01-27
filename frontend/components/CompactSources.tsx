@@ -104,9 +104,15 @@ export default function CompactSources({ sources }: CompactSourcesProps) {
                 </div>
                 <div className="flex gap-1">
                   {/* Author website button - shows when any author has a website */}
-                  {sourceData.authors.some(author => author.site_url) && (
+                  {sourceData.authors && sourceData.authors.length > 0 && sourceData.authors.some(author => author.site_url) && (
                     (() => {
-                      const authorsWithSites = sourceData.authors.filter(author => author.site_url);
+                      // Filter to get only authors with valid website URLs
+                      const authorsWithSites = sourceData.authors.filter(author => author.site_url && author.site_url.trim() !== '');
+                      
+                      // Safety check - should not happen but prevents errors
+                      if (authorsWithSites.length === 0) {
+                        return null;
+                      }
                       
                       // If only one author with website, make it a direct link like Read/Buy buttons
                       if (authorsWithSites.length === 1) {
@@ -123,7 +129,7 @@ export default function CompactSources({ sources }: CompactSourcesProps) {
                         );
                       }
                       
-                      // If multiple authors with websites, show dropdown
+                      // If multiple authors with websites, show dropdown with plural text
                       return (
                         <div className="relative group">
                           <button className="flex-shrink-0 text-xs bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded transition-colors">
