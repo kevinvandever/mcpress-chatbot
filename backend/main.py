@@ -347,6 +347,18 @@ try:
 except Exception as e:
     print(f"⚠️ Enrichment debug endpoints not available: {e}")
 
+# Author diagnostics endpoint
+try:
+    try:
+        from author_diagnostics_endpoint import router as author_diag_router
+    except ImportError:
+        from backend.author_diagnostics_endpoint import router as author_diag_router
+    
+    app.include_router(author_diag_router)
+    print("✅ Author diagnostics endpoint enabled at /api/diagnostics/authors")
+except Exception as e:
+    print(f"⚠️ Author diagnostics endpoint not available: {e}")
+
 # Multi-Author Books API v2
 try:
     try:
