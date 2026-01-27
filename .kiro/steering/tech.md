@@ -156,27 +156,41 @@ Examples:
 ### Overview
 Since this project has no local development environment, all scripts that import backend modules must be run on Railway where dependencies are available.
 
-### Method 1: Railway Run (Recommended)
-```bash
-# Basic command execution
-railway run python3 script_name.py
+### CRITICAL: The ONLY Way to Run Scripts on Railway
 
-# With timeout (for longer scripts)
-railway run python3 script_name.py
-# Note: Use executeBash timeout parameter in Kiro for long-running scripts
-```
+**Method: Railway Shell (Interactive Execution)**
 
-### Method 2: Railway Shell (Interactive)
+This is the ONLY reliable method to run scripts that import backend modules:
+
 ```bash
-# Enter Railway shell environment
+# Step 1: Enter Railway shell environment
 railway shell
 
-# Once in shell, run commands normally
+# Step 2: Once in shell, run your script
 python3 script_name.py
-exit  # to leave shell
+
+# Step 3: Exit when done
+exit
 ```
 
-### Method 3: API Testing (Alternative)
+**Why `railway run` DOESN'T WORK:**
+- `railway run python3 script.py` executes the script LOCALLY with Railway environment variables
+- The script still runs on your local machine, not on Railway
+- Backend imports will fail because dependencies aren't installed locally
+- Database connections will fail because the DATABASE_URL points to a remote host
+
+**Example of CORRECT Usage:**
+```bash
+# ✅ CORRECT - Runs on Railway server
+railway shell
+python3 diagnose_author_issues.py
+exit
+
+# ❌ WRONG - Runs locally with Railway env vars (will fail)
+railway run python3 diagnose_author_issues.py
+```
+
+### Alternative: API Testing (When Possible)
 For scripts that test backend functionality, create API-based tests instead:
 ```python
 # Instead of importing backend modules directly
@@ -187,23 +201,27 @@ response = requests.get(f"{api_url}/api/endpoint")
 
 ### Common Issues and Solutions
 
-#### Issue: "No module named 'pandas'" or similar import errors
+#### Issue: "No module named 'backend.module_name'" or database connection errors
 **Cause**: Script is running locally instead of on Railway
-**Solution**: Use `railway run python3 script.py` instead of `python3 script.py`
+**Solution**: Use `railway shell` then run the script inside the shell
 
-#### Issue: Railway run fails with import errors
-**Cause**: Backend modules may have dependency issues
-**Solutions**:
-1. Check if deployment completed successfully
-2. Try API-based testing instead
-3. Use Railway shell for interactive debugging
+```bash
+# ✅ CORRECT
+railway shell
+python3 script.py
+exit
 
-#### Issue: Script hangs or times out
+# ❌ WRONG - This runs locally!
+railway run python3 script.py
+python3 script.py
+```
+
+#### Issue: Script hangs or times out in Railway shell
 **Cause**: Long-running operations
 **Solutions**:
-1. Add timeout parameter to executeBash in Kiro
-2. Break script into smaller chunks
-3. Use Railway shell for manual execution
+1. The script is running correctly - just wait for it to complete
+2. For very long operations, consider breaking into smaller scripts
+3. Check Railway logs if the script seems stuck: `railway logs`
 
 ### Script Categories
 
@@ -212,23 +230,23 @@ response = requests.get(f"{api_url}/api/endpoint")
 - Simple utility scripts without backend imports
 - Data analysis scripts using only standard libraries
 
-#### ❌ Must Run on Railway
+#### ❌ Must Run on Railway (via `railway shell`)
 - Scripts importing from `backend.*` modules
-- Scripts requiring pandas, asyncpg, or other backend dependencies
+- Scripts requiring asyncpg, or other backend dependencies
 - Database migration scripts
 - Scripts using ExcelImportService, AuthorService, etc.
 
 ### Best Practices
 
-1. **Always check deployment status** before running Railway scripts
-2. **Use API tests when possible** - they're more reliable than module imports
-3. **Add timeouts** for long-running scripts in Kiro
+1. **Always use `railway shell` for backend scripts** - Don't use `railway run`
+2. **Check deployment status** before running scripts (ensure latest code is deployed)
+3. **Use API tests when possible** - they can run locally
 4. **Test with simple scripts first** to verify Railway environment
 5. **Use descriptive script names** to identify purpose quickly
 
 ### Example Patterns
 
-#### Good: API-based test
+#### Good: API-based test (runs locally)
 ```python
 import requests
 def test_service():
@@ -236,36 +254,37 @@ def test_service():
     return response.status_code == 200
 ```
 
-#### Problematic: Direct module import
+#### Problematic: Direct module import (must run on Railway)
 ```python
 # This will fail locally but work on Railway
 from backend.excel_import_service import ExcelImportService
 ```
 
-#### Solution: Railway-specific script
-```python
+#### Solution: Railway shell execution
+```bash
+# Create script with backend imports
+cat > my_script.py << 'EOF'
 #!/usr/bin/env python3
 """
-This script must be run on Railway: railway run python3 script.py
+This script must be run on Railway via railway shell
 """
-try:
-    from backend.excel_import_service import ExcelImportService
-    # ... rest of script
-except ImportError as e:
-    print(f"❌ Import error: {e}")
-    print("This script must be run on Railway where dependencies are available.")
-    sys.exit(1)
+from backend.excel_import_service import ExcelImportService
+# ... rest of script
+EOF
+
+# Run it on Railway
+railway shell
+python3 my_script.py
+exit
 ```
 
 ### Debugging Railway Scripts
 
 1. **Check Railway logs**: `railway logs`
 2. **Verify deployment**: Ensure latest code is deployed
-3. **Test basic imports**: Start with simple import tests
-4. **Use Railway shell**: For interactive debugging
-5. **Check environment variables**: Ensure DATABASE_URL etc. are set
-
-This documentation should eliminate the trial-and-error process for running scripts on Railway.
+3. **Use Railway shell**: For all backend script execution
+4. **Check environment variables**: Inside railway shell, run `env | grep DATABASE_URL`
+5. **Test imports**: Inside railway shell, run `python3 -c "from backend.author_service import AuthorService; print('OK')"`
 
 ### Local Development Limitations
 - **No FastAPI server**: Cannot run `uvicorn` locally due to missing dependencies
