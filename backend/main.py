@@ -359,6 +359,30 @@ try:
 except Exception as e:
     print(f"⚠️ Author diagnostics endpoint not available: {e}")
 
+# Association checker endpoint
+try:
+    try:
+        from association_checker_endpoint import router as association_checker_router
+    except ImportError:
+        from backend.association_checker_endpoint import router as association_checker_router
+    
+    app.include_router(association_checker_router)
+    print("✅ Association checker endpoint enabled at /api/association-checker/*")
+except Exception as e:
+    print(f"⚠️ Association checker endpoint not available: {e}")
+
+# Duplicate author endpoint
+try:
+    try:
+        from duplicate_author_endpoint import router as duplicate_author_router
+    except ImportError:
+        from backend.duplicate_author_endpoint import router as duplicate_author_router
+    
+    app.include_router(duplicate_author_router)
+    print("✅ Duplicate author endpoint enabled at /api/authors/duplicates")
+except Exception as e:
+    print(f"⚠️ Duplicate author endpoint not available: {e}")
+
 # Multi-Author Books API v2
 try:
     try:
