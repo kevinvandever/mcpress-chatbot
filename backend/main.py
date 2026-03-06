@@ -2399,19 +2399,6 @@ async def debug_enrichment_sample_books():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Query failed: {str(e)}")
 
-@app.get("/debug-subscription-auth-config")
-async def debug_subscription_auth_config():
-    """Diagnostic: check if Appstle env vars are visible to the app."""
-    return {
-        "APPSTLE_API_URL_set": bool(os.getenv("APPSTLE_API_URL")),
-        "APPSTLE_API_URL_length": len(os.getenv("APPSTLE_API_URL", "")),
-        "APPSTLE_API_KEY_set": bool(os.getenv("APPSTLE_API_KEY")),
-        "APPSTLE_API_KEY_length": len(os.getenv("APPSTLE_API_KEY", "")),
-        "JWT_SECRET_KEY_set": bool(os.getenv("JWT_SECRET_KEY")),
-        "SUBSCRIPTION_SIGNUP_URL_set": bool(os.getenv("SUBSCRIPTION_SIGNUP_URL")),
-        "SUBSCRIPTION_SIGNUP_URL_length": len(os.getenv("SUBSCRIPTION_SIGNUP_URL", "")),
-    }
-
 
 if __name__ == "__main__":
     import uvicorn
