@@ -11,7 +11,6 @@ interface SubscriptionError {
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionError | null>(null);
   const [loading, setLoading] = useState(false);
@@ -46,7 +45,7 @@ export default function LoginPage() {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email }),
       });
 
       if (response.ok) {
@@ -60,7 +59,7 @@ export default function LoginPage() {
 
       switch (response.status) {
         case 401:
-          setError('Invalid email or password');
+          setError('No subscription found for this email address.');
           break;
         case 403:
           // Subscription issue — show status-specific message + Subscribe Now
@@ -116,7 +115,7 @@ export default function LoginPage() {
             MC Press Chatbot
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Sign in with your subscription account
+            Enter your subscription email to access the chatbot
           </p>
         </div>
 
@@ -137,23 +136,6 @@ export default function LoginPage() {
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                disabled={loading}
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                className="appearance-none relative block w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
               />
             </div>
@@ -219,7 +201,7 @@ export default function LoginPage() {
 
         <div className="text-center">
           <p className="text-xs text-gray-500">
-            Sign in with your MC Press subscription account to access the chatbot.
+            Enter the email associated with your MC Press subscription.
           </p>
         </div>
       </div>

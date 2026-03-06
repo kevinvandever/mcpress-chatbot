@@ -246,7 +246,7 @@ async def test_property_4_cookie_security_attributes():
         client = TestClient(app)
         response = client.post(
             "/api/auth/login",
-            json={"email": "user@example.com", "password": "testpass"},
+            json={"email": "user@example.com"},
         )
 
         assert response.status_code == 200
@@ -293,7 +293,7 @@ def test_property_5_non_active_subscription_denial(status):
 
     with patch.object(svc, "verify_subscription", new_callable=AsyncMock, return_value=appstle_resp):
         result = asyncio.get_event_loop().run_until_complete(
-            svc.login("user@example.com", "pass", "127.0.0.1")
+            svc.login("user@example.com", "127.0.0.1")
         )
 
     assert result["status_code"] == 403, f"Expected 403, got {result['status_code']}"
@@ -334,7 +334,7 @@ def test_property_6_active_subscription_grants_access(email):
 
     with patch.object(svc, "verify_subscription", new_callable=AsyncMock, return_value=appstle_resp):
         result = asyncio.get_event_loop().run_until_complete(
-            svc.login(email, "pass", "127.0.0.1")
+            svc.login(email, "127.0.0.1")
         )
 
     assert result["status_code"] == 200, f"Expected 200, got {result['status_code']}"
@@ -535,11 +535,11 @@ async def test_property_12_rate_limiting_enforcement():
     with patch.object(svc, "verify_subscription", new_callable=AsyncMock, return_value=appstle_resp):
         # First 5 attempts should go through (denied by subscription, not rate limit)
         for i in range(5):
-            result = await svc.login("user@example.com", "pass", test_ip)
+            result = await svc.login("user@example.com", test_ip)
             assert result["status_code"] == 403, f"Attempt {i+1}: expected 403, got {result['status_code']}"
 
         # 6th attempt should be rate limited
-        result = await svc.login("user@example.com", "pass", test_ip)
+        result = await svc.login("user@example.com", test_ip)
         assert result["status_code"] == 429, f"6th attempt: expected 429, got {result['status_code']}"
         assert "Too many login attempts" in result["body"]["error"]
 
@@ -581,22 +581,22 @@ async def test_property_13_rate_limiting_reset():
     # Make 3 failed attempts
     with patch.object(svc, "verify_subscription", new_callable=AsyncMock, return_value=inactive_resp):
         for i in range(3):
-            result = await svc.login("user@example.com", "pass", test_ip)
+            result = await svc.login("user@example.com", test_ip)
             assert result["status_code"] == 403
 
     # Successful login should reset the counter
     with patch.object(svc, "verify_subscription", new_callable=AsyncMock, return_value=active_resp):
-        result = await svc.login("user@example.com", "pass", test_ip)
+        result = await svc.login("user@example.com", test_ip)
         assert result["status_code"] == 200, f"Expected 200, got {result['status_code']}"
 
     # After reset, should be able to make 5 more failed attempts before rate limit
     with patch.object(svc, "verify_subscription", new_callable=AsyncMock, return_value=inactive_resp):
         for i in range(5):
-            result = await svc.login("user@example.com", "pass", test_ip)
+            result = await svc.login("user@example.com", test_ip)
             assert result["status_code"] == 403, f"Post-reset attempt {i+1}: expected 403, got {result['status_code']}"
 
         # 6th should be rate limited again
-        result = await svc.login("user@example.com", "pass", test_ip)
+        result = await svc.login("user@example.com", test_ip)
         assert result["status_code"] == 429
 
 
@@ -621,7 +621,7 @@ def test_property_14_disabled_configuration_missing_url(email):
     svc._config_valid = False  # Missing URL
 
     result = asyncio.get_event_loop().run_until_complete(
-        svc.login(email, "pass", "127.0.0.1")
+        svc.login(email, "127.0.0.1")
     )
 
     assert result["status_code"] == 503, f"Expected 503, got {result['status_code']}"
@@ -645,7 +645,7 @@ def test_property_14_disabled_configuration_missing_key(email):
     svc._config_valid = False  # Missing key
 
     result = asyncio.get_event_loop().run_until_complete(
-        svc.login(email, "pass", "127.0.0.1")
+        svc.login(email, "127.0.0.1")
     )
 
     assert result["status_code"] == 503, f"Expected 503, got {result['status_code']}"
@@ -681,7 +681,7 @@ async def test_property_15_appstle_api_non_200():
     )
 
     with patch.object(svc, "verify_subscription", new_callable=AsyncMock, side_effect=mock_error):
-        result = await svc.login("user@example.com", "pass", "127.0.0.1")
+        result = await svc.login("user@example.com", "127.0.0.1")
 
     assert result["status_code"] == 503, f"Expected 503, got {result['status_code']}"
     assert "temporarily unavailable" in result["body"]["error"].lower()
@@ -703,7 +703,7 @@ async def test_property_15_appstle_api_timeout():
     svc._config_valid = True
 
     with patch.object(svc, "verify_subscription", new_callable=AsyncMock, side_effect=aio.TimeoutError()):
-        result = await svc.login("user@example.com", "pass", "127.0.0.2")
+        result = await svc.login("user@example.com", "127.0.0.2")
 
     assert result["status_code"] == 503, f"Expected 503, got {result['status_code']}"
     assert "temporarily unavailable" in result["body"]["error"].lower()
@@ -794,7 +794,7 @@ def test_admin_auth_isolation():
     # Verify customer auth endpoints also exist
     response_customer = client.post(
         "/api/auth/login",
-        json={"email": "user@test.com", "password": "testpass"},
+        json={"email": "user@test.com"},
     )
     assert response_customer.status_code not in (404, 405), (
         f"Customer login route not found: {response_customer.status_code}"

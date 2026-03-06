@@ -4,10 +4,10 @@
 
 - [x] Create `backend/subscription_auth.py` with the `SubscriptionAuthService` class
 - [x] Implement `__init__` reading `APPSTLE_API_URL`, `APPSTLE_API_KEY`, `JWT_SECRET_KEY`, `SUBSCRIPTION_SIGNUP_URL` from environment
-- [x] Implement `verify_subscription(email)` — async method that calls the Appstle API at `GET {APPSTLE_API_URL}/api/external/v2/subscription-customers/valid/{email}` with `X-API-Key` header, 10-second timeout, and returns parsed `AppstleSubscriptionResponse`
+- [x] Implement `verify_subscription(email)` — async method that calls the Appstle API at `GET {APPSTLE_API_URL}/api/external/v2/subscription-contract-details/customers?email={email}` with `X-API-Key` header, 10-second timeout, and returns parsed `AppstleSubscriptionResponse`
 - [x] Implement `create_token(email, subscription_status, expires_at)` — creates a JWT with claims: `sub`, `subscription_status`, `subscription_expires_at`, `iat`, `exp` (1 hour from `iat`)
 - [x] Implement `verify_token(token, allow_grace=False)` — decodes and verifies JWT; when `allow_grace=True`, accepts tokens expired within 5 minutes
-- [x] Implement `login(email, password, client_ip)` — full login flow: check rate limit → call Appstle API → return success with token or denial with status-specific message and redirect URL
+- [x] Implement `login(email, client_ip)` — full login flow: check rate limit → call Appstle API → return success with token or denial with status-specific message and redirect URL (email-only, no password)
 - [x] Implement `refresh(token)` — verify token with grace window → re-verify subscription with Appstle → issue new token or return 403
 - [x] Define Pydantic models: `CustomerLoginRequest`, `AppstleSubscriptionResponse`, `LoginSuccessResponse`, `LoginDeniedResponse`, `RefreshResponse`
 - [x] Implement status-specific denial messages: "Your subscription has expired", "Your subscription is paused", "Your subscription has been cancelled", "No subscription found"
@@ -47,10 +47,10 @@
 **Requirements**: 8
 **Design ref**: Environment Variables table
 
-## Task 5: Replace frontend login page with email + password form
+## Task 5: Update frontend login page with email-only form
 
-- [x] Rewrite `frontend/app/login/page.tsx` to accept email and password (not just password)
-- [x] On submit, POST to `/api/auth/login` with `{email, password}`
+- [x] Rewrite `frontend/app/login/page.tsx` to accept email only (no password — Appstle checks subscription by email)
+- [x] On submit, POST to `/api/auth/login` with `{email}`
 - [x] On 200 success: redirect to `/` with `router.push('/')` and `router.refresh()`
 - [x] On 401: display "Invalid email or password" error
 - [x] On 403 (subscription issue): display status-specific message from response (`error` field) and show "Subscribe Now" button linking to `redirect_url` from response (opens in new tab)
@@ -153,7 +153,7 @@
 
 ## Task 12: Deploy and verify on Railway
 
-- [-] Commit all backend changes and push to `main` to trigger Railway deployment
+- [x] Commit all backend changes and push to `main` to trigger Railway deployment
 - [ ] Wait for deployment to complete (~10-15 minutes)
 - [ ] Set `APPSTLE_API_URL`, `APPSTLE_API_KEY`, `SUBSCRIPTION_SIGNUP_URL`, and `JWT_SECRET_KEY` environment variables in Railway dashboard
 - [ ] Verify `GET /health` still works

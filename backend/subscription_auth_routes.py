@@ -56,14 +56,13 @@ def _get_client_ip(request: Request) -> str:
 @router.post("/login")
 async def login(body: CustomerLoginRequest, request: Request):
     """
-    Verify email/password via Appstle subscription API.
+    Verify email subscription via Appstle API.
     On success, sets an HTTP-only session_token cookie and returns user info.
     """
     client_ip = _get_client_ip(request)
 
     result = await auth_service.login(
         email=body.email,
-        password=body.password,
         client_ip=client_ip,
     )
 

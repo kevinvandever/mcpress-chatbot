@@ -29,9 +29,8 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 class CustomerLoginRequest(BaseModel):
-    """Request body for customer login."""
+    """Request body for customer login (email-only, no password)."""
     email: EmailStr
-    password: str
 
 
 class AppstleSubscriptionResponse(BaseModel):
@@ -147,9 +146,13 @@ class SubscriptionAuthService:
         """
         Call the Appstle API to check subscription status for the given email.
 
-        GET {APPSTLE_API_URL}/api/external/v2/subscription-customers/valid/{email}
+        GET {APPSTLE_API_URL}/api/external/v2/subscription-contract-details/customers?email={email}
         Headers: X-API-Key: {APPSTLE_API_KEY}
         Timeout: 10 seconds
+
+        The endpoint returns a paginated list of customers with subscription contracts.
+        If the response contains any customer data with subscription contracts, the
+        customer has a valid subscription. We look for contracts with ACTIVE status.
 
         Returns an AppstleSubscriptionResponse with parsed fields.
         Raises:
@@ -157,12 +160,13 @@ class SubscriptionAuthService:
             asyncio.TimeoutError on timeout
             ValueError on malformed response
         """
-        url = f"{self.appstle_api_url}/api/external/v2/subscription-customers/valid/{email}"
+        url = f"{self.appstle_api_url}/api/external/v2/subscription-contract-details/customers"
         headers = {"X-API-Key": self.appstle_api_key}
+        params = {"email": email}
         timeout = aiohttp.ClientTimeout(total=self.appstle_timeout)
 
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.get(url, headers=headers) as resp:
+            async with session.get(url, headers=headers, params=params) as resp:
                 if resp.status != 200:
                     logger.error(
                         "Appstle API returned status %d for email=%s",
@@ -182,27 +186,129 @@ class SubscriptionAuthService:
                     raise ValueError(f"Malformed Appstle response: {exc}") from exc
 
                 logger.info(
-                    "Appstle API response for email=%s: is_valid=%s status=%s",
+                    "Appstle API response for email=%s: %s",
                     email,
-                    data.get("is_valid"),
-                    data.get("subscription_status"),
+                    str(data)[:500],  # Log first 500 chars for debugging
                 )
 
-                # Parse expiration_date safely
-                expiration_date = None
-                raw_exp = data.get("expiration_date")
-                if raw_exp:
-                    try:
-                        expiration_date = datetime.fromisoformat(str(raw_exp).replace("Z", "+00:00"))
-                    except (ValueError, TypeError):
-                        pass
+                # Parse the response to determine subscription status.
+                # The endpoint returns customer data with subscription contracts.
+                # We need to find if any contract has an ACTIVE status.
+                return self._parse_subscription_response(data, email)
 
-                return AppstleSubscriptionResponse(
-                    is_valid=bool(data.get("is_valid", False)),
-                    subscription_status=data.get("subscription_status"),
-                    expiration_date=expiration_date,
-                    customer_email=data.get("customer_email"),
-                )
+    # ------------------------------------------------------------------
+    # _parse_subscription_response
+    # ------------------------------------------------------------------
+    def _parse_subscription_response(
+        self, data: Any, email: str
+    ) -> AppstleSubscriptionResponse:
+        """
+        Parse the Appstle /subscription-contract-details/customers response.
+
+        The response may be:
+        - A paginated object with a "content" list of customers
+        - A list of customers directly
+        - An empty list/object if no customer found
+
+        Each customer may have "subscriptionContracts" with "edges" containing
+        contract nodes with a "status" field (ACTIVE, PAUSED, CANCELLED, EXPIRED, FAILED).
+
+        We consider the customer to have a valid subscription if ANY contract
+        has an ACTIVE status.
+        """
+        # Normalize: extract the customer list from the response
+        customers = []
+        if isinstance(data, list):
+            customers = data
+        elif isinstance(data, dict):
+            # Paginated response: {"content": [...], "pageable": {...}, ...}
+            customers = data.get("content", [])
+            # If "content" is not present, maybe the response IS the customer
+            if not customers and data.get("email"):
+                customers = [data]
+
+        if not customers:
+            logger.info("No customers found in Appstle response for email=%s", email)
+            return AppstleSubscriptionResponse(
+                is_valid=False,
+                subscription_status=None,
+                expiration_date=None,
+                customer_email=email,
+            )
+
+        # Look through all customers (should typically be 1 for an email filter)
+        best_status = None
+        best_expiration = None
+        found_active = False
+
+        for customer in customers:
+            customer_email = customer.get("email") or customer.get("customerEmail")
+
+            # Extract subscription contracts
+            contracts = self._extract_contracts(customer)
+
+            for contract in contracts:
+                status = contract.get("status", "").upper()
+
+                if status == "ACTIVE":
+                    found_active = True
+                    best_status = "ACTIVE"
+                    # Try to get next billing date as expiration proxy
+                    next_billing = contract.get("nextBillingDate")
+                    if next_billing and not best_expiration:
+                        try:
+                            best_expiration = datetime.fromisoformat(
+                                str(next_billing).replace("Z", "+00:00")
+                            )
+                        except (ValueError, TypeError):
+                            pass
+                    break  # Found active, no need to check more contracts
+                elif not best_status or status in ("PAUSED", "CANCELLED", "EXPIRED"):
+                    best_status = status
+
+            if found_active:
+                break
+
+        return AppstleSubscriptionResponse(
+            is_valid=found_active,
+            subscription_status=best_status,
+            expiration_date=best_expiration,
+            customer_email=email,
+        )
+
+    # ------------------------------------------------------------------
+    # _extract_contracts
+    # ------------------------------------------------------------------
+    def _extract_contracts(self, customer: dict) -> list:
+        """
+        Extract subscription contracts from a customer object.
+
+        Handles multiple possible response shapes:
+        - customer["subscriptionContracts"]["edges"][*]["node"]
+        - customer["subscriptionContracts"][*]  (flat list)
+        - customer["contracts"][*]
+        """
+        contracts = []
+
+        sub_contracts = customer.get("subscriptionContracts")
+        if sub_contracts:
+            if isinstance(sub_contracts, dict):
+                # GraphQL-style: {"edges": [{"node": {...}}, ...]}
+                edges = sub_contracts.get("edges", [])
+                for edge in edges:
+                    node = edge.get("node") if isinstance(edge, dict) else None
+                    if node:
+                        contracts.append(node)
+            elif isinstance(sub_contracts, list):
+                contracts.extend(sub_contracts)
+
+        # Fallback: check "contracts" key
+        if not contracts:
+            alt_contracts = customer.get("contracts", [])
+            if isinstance(alt_contracts, list):
+                contracts.extend(alt_contracts)
+
+        return contracts
 
 
     # ------------------------------------------------------------------
@@ -279,17 +385,17 @@ class SubscriptionAuthService:
     # login
     # ------------------------------------------------------------------
     async def login(
-        self, email: str, password: str, client_ip: str
+        self, email: str, client_ip: str
     ) -> Dict[str, Any]:
         """
         Full login flow:
         1. Check configuration
         2. Check rate limit for client_ip
-        3. Call Appstle API to verify subscription
+        3. Call Appstle API to verify subscription by email
         4. Return success with token, or denial with status-specific message
 
         Returns a dict with keys:
-          - status_code: int (200, 401, 403, 429, 500, 503)
+          - status_code: int (200, 403, 429, 500, 503)
           - body: LoginSuccessResponse | LoginDeniedResponse (as dict)
         """
         import asyncio

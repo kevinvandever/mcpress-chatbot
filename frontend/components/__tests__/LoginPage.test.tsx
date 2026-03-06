@@ -43,7 +43,6 @@ async function renderAndWaitForForm() {
 
 async function fillAndSubmitForm(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText(/email address/i), 'test@example.com')
-  await user.type(screen.getByLabelText(/password/i), 'password123')
   await user.click(screen.getByRole('button', { name: /sign in/i }))
 }
 
@@ -56,29 +55,28 @@ describe('LoginPage', () => {
     jest.restoreAllMocks()
   })
 
-  // --- Requirement 1.1: Login page renders email and password fields ---
-  it('renders email and password input fields', async () => {
+  // --- Requirement 1.1: Login page renders email field (email-only auth) ---
+  it('renders email input field and sign in button', async () => {
     setupFetchMock({ '/api/auth/me': { status: 401 } })
     await renderAndWaitForForm()
 
     expect(screen.getByLabelText(/email address/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument()
   })
 
-  // --- Requirement 1.5: Shows "Invalid email or password" on 401 ---
-  it('shows "Invalid email or password" on 401 response', async () => {
+  // --- Requirement 1.5: Shows "No subscription found" on 401 ---
+  it('shows "No subscription found" message on 401 response', async () => {
     const user = userEvent.setup()
     setupFetchMock({
       '/api/auth/me': { status: 401 },
-      '/api/auth/login': { status: 401, body: { success: false, error: 'Invalid email or password' } },
+      '/api/auth/login': { status: 401, body: { success: false, error: 'No subscription found for this email address.' } },
     })
 
     await renderAndWaitForForm()
     await fillAndSubmitForm(user)
 
     await waitFor(() => {
-      expect(screen.getByText('Invalid email or password')).toBeInTheDocument()
+      expect(screen.getByText('No subscription found for this email address.')).toBeInTheDocument()
     })
   })
 
@@ -241,7 +239,7 @@ describe('LoginPage', () => {
       resolveLogin({
         ok: false,
         status: 401,
-        json: () => Promise.resolve({ error: 'Invalid email or password' }),
+        json: () => Promise.resolve({ error: 'No subscription found' }),
       })
     })
   })
