@@ -275,6 +275,18 @@ app.add_middleware(
 # Include auth router
 app.include_router(auth_router)
 
+# Include subscription auth router (customer auth via Appstle)
+try:
+    try:
+        from subscription_auth_routes import router as subscription_auth_router
+    except ImportError:
+        from backend.subscription_auth_routes import router as subscription_auth_router
+    
+    app.include_router(subscription_auth_router)
+    print("✅ Subscription auth endpoints enabled at /api/auth/*")
+except Exception as e:
+    print(f"⚠️ Subscription auth endpoints not available: {e}")
+
 # Include fix authors endpoint
 try:
     try:

@@ -5,24 +5,35 @@ import { useRouter } from 'next/navigation'
 import ChatInterface, { ChatInterfaceRef } from '@/components/ChatInterface'
 import BackToTopButton from '@/components/BackToTopButton'
 import { API_URL } from '@/config/api'
+import { useAuthRefresh } from '@/hooks/useAuthRefresh'
 
 export default function Home() {
   const [hasDocuments, setHasDocuments] = useState(false)
   const [isCheckingDocuments, setIsCheckingDocuments] = useState(true)
   const [documentCount, setDocumentCount] = useState(0)
   const [systemStatus, setSystemStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [userEmail, setUserEmail] = useState<string | null>(null)
   const chatInterfaceRef = useRef<ChatInterfaceRef>(null)
   const router = useRouter()
 
-  // Check admin authentication - entire site requires admin login
-  useEffect(() => {
-    const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null
+  // Silent token refresh — schedules refresh ~5 min before JWT expiry
+  useAuthRefresh()
 
-    if (!adminToken) {
-      router.push('/admin/login?redirect=/')
-      return
+  // Fetch user info from cookie-based session (middleware handles redirect if unauthenticated)
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const res = await fetch('/api/auth/me')
+        if (res.ok) {
+          const data = await res.json()
+          setUserEmail(data.email || null)
+        }
+      } catch {
+        // Silently ignore — middleware handles unauthenticated redirects
+      }
     }
-  }, [router])
+    fetchUserInfo()
+  }, [])
 
   // Check if documents are available
   useEffect(() => {
@@ -66,13 +77,13 @@ export default function Home() {
     // return () => clearInterval(interval)
   }, [])
 
-  const handleLogout = () => {
-    // Clear admin token and redirect to admin login
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('adminToken')
-      localStorage.removeItem('tokenExpiry')
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+    } catch {
+      // Continue with redirect even if the API call fails
     }
-    router.push('/admin/login')
+    router.push('/login')
   }
 
   return (
@@ -87,6 +98,9 @@ export default function Home() {
 
             {/* Navigation buttons */}
             <div className="flex items-center gap-2">
+              {userEmail && (
+                <span className="text-sm text-gray-500 hidden sm:inline mr-2">{userEmail}</span>
+              )}
               <button
                 onClick={() => router.push('/history')}
                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"

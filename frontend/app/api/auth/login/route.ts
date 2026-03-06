@@ -1,38 +1,37 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
+const BACKEND_URL = process.env.VITE_API_URL || 'https://mcpress-chatbot-production.up.railway.app';
+
 export async function POST(request: Request) {
   try {
-    const { password } = await request.json();
+    const body = await request.json();
 
-    // Get demo password from environment variable
-    const DEMO_PASSWORD = process.env.DEMO_PASSWORD || 'mcpress2024';
+    // Proxy to Railway backend
+    const backendResponse = await fetch(`${BACKEND_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
 
-    // Debug logging (remove after testing)
-    console.log('Password attempt length:', password?.length);
-    console.log('Expected password length:', DEMO_PASSWORD?.length);
-    console.log('Env var set?', !!process.env.DEMO_PASSWORD);
+    const data = await backendResponse.json();
 
-    // Simple password check
-    if (password === DEMO_PASSWORD) {
-      // Set HTTP-only cookie (more secure than localStorage)
+    // If login succeeded and backend returned a token, set it as an HTTP-only cookie
+    if (backendResponse.ok && data.token) {
       const cookieStore = await cookies();
-      cookieStore.set('demo_auth', 'authenticated', {
+      cookieStore.set('session_token', data.token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: true,
         sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
         path: '/',
+        maxAge: 3600, // 1 hour
       });
-
-      return NextResponse.json({ success: true });
-    } else {
-      return NextResponse.json(
-        { success: false, error: 'Invalid password' },
-        { status: 401 }
-      );
     }
+
+    // Forward the response body and status code to the client
+    return NextResponse.json(data, { status: backendResponse.status });
   } catch (error) {
+    console.error('Login proxy error:', error);
     return NextResponse.json(
       { success: false, error: 'Server error' },
       { status: 500 }

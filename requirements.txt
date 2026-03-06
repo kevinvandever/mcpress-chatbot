@@ -47,3 +47,4 @@ langchain-text-splitters>=0.0.1
 hypothesis>=6.92.0
 pytest>=7.4.0
 pytest-asyncio>=0.21.0
+httpx>=0.25.0
