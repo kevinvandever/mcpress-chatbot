@@ -359,6 +359,18 @@ try:
 except Exception as e:
     print(f"⚠️ Enrichment debug endpoints not available: {e}")
 
+# Appstle debug endpoint (temporary)
+try:
+    try:
+        from debug_appstle_endpoint import router as appstle_debug_router
+    except ImportError:
+        from backend.debug_appstle_endpoint import router as appstle_debug_router
+
+    app.include_router(appstle_debug_router)
+    print("✅ Appstle debug endpoint enabled at /api/debug/appstle-check")
+except Exception as e:
+    print(f"⚠️ Appstle debug endpoint not available: {e}")
+
 # Author diagnostics endpoint
 try:
     try:
