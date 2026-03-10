@@ -3,7 +3,8 @@
 ## Architecture
 - **Monorepo**: Frontend and backend in single repository
 - **Deployment**: Railway (backend), Netlify (frontend)
-- **Database**: Supabase PostgreSQL 16+ with pgvector extension
+- **Database**: Railway PostgreSQL with pgvector extension
+- **Branching**: `feature/* → staging → main` (staging-first workflow)
 
 ## Backend Stack
 
@@ -114,18 +115,65 @@ python3 -m pytest backend/test_file.py
 - `netlify.toml` - Netlify configuration
 
 ### Deployment Process
+
+**This project uses a staging-first workflow: `feature/* → staging → main`**
+
+Code must be tested on staging before it reaches production. Never push directly to `main` for new features.
+
+#### Step 1: Create a feature branch
 ```bash
-# 1. Commit and push changes
+git checkout staging
+git pull origin staging
+git checkout -b feature/my-change
+```
+
+#### Step 2: Develop and commit
+```bash
+# Make changes...
 git add .
 git commit -m "Description of changes"
-git push origin main
-
-# 2. Wait for deployment (10-15 minutes for Railway, 2-3 minutes for Netlify)
-# Monitor at: https://railway.app/dashboard
-
-# 3. THEN run tests on Railway
-railway run python3 your_test_script.py
+git push origin feature/my-change
 ```
+
+#### Step 3: Merge to staging for testing
+```bash
+git checkout staging
+git merge feature/my-change
+git push origin staging
+```
+- Railway staging auto-deploys (~10-15 min): https://mcpress-chatbot-staging.up.railway.app
+- Netlify staging auto-deploys (~2-3 min): https://staging--mc-chatmaster.netlify.app
+
+#### Step 4: Test on staging
+- Verify at staging URLs above
+- Run API-based test scripts against staging URL
+
+#### Step 5: Promote to production (after approval)
+```bash
+git checkout main
+git merge staging
+git push origin main
+```
+- Railway production auto-deploys: https://mcpress-chatbot-production.up.railway.app
+- Netlify production auto-deploys: https://mc-chatmaster.netlify.app
+
+#### Step 6: Clean up feature branch
+```bash
+git branch -d feature/my-change
+git push origin --delete feature/my-change
+```
+
+### Environment URLs
+| Environment | Backend | Frontend |
+|-------------|---------|----------|
+| Production  | https://mcpress-chatbot-production.up.railway.app | https://mc-chatmaster.netlify.app |
+| Staging     | https://mcpress-chatbot-staging.up.railway.app | https://staging--mc-chatmaster.netlify.app |
+
+### Database Configuration
+- **Single shared database** (Railway PostgreSQL with pgvector)
+- Production uses internal URL: `pgvector-railway.railway.internal:5432`
+- Staging uses public proxy URL: `shortline.proxy.rlwy.net:18459`
+- Both environments read/write the same data
 
 ### Files That DON'T Require Deployment
 - Root-level test scripts (e.g., `test_*.py`, `check_*.py`, `debug_*.py`)
@@ -143,13 +191,14 @@ Examples:
 - ❌ Updated `README.md` → **No deployment needed**
 
 ### Testing Workflow
-1. **Make code changes**
-2. **Deploy if needed** (see rules above)
-3. **Wait for deployment to complete**
-4. **Run tests on Railway** (not locally)
-5. **Verify functionality**
+1. **Make code changes** on a feature branch
+2. **Merge to staging** and push
+3. **Wait for staging deployment to complete**
+4. **Test on staging** (not production, not locally)
+5. **Verify functionality** at staging URLs
+6. **Merge staging to main** only after approval
 
-**Remember: This project has NO local development environment. All testing must be done on Railway after deployment.**
+**Remember: This project has NO local development environment. All testing must be done on Railway after deployment. Always test on staging first.**
 
 ## Running Scripts on Railway
 
@@ -585,15 +634,18 @@ print(f"Body: {response.text}")
 - **Deployment required**: All integration testing requires Railway deployment
 
 ### Backend (Railway)
-- **Auto-deploy**: Push to `main` branch triggers Railway deployment
-- **Manual deploy**: Trigger redeploy in Railway dashboard
+- **Production auto-deploy**: Push to `main` branch triggers Railway production deployment
+- **Staging auto-deploy**: Push to `staging` branch triggers Railway staging deployment
 - **Start command**: `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`
 - **Health check**: `/health` endpoint
 - **Deploy time**: ~10-15 minutes
-- **Run tests on Railway**: Use Railway CLI or connect via SSH to execute `python3 -m pytest`
+- **Run tests on Railway**: Use API-based scripts against staging URL
 
 ### Frontend (Netlify)
-- **Auto-deploy**: Push to `main` branch triggers Netlify deployment
+- **Production auto-deploy**: Push to `main` branch triggers Netlify production deployment
+- **Staging auto-deploy**: Push to `staging` branch triggers Netlify branch deploy
+- **Production URL**: https://mc-chatmaster.netlify.app
+- **Staging URL**: https://staging--mc-chatmaster.netlify.app
 - **Build command**: `cd frontend && npm install && npm run build`
 - **Publish directory**: `frontend/dist`
 - **Deploy time**: ~2-3 minutes
@@ -624,7 +676,8 @@ INITIAL_SEARCH_RESULTS=30
 
 ### Frontend (Netlify)
 ```
-VITE_API_URL=https://mcpress-chatbot-production.up.railway.app
+NEXT_PUBLIC_API_URL=https://mcpress-chatbot-production.up.railway.app  (production)
+NEXT_PUBLIC_API_URL=https://mcpress-chatbot-staging.up.railway.app     (staging - set via netlify.toml context)
 ```
 
 ## Critical Configuration Notes
