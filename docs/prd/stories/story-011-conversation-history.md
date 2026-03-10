@@ -1161,7 +1161,7 @@ Frontend build: SUCCESS
 **Deployment Status**: **LIVE IN PRODUCTION**
 
 **URLs**:
-- Frontend: https://mc-press-chatbot.netlify.app
+- Frontend: https://mc-chatmaster.netlify.app
 - Backend: https://mcpress-chatbot-production.up.railway.app
 - Conversation API: `/api/conversations`
 

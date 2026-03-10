@@ -8,6 +8,7 @@ import { API_URL } from '@/config/api'
 import { useAuthRefresh } from '@/hooks/useAuthRefresh'
 
 export default function Home() {
+  const [isInitializing, setIsInitializing] = useState(true)
   const [hasDocuments, setHasDocuments] = useState(false)
   const [isCheckingDocuments, setIsCheckingDocuments] = useState(true)
   const [documentCount, setDocumentCount] = useState(0)
@@ -68,6 +69,7 @@ export default function Home() {
         setSystemStatus('ready')
       } finally {
         setIsCheckingDocuments(false)
+        setIsInitializing(false)
       }
     }
     
@@ -84,6 +86,18 @@ export default function Home() {
       // Continue with redirect even if the API call fails
     }
     router.push('/login')
+  }
+
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <img src="/mc-chatmaster-logo.png" alt="MC ChatMaster" className="h-12 w-auto mx-auto mb-4" />
+          <div className="w-8 h-8 border-4 rounded-full animate-spin mx-auto"
+            style={{ borderColor: 'var(--mc-blue-lighter)', borderTopColor: 'var(--mc-blue)' }} />
+        </div>
+      </div>
+    )
   }
 
   return (

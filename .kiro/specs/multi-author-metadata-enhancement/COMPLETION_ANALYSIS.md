@@ -231,7 +231,7 @@ LIMIT 10;
 
 ### Step 4: Test in Chat Interface (HIGH PRIORITY)
 
-1. Open https://mcpress-chatbot.netlify.app
+1. Open https://mc-chatmaster.netlify.app
 2. Ask: "Tell me about DB2 programming"
 3. Verify in References section:
    - ✅ Author names are NOT "Unknown"

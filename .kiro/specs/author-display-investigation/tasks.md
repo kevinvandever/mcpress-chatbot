@@ -1,4 +1,4 @@
-`1# Implementation Plan: Author Display Investigation and Fix
+`1Ri# Implementation Plan: Author Display Investigation and Fix
 
 ## Overview
 

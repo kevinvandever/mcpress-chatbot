@@ -46,3 +46,21 @@ coverage/
 .coverage
 htmlcov/
 .pytest_cache/
+.hypothesis/
+
+# Data files (root level only)
+/*.json
+!package.json
+!package-lock.json
+/*.csv
+/*.sql
+/*.txt
+!requirements.txt
+!runtime.txt
+
+# Apple formats
+*.numbers
+*.pages
+
+# Excel macro files
+*.xlsm

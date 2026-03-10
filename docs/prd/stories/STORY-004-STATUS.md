@@ -11,7 +11,7 @@
    - Books table exists in PostgreSQL with all metadata
 
 2. **Frontend Admin Panel**
-   - URL: `https://mc-press-chatbot.netlify.app/admin/documents`
+   - URL: `https://mc-chatmaster.netlify.app/admin/documents`
    - Successfully displays all 115 documents
    - Shows document IDs, titles, authors, categories, page counts
    - Search and filtering works

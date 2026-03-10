@@ -729,7 +729,7 @@ None - Implementation completed without blocking issues.
   - **Status**: Fixed ✅
 
 ### Testing Instructions
-1. Navigate to https://mc-press-chatbot.netlify.app
+1. Navigate to https://mc-chatmaster.netlify.app
 2. Go to Conversations/History
 3. Open any conversation
 4. Click the export button (download icon) in the action bar

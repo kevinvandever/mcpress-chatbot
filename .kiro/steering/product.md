@@ -13,6 +13,8 @@ An AI-powered technical documentation assistant for IBM i professionals. The sys
 
 ### Current State
 - **Production**: Deployed on Railway (backend) and Netlify (frontend)
+- **Frontend URL**: https://mc-chatmaster.netlify.app
+- **Backend URL**: https://mcpress-chatbot-production.up.railway.app
 - **Database**: Supabase PostgreSQL with pgvector extension
 - **Documents**: 227,032+ indexed chunks from technical books
 - **Target Audience**: IBM i developers, RPG programmers, system administrators

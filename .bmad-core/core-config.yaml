@@ -12,7 +12,7 @@ development:
   localBackendPort: 8000
   localFrontendPort: 3000
   productionBackend: https://mcpress-chatbot-production.up.railway.app
-  productionFrontend: https://mc-press-chatbot.netlify.app
+  productionFrontend: https://mc-chatmaster.netlify.app
 
 standards:
   typescript:

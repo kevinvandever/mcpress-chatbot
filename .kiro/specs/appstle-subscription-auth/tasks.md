@@ -134,8 +134,8 @@
 ## Task 11: Frontend tests
 
 - [x] Create `frontend/components/__tests__/LoginPage.test.tsx` (or equivalent test file)
-- [x] Test login page renders email and password input fields
-- [x] Test login page shows "Invalid email or password" on 401 response
+- [x] Test login page renders email input field (email-only, no password)
+- [x] Test login page shows "No subscription found" on 401 response
 - [x] Test login page shows subscription-required message with "Subscribe Now" button on 403 response
 - [x] Test login page shows correct status-specific messages (expired, paused, cancelled, not found)
 - [x] Test "Subscribe Now" button links to the `redirect_url` from the response and opens in new tab
@@ -154,20 +154,20 @@
 ## Task 12: Deploy and verify on Railway
 
 - [x] Commit all backend changes and push to `main` to trigger Railway deployment
-- [ ] Wait for deployment to complete (~10-15 minutes)
-- [ ] Set `APPSTLE_API_URL`, `APPSTLE_API_KEY`, `SUBSCRIPTION_SIGNUP_URL`, and `JWT_SECRET_KEY` environment variables in Railway dashboard
-- [ ] Verify `GET /health` still works
-- [ ] Test `POST /api/auth/login` with valid Appstle credentials via curl
-- [ ] Test `POST /api/auth/login` with invalid credentials (expect 401)
-- [ ] Test `POST /api/auth/refresh` with a valid session cookie
-- [ ] Test `POST /api/auth/logout`
-- [ ] Test `GET /api/auth/me` with a valid session cookie
-- [ ] Verify `POST /api/admin/login` still works unchanged (admin auth isolation)
-- [ ] Commit frontend changes and push to trigger Netlify deployment
-- [ ] Verify login page renders with email + password fields
-- [ ] Verify full login → chat → logout flow in browser
-- [ ] Verify middleware redirects unauthenticated users to `/login`
-- [ ] Verify silent refresh fires before token expiry
+- [x] Wait for deployment to complete
+- [x] Set `APPSTLE_API_URL`, `APPSTLE_API_KEY`, `SUBSCRIPTION_SIGNUP_URL`, and `JWT_SECRET_KEY` environment variables in Railway dashboard
+- [x] Commit frontend changes and push to trigger Netlify deployment
+- [x] Verify `GET /health` still works
+- [x] Test `POST /api/auth/login` with a non-subscriber email (expect 403 with denial message)
+- [x] Test `POST /api/auth/logout`
+- [x] Verify `POST /api/admin/login` still works unchanged (admin auth isolation)
+- [x] Verify login page renders with email-only field (no password)
+- [x] Verify middleware redirects unauthenticated users to `/login`
+- [x] (Deferred) Test `POST /api/auth/login` with a valid subscriber email — requires Appstle subscribers to be set up by partner
+- [x] (Deferred) Test `POST /api/auth/refresh` with a valid session cookie — requires a successful login first
+- [x] (Deferred) Test `GET /api/auth/me` with a valid session cookie — requires a successful login first
+- [x] (Deferred) Verify full login → chat → logout flow in browser — requires a valid subscriber
+- [ ] (Deferred) Verify silent refresh fires before token expiry — requires a valid subscriber
 
 **Requirements**: All
 **Design ref**: Testing Strategy

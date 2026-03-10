@@ -153,138 +153,430 @@ Examples:
 
 ## Running Scripts on Railway
 
+### 🚨 CRITICAL: DO NOT USE RAILWAY SHELL - IT WILL FAIL! 🚨
+
+**Railway shell (`railway shell`) is UNRELIABLE and WILL FAIL.**
+
+**✅ ALWAYS use API-based scripts instead:**
+1. Create an API endpoint in `backend/` for your functionality
+2. Register it in `backend/main.py`
+3. Deploy to Railway (git push)
+4. Call the API from a local Python script using `requests`
+5. Run the script locally: `python3 my_script.py`
+
+**See examples below for the correct pattern.**
+
+---
+
 ### Overview
-Since this project has no local development environment, all scripts that import backend modules must be run on Railway where dependencies are available.
+Since this project has no local development environment, scripts that need database access must use one of two approaches: API-based testing (PREFERRED) or Railway shell execution (PROBLEMATIC).
 
-### CRITICAL: The ONLY Way to Run Scripts on Railway
+### ⚠️ CRITICAL: Railway Shell is UNRELIABLE - Use API Endpoints Instead!
 
-**Method: Railway Shell (Interactive Execution)**
+**Railway shell (`railway shell`) is known to fail frequently and should be AVOIDED.**
 
-This is the ONLY reliable method to run scripts that import backend modules:
+### ✅ PREFERRED METHOD: API-Based Testing
+
+**Create API endpoints for backend functionality and call them via HTTP requests.**
+
+This is the RELIABLE and RECOMMENDED approach:
+
+```python
+# Example: API-based script (runs locally, no Railway shell needed)
+import requests
+
+API_URL = "https://mcpress-chatbot-production.up.railway.app"
+
+# Call API endpoint instead of importing backend modules
+response = requests.get(f"{API_URL}/api/diagnostics/authors")
+data = response.json()
+print(f"Found {data['total_issues']} issues")
+```
+
+**Why API-based is better:**
+- ✅ Runs locally on your machine (no Railway shell needed)
+- ✅ Reliable and consistent
+- ✅ No dependency installation required
+- ✅ Works with file uploads via multipart/form-data
+- ✅ Can be tested immediately without deployment
+- ✅ Follows established patterns in the codebase
+
+**Examples of API-based scripts in the codebase:**
+- `run_author_diagnostics_via_api.py` - Calls `/api/diagnostics/authors`
+- `compare_csv_via_api.py` - Calls `/api/compare-csv-database`
+- `verify_excel_import.py` - Calls `/api/association-checker/compare-excel`
+- `run_author_corrections.py` - Calls `/api/fix-book-authors-from-csv`
+- `run_url_corrections.py` - Calls `/api/fix-book-urls-from-csv`
+
+**How to create API-based scripts:**
+
+1. **Create an API endpoint** in `backend/` (e.g., `backend/my_feature_endpoint.py`):
+```python
+from fastapi import APIRouter, UploadFile, File
+from backend.my_service import MyService
+
+router = APIRouter()
+
+@router.get("/api/my-feature/check")
+async def check_feature():
+    service = MyService()
+    result = await service.check()
+    return {"status": "ok", "data": result}
+
+@router.post("/api/my-feature/upload")
+async def upload_file(file: UploadFile = File(...)):
+    # Process uploaded file
+    return {"message": "File processed"}
+```
+
+2. **Register the endpoint** in `backend/main.py`:
+```python
+try:
+    from my_feature_endpoint import router as my_feature_router
+    app.include_router(my_feature_router)
+    print("✅ My feature endpoint enabled")
+except Exception as e:
+    print(f"⚠️ My feature endpoint not available: {e}")
+```
+
+3. **Create a local script** that calls the API:
+```python
+#!/usr/bin/env python3
+import requests
+import sys
+
+API_URL = "https://mcpress-chatbot-production.up.railway.app"
+
+def main():
+    response = requests.get(f"{API_URL}/api/my-feature/check")
+    if response.status_code == 200:
+        data = response.json()
+        print(f"Status: {data['status']}")
+    else:
+        print(f"Error: {response.status_code}")
+
+if __name__ == "__main__":
+    main()
+```
+
+4. **Run locally** (no Railway shell needed!):
+```bash
+python3 my_script.py
+```
+
+### ❌ AVOID: Railway Shell (Interactive Execution)
+
+**Railway shell is UNRELIABLE and should only be used as a last resort.**
+
+This method frequently fails and is NOT recommended:
+
+### ❌ AVOID: Railway Shell (Interactive Execution)
+
+**Railway shell is UNRELIABLE and should only be used as a last resort.**
+
+This method frequently fails and is NOT recommended:
 
 ```bash
-# Step 1: Enter Railway shell environment
+# ❌ AVOID - Railway shell is unreliable
 railway shell
-
-# Step 2: Once in shell, run your script
 python3 script_name.py
-
-# Step 3: Exit when done
 exit
 ```
 
-**Why `railway run` DOESN'T WORK:**
-- `railway run python3 script.py` executes the script LOCALLY with Railway environment variables
+**Why Railway shell DOESN'T WORK reliably:**
+- Frequently hangs or times out
+- Connection issues are common
+- Difficult to debug when it fails
+- Not suitable for production workflows
+
+**If you absolutely must use Railway shell:**
+1. Ensure your script is idempotent (can be run multiple times safely)
+2. Keep scripts short and focused
+3. Have a backup plan (API endpoint) ready
+4. Expect failures and plan accordingly
+
+### Why `railway run` DOESN'T WORK
+
+`railway run python3 script.py` executes the script LOCALLY with Railway environment variables:
 - The script still runs on your local machine, not on Railway
 - Backend imports will fail because dependencies aren't installed locally
 - Database connections will fail because the DATABASE_URL points to a remote host
 
-**Example of CORRECT Usage:**
+**Example:**
 ```bash
-# ✅ CORRECT - Runs on Railway server
-railway shell
-python3 diagnose_author_issues.py
-exit
-
 # ❌ WRONG - Runs locally with Railway env vars (will fail)
 railway run python3 diagnose_author_issues.py
 ```
 
-### Alternative: API Testing (When Possible)
-For scripts that test backend functionality, create API-based tests instead:
+### Migration Path: Converting Railway Shell Scripts to API-Based
+
+If you have an existing script that uses Railway shell, convert it to API-based:
+
+**Before (Railway shell - unreliable):**
 ```python
-# Instead of importing backend modules directly
+# diagnose_issues.py - Must run in railway shell
+from backend.my_service import MyService
+
+async def main():
+    service = MyService()
+    result = await service.diagnose()
+    print(result)
+```
+
+**After (API-based - reliable):**
+
+1. Create endpoint (`backend/my_service_endpoint.py`):
+```python
+from fastapi import APIRouter
+from backend.my_service import MyService
+
+router = APIRouter()
+
+@router.get("/api/my-service/diagnose")
+async def diagnose():
+    service = MyService()
+    result = await service.diagnose()
+    return result
+```
+
+2. Create local script (`diagnose_issues.py`):
+```python
 import requests
-api_url = "https://mcpress-chatbot-production.up.railway.app"
-response = requests.get(f"{api_url}/api/endpoint")
+
+API_URL = "https://mcpress-chatbot-production.up.railway.app"
+
+def main():
+    response = requests.get(f"{API_URL}/api/my-service/diagnose")
+    print(response.json())
+
+if __name__ == "__main__":
+    main()
+```
+
+3. Run locally:
+```bash
+python3 diagnose_issues.py  # No Railway shell needed!
 ```
 
 ### Common Issues and Solutions
 
 #### Issue: "No module named 'backend.module_name'" or database connection errors
-**Cause**: Script is running locally instead of on Railway
-**Solution**: Use `railway shell` then run the script inside the shell
+**Cause**: Script is trying to import backend modules locally
+**Solution**: Convert to API-based approach (see examples above)
 
 ```bash
-# ✅ CORRECT
-railway shell
-python3 script.py
-exit
+# ❌ WRONG - Trying to import backend modules locally
+python3 script_with_backend_imports.py
+# Error: ModuleNotFoundError: No module named 'backend'
 
-# ❌ WRONG - This runs locally!
-railway run python3 script.py
-python3 script.py
+# ✅ CORRECT - Use API endpoint instead
+python3 script_using_api_calls.py
+# Success: Calls Railway API, no imports needed
 ```
 
-#### Issue: Script hangs or times out in Railway shell
-**Cause**: Long-running operations
-**Solutions**:
-1. The script is running correctly - just wait for it to complete
-2. For very long operations, consider breaking into smaller scripts
-3. Check Railway logs if the script seems stuck: `railway logs`
+#### Issue: Need to process a file with backend logic
+**Cause**: Want to upload and process a file using backend services
+**Solution**: Create API endpoint that accepts file uploads
+
+```python
+# API endpoint (backend/my_endpoint.py)
+from fastapi import APIRouter, UploadFile, File
+
+@router.post("/api/process-file")
+async def process_file(file: UploadFile = File(...)):
+    content = await file.read()
+    # Process file
+    return {"status": "processed"}
+
+# Local script
+import requests
+
+with open('myfile.csv', 'rb') as f:
+    files = {'file': ('myfile.csv', f)}
+    response = requests.post(f"{API_URL}/api/process-file", files=files)
+    print(response.json())
+```
+
+#### Issue: Railway shell hangs or times out
+**Cause**: Railway shell is unreliable
+**Solution**: Don't use Railway shell - convert to API-based approach instead
 
 ### Script Categories
 
-#### ✅ Can Run Locally
-- API testing scripts (using requests)
-- Simple utility scripts without backend imports
-- Data analysis scripts using only standard libraries
+#### ✅ PREFERRED: API-based scripts (run locally)
+- Scripts using `requests` to call Railway API endpoints
+- File upload scripts using multipart/form-data
+- Data analysis scripts that fetch data via API
+- Diagnostic scripts that call `/api/diagnostics/*` endpoints
+- Correction scripts that call `/api/fix-*` endpoints
 
-#### ❌ Must Run on Railway (via `railway shell`)
+**Examples:**
+- `verify_excel_import.py` - Uploads Excel and compares via API
+- `run_author_diagnostics_via_api.py` - Calls diagnostics API
+- `compare_csv_via_api.py` - Compares CSV via API
+- `run_author_corrections.py` - Applies corrections via API
+
+#### ⚠️ AVOID: Railway shell scripts
 - Scripts importing from `backend.*` modules
-- Scripts requiring asyncpg, or other backend dependencies
-- Database migration scripts
-- Scripts using ExcelImportService, AuthorService, etc.
+- Scripts requiring asyncpg or other backend dependencies
+- Database migration scripts (convert to API endpoints)
+- Scripts using backend services directly
+
+**If you must use Railway shell:**
+- Keep scripts very short (< 50 lines)
+- Make them idempotent
+- Have an API-based backup ready
+- Expect failures
 
 ### Best Practices
 
-1. **Always use `railway shell` for backend scripts** - Don't use `railway run`
-2. **Check deployment status** before running scripts (ensure latest code is deployed)
-3. **Use API tests when possible** - they can run locally
-4. **Test with simple scripts first** to verify Railway environment
-5. **Use descriptive script names** to identify purpose quickly
+1. **ALWAYS prefer API-based scripts over Railway shell** - Railway shell is unreliable
+2. **Create API endpoints for new functionality** - Makes testing easier and more reliable
+3. **Use `requests` library for API calls** - Simple and works everywhere
+4. **Check deployment status** before testing (ensure latest code is deployed)
+5. **Use descriptive endpoint names** - `/api/feature/action` pattern
+6. **Return structured JSON** from API endpoints for easy parsing
+7. **Handle file uploads via multipart/form-data** - Works reliably with `requests`
+8. **Add error handling** in both endpoint and script
+9. **Log API responses** for debugging
+10. **Test endpoints with curl first** before writing Python scripts
+
+### Quick Reference: API-Based Script Template
+
+```python
+#!/usr/bin/env python3
+"""
+Description of what this script does
+
+Usage:
+    python3 my_script.py [arguments]
+"""
+
+import requests
+import sys
+import os
+
+API_URL = os.getenv("API_URL", "https://mcpress-chatbot-production.up.railway.app")
+
+def main():
+    """Main entry point"""
+    # Parse arguments
+    if len(sys.argv) < 2:
+        print("Usage: python3 my_script.py <argument>")
+        sys.exit(1)
+    
+    arg = sys.argv[1]
+    
+    try:
+        # Call API endpoint
+        response = requests.get(
+            f"{API_URL}/api/my-endpoint",
+            params={"arg": arg},
+            timeout=60
+        )
+        
+        if response.status_code != 200:
+            print(f"❌ ERROR: API returned status {response.status_code}")
+            print(f"Response: {response.text}")
+            return
+        
+        # Process response
+        data = response.json()
+        print(f"✅ Success: {data}")
+        
+    except requests.exceptions.RequestException as e:
+        print(f"❌ ERROR: API request failed: {e}")
+    except Exception as e:
+        print(f"❌ ERROR: {e}")
+
+if __name__ == "__main__":
+    main()
+```
 
 ### Example Patterns
 
-#### Good: API-based test (runs locally)
+#### ✅ RECOMMENDED: API-based test (runs locally, reliable)
 ```python
 import requests
+
+API_URL = "https://mcpress-chatbot-production.up.railway.app"
+
 def test_service():
-    response = requests.get("https://mcpress-chatbot-production.up.railway.app/api/health")
+    response = requests.get(f"{API_URL}/api/health")
     return response.status_code == 200
+
+def test_with_file_upload():
+    with open('data.csv', 'rb') as f:
+        files = {'file': ('data.csv', f)}
+        response = requests.post(
+            f"{API_URL}/api/upload-endpoint",
+            files=files
+        )
+    return response.json()
 ```
 
-#### Problematic: Direct module import (must run on Railway)
+#### ❌ AVOID: Direct module import (requires Railway shell, unreliable)
 ```python
-# This will fail locally but work on Railway
+# This will fail locally and Railway shell is unreliable
 from backend.excel_import_service import ExcelImportService
+
+def process_file():
+    service = ExcelImportService()
+    # ... this won't work locally
 ```
 
-#### Solution: Railway shell execution
+#### ✅ SOLUTION: Create API endpoint instead
+```python
+# backend/excel_import_endpoint.py
+from fastapi import APIRouter, UploadFile, File
+from backend.excel_import_service import ExcelImportService
+
+router = APIRouter()
+
+@router.post("/api/excel/import")
+async def import_excel(file: UploadFile = File(...)):
+    service = ExcelImportService()
+    result = await service.process(file)
+    return {"status": "success", "result": result}
+
+# Then call it from local script:
+# python3 import_excel.py myfile.xlsx
+```
+
+### Debugging API-Based Scripts
+
+1. **Test endpoint with curl first**:
 ```bash
-# Create script with backend imports
-cat > my_script.py << 'EOF'
-#!/usr/bin/env python3
-"""
-This script must be run on Railway via railway shell
-"""
-from backend.excel_import_service import ExcelImportService
-# ... rest of script
-EOF
-
-# Run it on Railway
-railway shell
-python3 my_script.py
-exit
+curl https://mcpress-chatbot-production.up.railway.app/api/my-endpoint
 ```
 
-### Debugging Railway Scripts
+2. **Check Railway logs** for backend errors:
+```bash
+railway logs
+```
+
+3. **Verify deployment**: Ensure latest code is deployed to Railway
+
+4. **Use verbose mode** in requests:
+```python
+response = requests.get(url, timeout=60)
+print(f"Status: {response.status_code}")
+print(f"Headers: {response.headers}")
+print(f"Body: {response.text}")
+```
+
+5. **Test locally with Railway API**: No need to deploy for testing
+
+6. **Check API documentation**: Review endpoint parameters and expected responses
+
+### Debugging Railway Shell Scripts (if you must use them)
 
 1. **Check Railway logs**: `railway logs`
 2. **Verify deployment**: Ensure latest code is deployed
-3. **Use Railway shell**: For all backend script execution
-4. **Check environment variables**: Inside railway shell, run `env | grep DATABASE_URL`
-5. **Test imports**: Inside railway shell, run `python3 -c "from backend.author_service import AuthorService; print('OK')"`
+3. **Keep scripts short**: < 50 lines to minimize failure points
+4. **Add print statements**: For debugging progress
+5. **Make idempotent**: So you can retry safely
+6. **Have API backup**: Convert to API-based if shell fails
 
 ### Local Development Limitations
 - **No FastAPI server**: Cannot run `uvicorn` locally due to missing dependencies

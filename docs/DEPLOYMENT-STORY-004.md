@@ -68,7 +68,7 @@ Test the admin endpoints are working:
    Should return document statistics
 
 3. **Test Frontend**
-   - Navigate to: https://mc-press-chatbot.netlify.app/admin/documents
+   - Navigate to: https://mc-chatmaster.netlify.app/admin/documents
    - Login with admin credentials
    - Verify table shows documents with IDs
    - Test inline editing
