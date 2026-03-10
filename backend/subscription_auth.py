@@ -244,7 +244,25 @@ class SubscriptionAuthService:
         for customer in customers:
             customer_email = customer.get("email") or customer.get("customerEmail")
 
-            # Extract subscription contracts
+            # ----- Strategy 1: Check summary-level activeSubscriptions field -----
+            # The Appstle customer-list endpoint returns a summary with
+            # "activeSubscriptions" (int) instead of nested contract objects.
+            active_count = customer.get("activeSubscriptions")
+            if active_count is not None and int(active_count) > 0:
+                found_active = True
+                best_status = "ACTIVE"
+                # Use nextOrderDate as expiration proxy when available
+                next_order = customer.get("nextOrderDate")
+                if next_order and not best_expiration:
+                    try:
+                        best_expiration = datetime.fromisoformat(
+                            str(next_order).replace("Z", "+00:00")
+                        )
+                    except (ValueError, TypeError):
+                        pass
+                break  # Found active, done
+
+            # ----- Strategy 2: Check nested subscription contracts -----
             contracts = self._extract_contracts(customer)
 
             for contract in contracts:
@@ -268,6 +286,14 @@ class SubscriptionAuthService:
 
             if found_active:
                 break
+
+            # ----- Strategy 3: Infer from inActiveSubscriptions if no contracts -----
+            # If no contracts found and no activeSubscriptions, check if
+            # inActiveSubscriptions > 0 to determine a non-active status.
+            if not contracts and not best_status:
+                inactive_count = customer.get("inActiveSubscriptions", 0)
+                if inactive_count and int(inactive_count) > 0:
+                    best_status = "EXPIRED"  # Best guess for inactive
 
         return AppstleSubscriptionResponse(
             is_valid=found_active,
