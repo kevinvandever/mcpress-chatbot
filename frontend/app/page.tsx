@@ -93,7 +93,11 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <h1 className="text-2xl font-bold" style={{ color: 'var(--mc-blue-darker)' }}>MC Press Chatbot</h1>
+              <img
+                src="/mc-chatmaster-logo.png"
+                alt="MC ChatMaster"
+                className="h-10 w-auto"
+              />
             </div>
 
             {/* Navigation buttons */}

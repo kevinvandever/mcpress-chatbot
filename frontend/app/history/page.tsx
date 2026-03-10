@@ -28,14 +28,9 @@ export default function HistoryPage() {
   const [filters, setFilters] = useState<ConversationFilters>({})
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Check authentication
-  useEffect(() => {
-    const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null
-    if (!adminToken) {
-      router.push('/admin/login?redirect=/history')
-      return
-    }
-  }, [router])
+  // Authentication is handled by middleware (session_token cookie check).
+  // No client-side redirect needed — unauthenticated users are redirected
+  // to /login by the middleware before this page even loads.
 
   // Load stats on mount
   useEffect(() => {
