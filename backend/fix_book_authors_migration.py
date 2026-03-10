@@ -116,6 +116,80 @@ async def debug_data():
         await conn.close()
 
 
+@fix_book_authors_router.get("/api/fix-book-authors/author-urls")
+async def author_url_report():
+    """Report on author URL coverage — how many have URLs vs missing."""
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        return {"error": "DATABASE_URL not set"}
+
+    conn = await asyncpg.connect(database_url)
+    try:
+        total = await conn.fetchval("SELECT COUNT(*) FROM authors")
+        with_url = await conn.fetchval(
+            "SELECT COUNT(*) FROM authors WHERE site_url IS NOT NULL AND site_url != ''"
+        )
+        without_url = await conn.fetchval(
+            "SELECT COUNT(*) FROM authors WHERE site_url IS NULL OR site_url = ''"
+        )
+
+        # Authors with URLs — sample
+        url_samples = await conn.fetch("""
+            SELECT a.id, a.name, a.site_url,
+                   (SELECT COUNT(*) FROM document_authors da WHERE da.author_id = a.id) as doc_count
+            FROM authors a
+            WHERE a.site_url IS NOT NULL AND a.site_url != ''
+            ORDER BY (SELECT COUNT(*) FROM document_authors da WHERE da.author_id = a.id) DESC
+            LIMIT 20
+        """)
+
+        # Authors WITHOUT URLs who are associated with books (document_type='book')
+        book_authors_missing_url = await conn.fetch("""
+            SELECT DISTINCT a.id, a.name,
+                   (SELECT COUNT(*) FROM document_authors da WHERE da.author_id = a.id) as doc_count
+            FROM authors a
+            JOIN document_authors da ON da.author_id = a.id
+            JOIN books b ON b.id = da.book_id
+            WHERE b.document_type = 'book'
+              AND (a.site_url IS NULL OR a.site_url = '')
+            ORDER BY a.name
+        """)
+
+        # Authors WITHOUT URLs who are associated with articles
+        article_authors_missing_url = await conn.fetch("""
+            SELECT DISTINCT a.id, a.name,
+                   (SELECT COUNT(*) FROM document_authors da WHERE da.author_id = a.id) as doc_count
+            FROM authors a
+            JOIN document_authors da ON da.author_id = a.id
+            JOIN books b ON b.id = da.book_id
+            WHERE b.document_type = 'article'
+              AND (a.site_url IS NULL OR a.site_url = '')
+            ORDER BY (SELECT COUNT(*) FROM document_authors da WHERE da.author_id = a.id) DESC
+            LIMIT 30
+        """)
+
+        return {
+            "total_authors": total,
+            "with_url": with_url,
+            "without_url": without_url,
+            "url_coverage_pct": round(with_url / total * 100, 1) if total > 0 else 0,
+            "authors_with_urls_sample": [
+                {"id": a["id"], "name": a["name"], "site_url": a["site_url"], "doc_count": a["doc_count"]}
+                for a in url_samples
+            ],
+            "book_authors_missing_url": [
+                {"id": a["id"], "name": a["name"], "doc_count": a["doc_count"]}
+                for a in book_authors_missing_url
+            ],
+            "article_authors_missing_url_top30": [
+                {"id": a["id"], "name": a["name"], "doc_count": a["doc_count"]}
+                for a in article_authors_missing_url
+            ]
+        }
+    finally:
+        await conn.close()
+
+
 @fix_book_authors_router.get("/api/fix-book-authors/preview")
 async def preview_fix():
     """Preview which books need multi-author splitting (dry run)."""
