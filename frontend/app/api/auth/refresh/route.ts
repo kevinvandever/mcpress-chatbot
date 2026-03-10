@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-const BACKEND_URL = process.env.VITE_API_URL || 'https://mcpress-chatbot-production.up.railway.app';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mcpress-chatbot-production.up.railway.app';
 
 export async function POST() {
   try {

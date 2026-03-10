@@ -187,6 +187,7 @@ import re
 allowed_origins = [
     "http://localhost:3000",  # Local development
     "https://mc-chatmaster.netlify.app",  # Production frontend
+    "https://staging--mc-chatmaster.netlify.app",  # Staging frontend
     "https://mc-press-chatbot.netlify.app",  # Legacy URL (keep for transition)
     "https://mcpress-chatbot.netlify.app",  # Legacy URL (keep for transition)
 ]

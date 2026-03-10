@@ -23,3 +23,20 @@
 
 # Auth routes stay in Next.js (not redirected to Railway)
 # /api/auth/* routes will be handled by Next.js API routes
+
+# Staging branch deploy context
+[context.staging]
+  [context.staging.environment]
+    NEXT_PUBLIC_API_URL = "https://mcpress-chatbot-staging.up.railway.app"
+
+[[context.staging.redirects]]
+  from = "/api/chat*"
+  to = "https://mcpress-chatbot-staging.up.railway.app/chat:splat"
+  status = 200
+  force = true
+
+[[context.staging.redirects]]
+  from = "/api/documents*"
+  to = "https://mcpress-chatbot-staging.up.railway.app/documents:splat"
+  status = 200
+  force = true
