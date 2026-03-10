@@ -544,6 +544,15 @@ async def startup_event():
                         print(f"⚠️ Could not enable Excel import routes: {e}")
                         import traceback
                         print(traceback.format_exc())
+                
+                # Register book authors migration fix endpoint
+                try:
+                    from backend.fix_book_authors_migration import fix_book_authors_router
+                    app.include_router(fix_book_authors_router)
+                    print("✅ Book authors migration fix endpoint enabled at /api/fix-book-authors/*")
+                except Exception as e:
+                    print(f"⚠️ Could not enable book authors migration fix: {e}")
+
                 elif excel_import_routes_available and not author_service:
                     print("⚠️ Excel import service requires author service - skipping")
             else:
