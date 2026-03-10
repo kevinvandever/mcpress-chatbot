@@ -46,6 +46,76 @@ def parse_authors(author_string: str) -> list:
     return [author_string.strip()]
 
 
+@fix_book_authors_router.get("/api/fix-book-authors/debug")
+async def debug_data():
+    """Debug: Show sample data from books table to understand the author field."""
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        return {"error": "DATABASE_URL not set"}
+
+    conn = await asyncpg.connect(database_url)
+    try:
+        # Get table columns
+        columns = await conn.fetch("""
+            SELECT column_name, data_type FROM information_schema.columns
+            WHERE table_name = 'books' ORDER BY ordinal_position
+        """)
+
+        # Sample books with author containing comma, semicolon, or " and "
+        multi_author_samples = await conn.fetch("""
+            SELECT id, title, author, document_type
+            FROM books
+            WHERE author LIKE '%,%' OR author LIKE '%;%' OR author LIKE '% and %'
+            LIMIT 20
+        """)
+
+        # Count by document_type
+        type_counts = await conn.fetch("""
+            SELECT document_type, COUNT(*) as cnt FROM books GROUP BY document_type ORDER BY cnt DESC
+        """)
+
+        # Sample of books with document_type = 'book'
+        book_samples = await conn.fetch("""
+            SELECT id, title, author FROM books WHERE document_type = 'book' LIMIT 10
+        """)
+
+        # Check document_authors table
+        da_counts = await conn.fetch("""
+            SELECT book_id, COUNT(*) as author_count
+            FROM document_authors
+            GROUP BY book_id
+            HAVING COUNT(*) > 1
+            LIMIT 20
+        """)
+
+        # Total counts
+        total_books = await conn.fetchval("SELECT COUNT(*) FROM books")
+        total_da = await conn.fetchval("SELECT COUNT(*) FROM document_authors")
+        total_authors = await conn.fetchval("SELECT COUNT(*) FROM authors")
+
+        return {
+            "table_columns": [{"name": c["column_name"], "type": c["data_type"]} for c in columns],
+            "total_rows_in_books": total_books,
+            "total_document_authors": total_da,
+            "total_authors": total_authors,
+            "type_counts": [{"type": t["document_type"], "count": t["cnt"]} for t in type_counts],
+            "multi_author_samples": [
+                {"id": b["id"], "title": b["title"], "author": b["author"], "type": b["document_type"]}
+                for b in multi_author_samples
+            ],
+            "book_type_samples": [
+                {"id": b["id"], "title": b["title"], "author": b["author"]}
+                for b in book_samples
+            ],
+            "books_with_multiple_da_entries": [
+                {"book_id": d["book_id"], "author_count": d["author_count"]}
+                for d in da_counts
+            ]
+        }
+    finally:
+        await conn.close()
+
+
 @fix_book_authors_router.get("/api/fix-book-authors/preview")
 async def preview_fix():
     """Preview which books need multi-author splitting (dry run)."""
