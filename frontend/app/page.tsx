@@ -11,7 +11,6 @@ export default function Home() {
   const [isInitializing, setIsInitializing] = useState(true)
   const [hasDocuments, setHasDocuments] = useState(false)
   const [isCheckingDocuments, setIsCheckingDocuments] = useState(true)
-  const [documentCount, setDocumentCount] = useState(0)
   const [bookCount, setBookCount] = useState(0)
   const [articleCount, setArticleCount] = useState(0)
   const [systemStatus, setSystemStatus] = useState<'loading' | 'ready' | 'error'>('loading')
@@ -55,7 +54,6 @@ export default function Home() {
             documents = documents.documents
           }
           const docCount = Array.isArray(documents) ? documents.length : 0
-          setDocumentCount(docCount)
           if (Array.isArray(documents)) {
             setBookCount(documents.filter((d: any) => d.document_type === 'book').length)
             setArticleCount(documents.filter((d: any) => d.document_type === 'article').length)
@@ -260,23 +258,23 @@ export default function Home() {
                         onClick={() => chatInterfaceRef.current?.setInputValue("IBM i system administration")}
                         className="group px-4 py-2 rounded-full text-xs font-medium transition-all transform hover:scale-105 hover:shadow-md focus:ring-2 focus:outline-none text-white"
                         style={{
-                          backgroundColor: 'var(--mc-gray)'
+                          backgroundColor: 'var(--mc-green)'
                         }}
-                        onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-gray-dark)'}
-                        onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-gray)'}
+                        onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-green-dark)'}
+                        onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-green)'}
                       >
-                        <span className="group-hover:animate-pulse">⚙️</span> "IBM i system administration"
+                        <span className="group-hover:animate-pulse">⚙️</span> Ace IBM i System Admin
                       </button>
                       <button
                         onClick={() => chatInterfaceRef.current?.setInputValue("Show me code examples for JSON handling")}
                         className="group px-4 py-2 rounded-full text-xs font-medium transition-all transform hover:scale-105 hover:shadow-md focus:ring-2 focus:outline-none text-white"
                         style={{
-                          backgroundColor: 'var(--mc-orange)'
+                          backgroundColor: 'var(--mc-blue)'
                         }}
-                        onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-orange-dark)'}
-                        onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-orange)'}
+                        onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-blue-dark)'}
+                        onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-blue)'}
                       >
-                        <span className="group-hover:animate-pulse">💻</span> "Show me code examples for JSON handling"
+                        <span className="group-hover:animate-pulse">💻</span> Explore JSON Code Examples
                       </button>
                     </div>
                   </div>
@@ -293,9 +291,6 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <p className="text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
             MC ChatMaster: Instant AI-Powered IBM i Expertise
-          </p>
-          <p className="text-center text-xs mt-1 uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
-            POWERED BY AI IBM i EXPERTISE
           </p>
         </div>
       </footer>

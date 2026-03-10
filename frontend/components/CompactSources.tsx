@@ -131,14 +131,32 @@ export default function CompactSources({ sources }: CompactSourcesProps) {
                       
                       // If multiple authors with websites, show dropdown with plural text
                       return (
-                        <div className="relative group">
-                          <button className="flex-shrink-0 text-xs bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded transition-colors">
-                            View Author Profiles
+                        <div className="relative">
+                          <button
+                            onClick={(e) => {
+                              const dropdown = e.currentTarget.nextElementSibling as HTMLElement;
+                              if (dropdown) {
+                                const isVisible = dropdown.style.display === 'block';
+                                dropdown.style.display = isVisible ? 'none' : 'block';
+                              }
+                            }}
+                            onBlur={(e) => {
+                              // Close dropdown when focus leaves, with delay for link clicks
+                              const dropdown = e.currentTarget.nextElementSibling as HTMLElement;
+                              setTimeout(() => {
+                                if (dropdown && !dropdown.contains(document.activeElement)) {
+                                  dropdown.style.display = 'none';
+                                }
+                              }, 150);
+                            }}
+                            className="flex-shrink-0 text-xs bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded transition-colors"
+                          >
+                            View Author Profiles ▾
                           </button>
-                          {/* Dropdown with author websites - includes hover bridge */}
-                          <div className="absolute right-0 top-full bg-white border border-gray-200 rounded-md shadow-lg z-20 min-w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none group-hover:pointer-events-auto">
-                            {/* Invisible bridge to prevent dropdown from disappearing */}
-                            <div className="absolute -top-1 right-0 w-full h-1 bg-transparent"></div>
+                          <div
+                            className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-20 min-w-48"
+                            style={{ display: 'none' }}
+                          >
                             <div className="py-1">
                               {authorsWithSites.map((author) => (
                                 <a
