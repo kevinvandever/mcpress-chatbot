@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import {
   getConversation,
   updateConversation,
@@ -281,7 +283,17 @@ export default function ConversationDetail({
                   : 'bg-gray-100 text-gray-900'
               }`}
             >
-              <div className="text-sm whitespace-pre-wrap break-words">{message.content}</div>
+              <div className="text-sm whitespace-pre-wrap break-words">
+                {message.role === 'assistant' ? (
+                  <div className="prose prose-sm max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {message.content}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  message.content
+                )}
+              </div>
               <div
                 className={`text-xs mt-2 ${
                   message.role === 'user' ? 'text-blue-100' : 'text-gray-500'
