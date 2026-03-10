@@ -12,6 +12,8 @@ export default function Home() {
   const [hasDocuments, setHasDocuments] = useState(false)
   const [isCheckingDocuments, setIsCheckingDocuments] = useState(true)
   const [documentCount, setDocumentCount] = useState(0)
+  const [bookCount, setBookCount] = useState(0)
+  const [articleCount, setArticleCount] = useState(0)
   const [systemStatus, setSystemStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const chatInterfaceRef = useRef<ChatInterfaceRef>(null)
@@ -54,6 +56,10 @@ export default function Home() {
           }
           const docCount = Array.isArray(documents) ? documents.length : 0
           setDocumentCount(docCount)
+          if (Array.isArray(documents)) {
+            setBookCount(documents.filter((d: any) => d.document_type === 'book').length)
+            setArticleCount(documents.filter((d: any) => d.document_type === 'article').length)
+          }
           setHasDocuments(docCount > 0)
           setSystemStatus('ready')
           console.log(`Found ${docCount} documents in the system`)
@@ -157,7 +163,7 @@ export default function Home() {
                   <svg className="w-5 h-5 mr-2" style={{ color: 'var(--mc-green)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                   </svg>
-                  AI Assistant
+                  MC ChatMaster Assistant
                 </h2>
                 
                 {/* System Status Indicator - MC Press Colors */}
@@ -195,8 +201,8 @@ export default function Home() {
                         </svg>
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>✨ System Ready!</p>
-                        <p className="text-xs" style={{ color: 'var(--color-success-text)' }}>{documentCount.toLocaleString()} documents loaded and indexed • AI assistant active</p>
+                        <p className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>✨ MC ChatMaster Ready!</p>
+                        <p className="text-xs" style={{ color: 'var(--color-success-text)' }}>{bookCount} Books & {articleCount} Articles Loaded • Instant Expertise Active</p>
                       </div>
                     </div>
                   </div>
@@ -230,30 +236,25 @@ export default function Home() {
                       <svg className="w-4 h-4" style={{ color: 'var(--mc-blue)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                       </svg>
-                      <p className="text-sm font-semibold text-gray-700">Quick Start - Try these questions:</p>
+                      <p className="text-sm font-semibold text-gray-700">Instant Insights: Try These RPG & IBM i Questions</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <button
                         onClick={() => chatInterfaceRef.current?.setInputValue("How do I configure DB2 on IBM i?")}
                         className="group px-4 py-2 rounded-full text-xs font-medium transition-all transform hover:scale-105 hover:shadow-md focus:ring-2 focus:outline-none text-white"
                         style={{
-                          backgroundColor: 'var(--mc-blue)'
+                          backgroundColor: 'var(--mc-orange)'
                         }}
-                        onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-blue-dark)'}
-                        onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-blue)'}
+                        onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-orange-dark)'}
+                        onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-orange)'}
                       >
-                        <span className="group-hover:animate-pulse">💾</span> "How do I configure DB2 on IBM i?"
+                        <span className="group-hover:animate-pulse">💾</span> Master DB2 Config on IBM i
                       </button>
                       <button
                         onClick={() => chatInterfaceRef.current?.setInputValue("RPG programming best practices")}
-                        className="group px-4 py-2 rounded-full text-xs font-medium transition-all transform hover:scale-105 hover:shadow-md focus:ring-2 focus:outline-none text-white"
-                        style={{
-                          backgroundColor: 'var(--mc-green)'
-                        }}
-                        onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-green-dark)'}
-                        onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-green)'}
+                        className="group px-4 py-2 rounded-full text-xs font-medium transition-all transform hover:scale-105 hover:shadow-md focus:ring-2 focus:outline-none text-white bg-purple-600 hover:bg-purple-700"
                       >
-                        <span className="group-hover:animate-pulse">🔧</span> "RPG programming best practices"
+                        <span className="group-hover:animate-pulse">🔧</span> Optimize Your RPG Skills
                       </button>
                       <button
                         onClick={() => chatInterfaceRef.current?.setInputValue("IBM i system administration")}
@@ -291,7 +292,10 @@ export default function Home() {
       <footer className="bg-white border-t mt-auto" style={{ borderColor: 'var(--border-primary)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <p className="text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
-            MC Press Chatbot - Powered by AI
+            MC ChatMaster: Instant AI-Powered IBM i Expertise
+          </p>
+          <p className="text-center text-xs mt-1 uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
+            POWERED BY AI IBM i EXPERTISE
           </p>
         </div>
       </footer>

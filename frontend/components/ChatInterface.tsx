@@ -429,8 +429,8 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                   </svg>
                 </div>
-                <p className="text-xl font-semibold text-gray-700">Ready to help! ✨</p>
-                <p className="text-base mt-2 text-gray-600">Ask me anything about your MC Press books</p>
+                <p className="text-xl font-semibold text-gray-700">MC ChatMaster Ready for Your Query! ✨</p>
+                <p className="text-base mt-2 text-gray-600">Your 24/7 Guide to Mastering RPG, DB2, System Administration, and IBM i Best Practices – Fresh Insights Added as MC Press Publishes</p>
               </>
             ) : (
               <div className="max-w-lg">
@@ -687,7 +687,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={hasDocuments ? "Ask me about your MC Press books..." : "Upload documents first to start chatting..."}
+              placeholder={hasDocuments ? "Ask MC ChatMaster Anything" : "Upload documents first to start chatting..."}
               className="w-full px-6 py-4 border-2 border-gray-200 rounded-2xl focus:border-mc-blue focus:ring-4 focus:ring-blue-100 transition-all text-lg placeholder-gray-400 shadow-sm hover:shadow-md resize-none min-h-[60px] max-h-[120px]"
               disabled={isStreaming}
               rows={1}

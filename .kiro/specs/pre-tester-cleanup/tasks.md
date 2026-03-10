@@ -40,7 +40,7 @@ Comprehensive cleanup of the MC Press Chatbot codebase before sharing with first
 - [x] 9. Remove empty spec directory
   - [x] Deleted `.kiro/specs/shopify-subscription-auth/` directory
 
-- [ ] 10. Final checkpoint — Deploy and verify all changes
+- [x] 10. Final checkpoint — Deploy and verify all changes
   - Deploy to Railway (git push to main), wait for deployment
   - Verify `GET /health` returns 200
   - Verify all removed endpoints return 404

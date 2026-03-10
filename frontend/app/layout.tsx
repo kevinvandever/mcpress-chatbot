@@ -6,8 +6,8 @@ import GuestAuthProvider from '../components/GuestAuthProvider'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'MC Press Chatbot - AI-Powered Document Assistant',
-  description: 'Ask questions about MC Press technical books and documentation',
+  title: 'MC ChatMaster | Instant AI-Powered IBM i Expertise',
+  description: 'Your 24/7 AI-powered guide to mastering RPG, DB2, System Administration, and IBM i best practices from MC Press technical books and articles',
 }
 
 export default function RootLayout({

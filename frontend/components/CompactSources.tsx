@@ -64,7 +64,7 @@ export default function CompactSources({ sources }: CompactSourcesProps) {
         <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
         </svg>
-        <span className="text-xs font-semibold text-gray-700">References</span>
+        <span className="text-xs font-semibold text-gray-700">Sources</span>
       </div>
       
       <div className="space-y-2">
@@ -124,7 +124,7 @@ export default function CompactSources({ sources }: CompactSourcesProps) {
                             className="flex-shrink-0 text-xs bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded transition-colors"
                             title={`Visit ${authorsWithSites[0].name}'s website`}
                           >
-                            Author
+                            View Author Profile
                           </a>
                         );
                       }
@@ -133,7 +133,7 @@ export default function CompactSources({ sources }: CompactSourcesProps) {
                       return (
                         <div className="relative group">
                           <button className="flex-shrink-0 text-xs bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded transition-colors">
-                            Authors
+                            View Author Profiles
                           </button>
                           {/* Dropdown with author websites - includes hover bridge */}
                           <div className="absolute right-0 top-full bg-white border border-gray-200 rounded-md shadow-lg z-20 min-w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none group-hover:pointer-events-auto">
@@ -169,7 +169,7 @@ export default function CompactSources({ sources }: CompactSourcesProps) {
                       className="flex-shrink-0 text-xs bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded transition-colors"
                       title="Read full article"
                     >
-                      Read
+                      Access Source
                     </a>
                   )}
                   
