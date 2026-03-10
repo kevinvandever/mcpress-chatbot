@@ -430,7 +430,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
                   </svg>
                 </div>
                 <p className="text-xl font-semibold text-gray-700">MC ChatMaster Ready for Your Query! ✨</p>
-                <p className="text-base mt-2 text-gray-600">Your 24/7 Guide to Mastering RPG, DB2, System Administration, and IBM i Best Practices – Fresh Insights Added as MC Press Publishes</p>
+                <p className="text-base mt-2 text-gray-600">Your 24/7 Guide to Mastering RPG, DB2, System Administration, and IBM i Best Practices – Fresh Insights Added as MC Press Publishes New Books and Articles.</p>
               </>
             ) : (
               <div className="max-w-lg">

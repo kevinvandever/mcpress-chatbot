@@ -106,16 +106,17 @@ export default function CompactSources({ sources }: CompactSourcesProps) {
                   {/* Author website button - shows when any author has a website */}
                   {sourceData.authors && sourceData.authors.length > 0 && sourceData.authors.some(author => author.site_url) && (
                     (() => {
-                      // Filter to get only authors with valid website URLs
-                      const authorsWithSites = sourceData.authors.filter(author => author.site_url && author.site_url.trim() !== '');
+                      // All authors for display, some may not have URLs
+                      const allAuthors = sourceData.authors;
+                      const authorsWithSites = allAuthors.filter(author => author.site_url && author.site_url.trim() !== '');
                       
-                      // Safety check - should not happen but prevents errors
+                      // Safety check
                       if (authorsWithSites.length === 0) {
                         return null;
                       }
                       
-                      // If only one author with website, make it a direct link like Read/Buy buttons
-                      if (authorsWithSites.length === 1) {
+                      // If only one author total, make it a direct link
+                      if (allAuthors.length === 1 && authorsWithSites.length === 1) {
                         return (
                           <a
                             href={authorsWithSites[0].site_url}
@@ -129,7 +130,7 @@ export default function CompactSources({ sources }: CompactSourcesProps) {
                         );
                       }
                       
-                      // If multiple authors with websites, show dropdown with plural text
+                      // Multiple authors — show dropdown listing all, with links for those who have URLs
                       return (
                         <div className="relative">
                           <button
@@ -141,7 +142,6 @@ export default function CompactSources({ sources }: CompactSourcesProps) {
                               }
                             }}
                             onBlur={(e) => {
-                              // Close dropdown when focus leaves, with delay for link clicks
                               const dropdown = e.currentTarget.nextElementSibling as HTMLElement;
                               setTimeout(() => {
                                 if (dropdown && !dropdown.contains(document.activeElement)) {
@@ -158,18 +158,28 @@ export default function CompactSources({ sources }: CompactSourcesProps) {
                             style={{ display: 'none' }}
                           >
                             <div className="py-1">
-                              {authorsWithSites.map((author) => (
-                                <a
-                                  key={author.id}
-                                  href={author.site_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="block px-3 py-2 text-xs text-gray-700 hover:bg-gray-100 transition-colors"
-                                  title={`Visit ${author.name}'s website`}
-                                >
-                                  <div className="font-medium text-gray-900">{author.name}</div>
-                                  <div className="text-gray-500 truncate text-xs mt-0.5">{author.site_url}</div>
-                                </a>
+                              {allAuthors.map((author) => (
+                                author.site_url && author.site_url.trim() !== '' ? (
+                                  <a
+                                    key={author.id}
+                                    href={author.site_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block px-3 py-2 text-xs text-gray-700 hover:bg-gray-100 transition-colors"
+                                    title={`Visit ${author.name}'s website`}
+                                  >
+                                    <div className="font-medium text-gray-900">{author.name}</div>
+                                    <div className="text-gray-500 truncate text-xs mt-0.5">{author.site_url}</div>
+                                  </a>
+                                ) : (
+                                  <div
+                                    key={author.id}
+                                    className="block px-3 py-2 text-xs text-gray-400"
+                                  >
+                                    <div className="font-medium">{author.name}</div>
+                                    <div className="text-xs mt-0.5 italic">No website available</div>
+                                  </div>
+                                )
                               ))}
                             </div>
                           </div>
