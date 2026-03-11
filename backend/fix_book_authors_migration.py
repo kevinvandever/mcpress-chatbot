@@ -329,3 +329,176 @@ async def run_fix():
         }
     finally:
         await conn.close()
+
+
+# ---- Author URL Bulk Update ----
+# Exact matches from export_subset_DMU_v2.xlsm (Excel CMS user table)
+EXCEL_EXACT_MATCHES = {
+    "Bryan Meyers": "https://www.mcpressonline.com/archive/authors/author/12239",
+    "John Boyer": "https://www.mcpressonline.com/archive/authors/author/131246",
+    "Kameron Cole": "https://www.mcpressonline.com/archive/authors/author/65940",
+    "Thanh Pham": "https://www.mcpressonline.com/archive/authors/author/117558",
+}
+
+# Name variants: book author name -> article author name (who already has a URL in DB)
+# These are the same person under different name spellings
+NAME_VARIANT_COPIES = {
+    "Bob Cozzi": "Robert Cozzi",
+    "Roger E. Sanders": "Roger Sanders",
+    "Ken Milberg": "Kenneth Milberg",
+}
+
+
+@fix_book_authors_router.get("/api/fix-book-authors/update-urls-preview")
+async def update_urls_preview():
+    """Preview which author URLs will be updated (dry run)."""
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        return {"error": "DATABASE_URL not set"}
+
+    conn = await asyncpg.connect(database_url)
+    try:
+        will_update = []
+        already_has_url = []
+        not_found_in_db = []
+
+        # Check exact matches from Excel
+        for name, url in EXCEL_EXACT_MATCHES.items():
+            row = await conn.fetchrow(
+                "SELECT id, name, site_url FROM authors WHERE name = $1", name
+            )
+            if row:
+                if row["site_url"] and row["site_url"].strip():
+                    already_has_url.append({
+                        "id": row["id"], "name": row["name"],
+                        "current_url": row["site_url"], "new_url": url,
+                        "source": "excel_exact"
+                    })
+                else:
+                    will_update.append({
+                        "id": row["id"], "name": row["name"],
+                        "new_url": url, "source": "excel_exact"
+                    })
+            else:
+                not_found_in_db.append({"name": name, "url": url, "source": "excel_exact"})
+
+        # Check name variant copies
+        for book_name, article_name in NAME_VARIANT_COPIES.items():
+            book_row = await conn.fetchrow(
+                "SELECT id, name, site_url FROM authors WHERE name = $1", book_name
+            )
+            article_row = await conn.fetchrow(
+                "SELECT id, name, site_url FROM authors WHERE name = $1", article_name
+            )
+            if book_row and article_row and article_row["site_url"]:
+                if book_row["site_url"] and book_row["site_url"].strip():
+                    already_has_url.append({
+                        "id": book_row["id"], "name": book_row["name"],
+                        "current_url": book_row["site_url"],
+                        "new_url": article_row["site_url"],
+                        "source": f"name_variant_of_{article_name}"
+                    })
+                else:
+                    will_update.append({
+                        "id": book_row["id"], "name": book_row["name"],
+                        "new_url": article_row["site_url"],
+                        "source": f"name_variant_of_{article_name}"
+                    })
+            elif not book_row:
+                not_found_in_db.append({
+                    "name": book_name, "source": f"name_variant_of_{article_name}",
+                    "reason": "book author not found in DB"
+                })
+            elif not article_row or not article_row["site_url"]:
+                not_found_in_db.append({
+                    "name": book_name, "source": f"name_variant_of_{article_name}",
+                    "reason": f"article author '{article_name}' has no URL"
+                })
+
+        return {
+            "will_update": len(will_update),
+            "already_has_url": len(already_has_url),
+            "not_found": len(not_found_in_db),
+            "updates": will_update,
+            "skipped_has_url": already_has_url,
+            "skipped_not_found": not_found_in_db
+        }
+    finally:
+        await conn.close()
+
+
+@fix_book_authors_router.post("/api/fix-book-authors/update-urls")
+async def update_urls():
+    """Apply author URL updates for exact matches and name variants."""
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        return {"error": "DATABASE_URL not set"}
+
+    conn = await asyncpg.connect(database_url)
+    try:
+        updated = []
+        skipped = []
+        errors = []
+
+        # Apply exact matches from Excel
+        for name, url in EXCEL_EXACT_MATCHES.items():
+            try:
+                row = await conn.fetchrow(
+                    "SELECT id, site_url FROM authors WHERE name = $1", name
+                )
+                if not row:
+                    skipped.append({"name": name, "reason": "not found in DB"})
+                    continue
+                if row["site_url"] and row["site_url"].strip():
+                    skipped.append({"name": name, "reason": "already has URL",
+                                    "current_url": row["site_url"]})
+                    continue
+                await conn.execute(
+                    "UPDATE authors SET site_url = $1 WHERE id = $2", url, row["id"]
+                )
+                updated.append({"id": row["id"], "name": name, "url": url,
+                                "source": "excel_exact"})
+            except Exception as e:
+                errors.append({"name": name, "error": str(e)})
+
+        # Apply name variant copies
+        for book_name, article_name in NAME_VARIANT_COPIES.items():
+            try:
+                book_row = await conn.fetchrow(
+                    "SELECT id, site_url FROM authors WHERE name = $1", book_name
+                )
+                article_row = await conn.fetchrow(
+                    "SELECT id, site_url FROM authors WHERE name = $1", article_name
+                )
+                if not book_row:
+                    skipped.append({"name": book_name, "reason": "not found in DB"})
+                    continue
+                if book_row["site_url"] and book_row["site_url"].strip():
+                    skipped.append({"name": book_name, "reason": "already has URL",
+                                    "current_url": book_row["site_url"]})
+                    continue
+                if not article_row or not article_row["site_url"]:
+                    skipped.append({"name": book_name,
+                                    "reason": f"variant '{article_name}' has no URL"})
+                    continue
+                url = article_row["site_url"]
+                await conn.execute(
+                    "UPDATE authors SET site_url = $1 WHERE id = $2", url, book_row["id"]
+                )
+                updated.append({"id": book_row["id"], "name": book_name, "url": url,
+                                "source": f"name_variant_of_{article_name}"})
+            except Exception as e:
+                errors.append({"name": book_name, "error": str(e)})
+
+        return {
+            "updated": len(updated),
+            "skipped": len(skipped),
+            "errors": len(errors),
+            "details": {
+                "updated_authors": updated,
+                "skipped_authors": skipped,
+                "error_authors": errors
+            }
+        }
+    finally:
+        await conn.close()
