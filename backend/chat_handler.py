@@ -189,7 +189,7 @@ class ChatHandler:
                 - Provide COMPREHENSIVE answers - explain concepts thoroughly
                 - Include practical examples and code from the source material
                 - Quote specific passages when relevant
-                - Do NOT include inline citations - sources are displayed separately below your answer
+                - NEVER mention source names, book titles, author names, or filenames in your answer. Do NOT say things like "According to [book title]..." or "As described in [source]..." or "In the book [title]...". Sources are displayed separately below your answer in a dedicated UI section — the user will see them there.
                 - Format code blocks with appropriate syntax highlighting (```rpg, ```cl, ```sql, etc.)
 
                 WHEN NO RELEVANT DOCUMENTATION IS FOUND (empty context):
