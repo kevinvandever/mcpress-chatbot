@@ -12,7 +12,7 @@ Manages password reset token lifecycle:
 
 import os
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Optional
 
 import asyncpg
@@ -75,7 +75,7 @@ class ResetTokenService:
         await self._ensure_pool()
         normalized_email = email.lower().strip()
         token = secrets.token_urlsafe()
-        expires_at = datetime.now(timezone.utc) + timedelta(hours=self.TOKEN_EXPIRY_HOURS)
+        expires_at = datetime.utcnow() + timedelta(hours=self.TOKEN_EXPIRY_HOURS)
 
         async with self.pool.acquire() as conn:
             async with conn.transaction():
@@ -123,7 +123,7 @@ class ResetTokenService:
             if row['used']:
                 return None
 
-            if row['expires_at'].replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+            if row['expires_at'] < datetime.utcnow():
                 return None
 
             return row['email']
@@ -161,7 +161,7 @@ class ResetTokenService:
         """
         await self._ensure_pool()
         normalized_email = email.lower().strip()
-        one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
+        one_hour_ago = datetime.utcnow() - timedelta(hours=1)
 
         async with self.pool.acquire() as conn:
             count = await conn.fetchval(

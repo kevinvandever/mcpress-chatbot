@@ -237,11 +237,9 @@ async def _get_token_failure_reason(token_str: str) -> str:
             return "Invalid reset link. Please request a new one."
         if row["used"]:
             return "Invalid reset link. Please request a new one."
-        from datetime import datetime, timezone
+        from datetime import datetime
         expires_at = row["expires_at"]
-        if hasattr(expires_at, "replace"):
-            expires_at = expires_at.replace(tzinfo=timezone.utc)
-        if expires_at < datetime.now(timezone.utc):
+        if expires_at < datetime.utcnow():
             return "Reset link has expired. Please request a new one."
         return "Invalid reset link. Please request a new one."
     except Exception as exc:
