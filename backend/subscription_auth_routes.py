@@ -28,11 +28,6 @@ except ImportError:
     from reset_token_service import ResetTokenService
 
 try:
-    from backend.email_service import EmailService
-except ImportError:
-    from email_service import EmailService
-
-try:
     from backend.password_service import PasswordService
 except ImportError:
     from password_service import PasswordService
@@ -47,23 +42,25 @@ router = APIRouter(prefix="/api/auth", tags=["customer-auth"])
 
 auth_service = SubscriptionAuthService()
 
-try:
-    reset_token_service = ResetTokenService()
-except Exception as exc:
-    logger.warning("⚠️ ResetTokenService initialization failed: %s — password reset disabled", exc)
-    reset_token_service = None
+# Lazy-initialized services for password reset (avoids startup failures)
+_reset_token_service = None
+_password_service = None
 
-try:
-    email_service = EmailService()
-except Exception as exc:
-    logger.warning("⚠️ EmailService initialization failed: %s — password reset emails disabled", exc)
-    email_service = None
 
-try:
-    password_service = PasswordService()
-except Exception as exc:
-    logger.warning("⚠️ PasswordService initialization failed: %s — password operations disabled", exc)
-    password_service = None
+def _get_reset_token_service() -> ResetTokenService:
+    """Lazy-initialize ResetTokenService on first use."""
+    global _reset_token_service
+    if _reset_token_service is None:
+        _reset_token_service = ResetTokenService()
+    return _reset_token_service
+
+
+def _get_password_service() -> PasswordService:
+    """Lazy-initialize PasswordService on first use."""
+    global _password_service
+    if _password_service is None:
+        _password_service = PasswordService()
+    return _password_service
 
 # Cookie configuration
 COOKIE_CONFIG = {
@@ -219,16 +216,19 @@ def _mask_email(email: str) -> str:
     return f"***@{domain}"
 
 
+
 async def _get_token_failure_reason(token_str: str) -> str:
     """
     Determine why a token is invalid by querying the DB directly.
     Returns an appropriate error message.
     """
-    if not reset_token_service:
+    try:
+        rts = _get_reset_token_service()
+    except Exception:
         return "Invalid reset link. Please request a new one."
     try:
-        await reset_token_service._ensure_pool()
-        async with reset_token_service.pool.acquire() as conn:
+        await rts._ensure_pool()
+        async with rts.pool.acquire() as conn:
             row = await conn.fetchrow(
                 "SELECT email, expires_at, used FROM password_reset_tokens WHERE token = $1",
                 token_str,
@@ -237,7 +237,6 @@ async def _get_token_failure_reason(token_str: str) -> str:
             return "Invalid reset link. Please request a new one."
         if row["used"]:
             return "Invalid reset link. Please request a new one."
-        # Token exists and not used — check expiry
         from datetime import datetime, timezone
         expires_at = row["expires_at"]
         if hasattr(expires_at, "replace"):
@@ -250,9 +249,11 @@ async def _get_token_failure_reason(token_str: str) -> str:
         return "Invalid reset link. Please request a new one."
 
 
+
 # ---------------------------------------------------------------------------
 # POST /api/auth/forgot-password
 # ---------------------------------------------------------------------------
+
 
 @router.post("/forgot-password")
 async def forgot_password(body: ForgotPasswordRequest, request: Request):
@@ -262,22 +263,25 @@ async def forgot_password(body: ForgotPasswordRequest, request: Request):
     """
     email = body.email.lower().strip()
 
-    # 1. Check required services
-    if not reset_token_service or not password_service:
-        logger.error("Required services not available for forgot-password")
+    # 1. Initialize services lazily
+    try:
+        rts = _get_reset_token_service()
+        ps = _get_password_service()
+    except Exception as exc:
+        logger.error("Failed to initialize password reset services: %s", exc)
         return JSONResponse(
             status_code=503,
-            content={"error": "Password reset is temporarily unavailable"},
+            content={"error": f"Password reset service init failed: {exc}"},
         )
 
     # 2. Check rate limit
     try:
-        rate_ok = await reset_token_service.check_rate_limit(email)
+        rate_ok = await rts.check_rate_limit(email)
     except Exception as exc:
         logger.error("Rate limit check failed for email=%s: %s", email, exc)
         return JSONResponse(
             status_code=503,
-            content={"error": "Password reset is temporarily unavailable"},
+            content={"error": f"Rate limit check failed: {exc}"},
         )
 
     if not rate_ok:
@@ -298,7 +302,6 @@ async def forgot_password(body: ForgotPasswordRequest, request: Request):
         )
 
     if not appstle_resp.is_valid:
-        # Return generic message to prevent email enumeration
         logger.info("Forgot-password: no active subscription for email=%s", email)
         return JSONResponse(
             status_code=403,
@@ -307,12 +310,12 @@ async def forgot_password(body: ForgotPasswordRequest, request: Request):
 
     # 4. Check if email exists in customer_passwords
     try:
-        customer = await password_service.get_customer(email)
+        customer = await ps.get_customer(email)
     except Exception as exc:
         logger.error("Error looking up customer for forgot-password email=%s: %s", email, exc)
         return JSONResponse(
             status_code=500,
-            content={"error": "An unexpected error occurred. Please try again."},
+            content={"error": f"Customer lookup failed: {exc}"},
         )
 
     if not customer:
@@ -324,7 +327,7 @@ async def forgot_password(body: ForgotPasswordRequest, request: Request):
 
     # 5. Generate reset token and return it directly (no email needed)
     try:
-        token = await reset_token_service.create_reset_token(email)
+        token = await rts.create_reset_token(email)
         logger.info("Reset token issued for email=%s (subscription-verified)", email)
         return JSONResponse(
             status_code=200,
@@ -334,13 +337,15 @@ async def forgot_password(body: ForgotPasswordRequest, request: Request):
         logger.error("Error creating reset token for email=%s: %s", email, exc)
         return JSONResponse(
             status_code=500,
-            content={"error": "An unexpected error occurred. Please try again."},
+            content={"error": f"Token creation failed: {exc}"},
         )
+
 
 
 # ---------------------------------------------------------------------------
 # POST /api/auth/reset-password
 # ---------------------------------------------------------------------------
+
 
 @router.post("/reset-password")
 async def reset_password(body: ResetPasswordRequest):
@@ -350,8 +355,11 @@ async def reset_password(body: ResetPasswordRequest):
     token_str = body.token
     new_password = body.new_password
 
-    if not reset_token_service or not password_service:
-        logger.error("Required services not available for reset-password")
+    try:
+        rts = _get_reset_token_service()
+        ps = _get_password_service()
+    except Exception as exc:
+        logger.error("Failed to initialize services for reset-password: %s", exc)
         return JSONResponse(
             status_code=503,
             content={"error": "Password reset is temporarily unavailable"},
@@ -359,7 +367,7 @@ async def reset_password(body: ResetPasswordRequest):
 
     # 1. Validate token
     try:
-        email = await reset_token_service.validate_token(token_str)
+        email = await rts.validate_token(token_str)
     except Exception as exc:
         logger.error("Error validating reset token: %s", exc)
         return JSONResponse(
@@ -376,7 +384,7 @@ async def reset_password(body: ResetPasswordRequest):
         )
 
     # 3. Validate new password rules
-    failed_rules = password_service.validate_password(new_password)
+    failed_rules = ps.validate_password(new_password)
     if failed_rules:
         return JSONResponse(
             status_code=400,
@@ -385,7 +393,7 @@ async def reset_password(body: ResetPasswordRequest):
 
     # 4. Update password
     try:
-        updated = await password_service.update_password(email, new_password)
+        updated = await ps.update_password(email, new_password)
         if not updated:
             logger.error("Password update failed — no record found for email=%s", email)
             return JSONResponse(
@@ -401,10 +409,9 @@ async def reset_password(body: ResetPasswordRequest):
 
     # 5. Mark token used
     try:
-        await reset_token_service.mark_token_used(token_str)
+        await rts.mark_token_used(token_str)
     except Exception as exc:
         logger.error("Error marking token used: %s", exc)
-        # Password was already updated, so we continue
 
     logger.info("Password reset successful for email=%s", email)
 
@@ -415,9 +422,11 @@ async def reset_password(body: ResetPasswordRequest):
     )
 
 
+
 # ---------------------------------------------------------------------------
 # POST /api/auth/validate-reset-token
 # ---------------------------------------------------------------------------
+
 
 @router.post("/validate-reset-token")
 async def validate_reset_token(body: dict):
@@ -427,14 +436,23 @@ async def validate_reset_token(body: dict):
     """
     token_str = body.get("token", "")
 
-    if not token_str or not reset_token_service:
+    if not token_str:
         return JSONResponse(
             status_code=400,
             content={"valid": False, "error": "Token expired or invalid"},
         )
 
     try:
-        email = await reset_token_service.validate_token(token_str)
+        rts = _get_reset_token_service()
+    except Exception as exc:
+        logger.error("Failed to initialize ResetTokenService: %s", exc)
+        return JSONResponse(
+            status_code=400,
+            content={"valid": False, "error": "Token expired or invalid"},
+        )
+
+    try:
+        email = await rts.validate_token(token_str)
     except Exception as exc:
         logger.error("Error validating reset token: %s", exc)
         return JSONResponse(
@@ -452,3 +470,4 @@ async def validate_reset_token(body: dict):
         status_code=200,
         content={"valid": True, "email": _mask_email(email)},
     )
+
