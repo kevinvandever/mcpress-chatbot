@@ -22,6 +22,12 @@ try:
 except ImportError:
     from auth import RateLimiter
 
+# Import PasswordService for password authentication
+try:
+    from backend.password_service import PasswordService
+except ImportError:
+    from password_service import PasswordService
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -29,8 +35,20 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 class CustomerLoginRequest(BaseModel):
-    """Request body for customer login (email-only, no password)."""
+    """Request body for customer login with email and password."""
     email: EmailStr
+    password: str
+
+
+class ForgotPasswordRequest(BaseModel):
+    """Request body for forgot-password endpoint."""
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    """Request body for reset-password endpoint."""
+    token: str
+    new_password: str
 
 
 class AppstleSubscriptionResponse(BaseModel):
@@ -123,6 +141,13 @@ class SubscriptionAuthService:
 
         # Rate limiter: 5 attempts per IP per 15 minutes
         self.rate_limiter = RateLimiter(max_attempts=5, window_minutes=15)
+
+        # Password service for local password authentication
+        try:
+            self.password_service = PasswordService()
+        except Exception as exc:
+            logger.warning("⚠️ PasswordService initialization failed: %s — password auth disabled", exc)
+            self.password_service = None
 
         # Configuration health check
         self._config_valid = True
@@ -411,17 +436,21 @@ class SubscriptionAuthService:
     # login
     # ------------------------------------------------------------------
     async def login(
-        self, email: str, client_ip: str
+        self, email: str, password: str, client_ip: str
     ) -> Dict[str, Any]:
         """
-        Full login flow:
+        Full login flow with password authentication:
         1. Check configuration
         2. Check rate limit for client_ip
-        3. Call Appstle API to verify subscription by email
-        4. Return success with token, or denial with status-specific message
+        3. Lookup customer_passwords record by email
+        4a. If record exists: verify password → if mismatch, return 401
+        4b. If no record: validate password rules → if fail, return 400
+        5. Call Appstle API to verify subscription
+        6. If no record + active subscription: create customer_passwords record
+        7. Return success with token, or denial with status-specific message
 
         Returns a dict with keys:
-          - status_code: int (200, 403, 429, 500, 503)
+          - status_code: int (200, 400, 401, 403, 429, 500, 503)
           - body: LoginSuccessResponse | LoginDeniedResponse (as dict)
         """
         import asyncio
@@ -450,7 +479,60 @@ class SubscriptionAuthService:
                 ).model_dump(),
             }
 
-        # 3. Call Appstle API
+        # 3. Lookup customer_passwords record by email
+        existing_record = None
+        is_new_user = True
+        if self.password_service:
+            try:
+                existing_record = await self.password_service.get_customer(email)
+                is_new_user = existing_record is None
+            except Exception as exc:
+                logger.error("Error looking up password record for email=%s: %s", email, exc)
+                # Continue without password check if DB is unavailable
+
+        # 4a. Existing user: verify password against stored hash
+        if existing_record:
+            try:
+                password_valid = self.password_service.verify_password(
+                    password, existing_record["password_hash"]
+                )
+            except Exception as exc:
+                logger.error("Error verifying password for email=%s: %s", email, exc)
+                return {
+                    "status_code": 500,
+                    "body": LoginDeniedResponse(
+                        error="An unexpected error occurred",
+                        subscription_status=None,
+                        redirect_url=None,
+                    ).model_dump(),
+                }
+
+            if not password_valid:
+                logger.info("Password mismatch for email=%s", email)
+                return {
+                    "status_code": 401,
+                    "body": LoginDeniedResponse(
+                        error="Invalid email or password",
+                        subscription_status=None,
+                        redirect_url=None,
+                    ).model_dump(),
+                }
+
+        # 4b. New user: validate password rules before proceeding
+        if is_new_user and self.password_service:
+            failed_rules = self.password_service.validate_password(password)
+            if failed_rules:
+                logger.info("Password validation failed for new user email=%s: %s", email, failed_rules)
+                return {
+                    "status_code": 400,
+                    "body": {
+                        "success": False,
+                        "error": "Password validation failed",
+                        "failed_rules": failed_rules,
+                    },
+                }
+
+        # 5. Call Appstle API to verify subscription
         try:
             appstle_resp = await self.verify_subscription(email)
         except asyncio.TimeoutError:
@@ -494,11 +576,20 @@ class SubscriptionAuthService:
                 ).model_dump(),
             }
 
-        # 4. Evaluate subscription status
+        # 6. Evaluate subscription status
         raw_status = appstle_resp.subscription_status
         normalized = _normalize_status(raw_status)
 
         if appstle_resp.is_valid and normalized == "active":
+            # 6a. New user with active subscription: create password record
+            if is_new_user and self.password_service:
+                try:
+                    await self.password_service.create_customer(email, password)
+                    logger.info("Created password record for new user email=%s", email)
+                except Exception as exc:
+                    logger.error("Failed to create password record for email=%s: %s", email, exc)
+                    # Don't block login if record creation fails — user can still log in
+
             # Success — reset rate limiter and issue token
             self.rate_limiter.reset(client_ip)
 

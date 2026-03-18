@@ -238,6 +238,18 @@ try:
 except Exception as e:
     print(f"⚠️ Books API v2 not available: {e}")
 
+# Migration 004: Customer Password Authentication
+try:
+    try:
+        from run_migration_004 import router as migration_004_router
+    except ImportError:
+        from backend.run_migration_004 import router as migration_004_router
+    
+    app.include_router(migration_004_router)
+    print("✅ Migration 004 endpoint enabled at /run-migration-004")
+except Exception as e:
+    print(f"⚠️ Migration 004 endpoint not available: {e}")
+
 print(f"🚀 Backend version: {__version__}")
 pdf_processor = PDFProcessorFull()
 
