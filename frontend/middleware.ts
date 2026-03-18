@@ -5,16 +5,18 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const sessionToken = request.cookies.get('session_token')?.value;
 
-  // Routes excluded from customer auth checks:
-  // - /login (customer login page — handled separately below)
-  // - /admin/* (admin pages use their own client-side localStorage auth)
-  // - /api/* (API routes handle their own auth via backend JWT verification)
   const isLoginPage = pathname === '/login';
+  const isPublicAuthPage = pathname === '/forgot-password' || pathname === '/reset-password';
   const isAdminRoute = pathname.startsWith('/admin');
   const isApiRoute = pathname.startsWith('/api');
 
   // Allow admin routes through — they use existing client-side adminToken check
   if (isAdminRoute || isApiRoute) {
+    return NextResponse.next();
+  }
+
+  // Allow public auth pages (forgot-password, reset-password) without session
+  if (isPublicAuthPage) {
     return NextResponse.next();
   }
 
@@ -31,19 +33,16 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // session_token exists — allow through (backend validates JWT on API calls)
-  return NextResponse.next();
+  // Add no-cache headers to prevent back button showing stale pages after logout
+  const response = NextResponse.next();
+  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  response.headers.set('Pragma', 'no-cache');
+  response.headers.set('Expires', '0');
+  return response;
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder assets (svg, png, jpg, jpeg, gif, webp)
-     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

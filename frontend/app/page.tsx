@@ -21,7 +21,7 @@ export default function Home() {
   // Silent token refresh — schedules refresh ~5 min before JWT expiry
   useAuthRefresh()
 
-  // Fetch user info from cookie-based session (middleware handles redirect if unauthenticated)
+  // Fetch user info from cookie-based session — redirect if session is invalid (handles back-button after logout)
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
@@ -29,13 +29,16 @@ export default function Home() {
         if (res.ok) {
           const data = await res.json()
           setUserEmail(data.email || null)
+        } else {
+          // Session invalid or expired — redirect to login
+          router.replace('/login')
         }
       } catch {
-        // Silently ignore — middleware handles unauthenticated redirects
+        router.replace('/login')
       }
     }
     fetchUserInfo()
-  }, [])
+  }, [router])
 
   // Check if documents are available
   useEffect(() => {
@@ -90,6 +93,7 @@ export default function Home() {
       // Continue with redirect even if the API call fails
     }
     router.push('/login')
+    router.refresh()
   }
 
   if (isInitializing) {
