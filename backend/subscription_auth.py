@@ -14,6 +14,8 @@ from typing import Optional, Dict, Any
 
 import aiohttp
 import jwt
+from dataclasses import dataclass, field
+
 from pydantic import BaseModel, EmailStr
 
 # Import RateLimiter from existing auth module
@@ -82,6 +84,50 @@ class RefreshResponse(BaseModel):
     token: Optional[str] = None
     error: Optional[str] = None
     redirect_url: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class TagConfig:
+    active_patterns: list[str] = field(default_factory=lambda: ["active-subscriber"])
+    paused_patterns: list[str] = field(default_factory=lambda: ["paused-subscriber"])
+    inactive_patterns: list[str] = field(default_factory=lambda: ["inactive-subscriber"])
+
+
+def load_tag_config() -> TagConfig:
+    """Read tag patterns from environment variables and return a TagConfig."""
+    def _parse_env(var_name: str, default: list[str]) -> list[str]:
+        raw = os.getenv(var_name, "")
+        patterns = [p.strip().lower() for p in raw.split(",") if p.strip()]
+        return patterns if patterns else [d.lower() for d in default]
+
+    return TagConfig(
+        active_patterns=_parse_env("SUBSCRIPTION_TAG_ACTIVE", ["active-subscriber"]),
+        paused_patterns=_parse_env("SUBSCRIPTION_TAG_PAUSED", ["paused-subscriber"]),
+        inactive_patterns=_parse_env("SUBSCRIPTION_TAG_INACTIVE", ["inactive-subscriber"]),
+    )
+
+
+def _derive_status_from_tags(tags: list[str], config: TagConfig) -> str:
+    """Derive subscription status from customer tags.
+
+    Returns one of: active, paused, inactive, not_found.
+    Priority: active > paused > inactive > not_found.
+    """
+    lower_tags = [t.lower() for t in tags]
+
+    for tag in lower_tags:
+        if tag in config.active_patterns:
+            return "active"
+
+    for tag in lower_tags:
+        if tag in config.paused_patterns:
+            return "paused"
+
+    for tag in lower_tags:
+        if tag in config.inactive_patterns:
+            return "inactive"
+
+    return "not_found"
 
 
 # ---------------------------------------------------------------------------
@@ -163,6 +209,85 @@ class SubscriptionAuthService:
         if not self.signup_url:
             logger.warning("⚠️ SUBSCRIPTION_SIGNUP_URL is not set — redirect URLs will be empty")
 
+        # Tag-based subscription config
+        self.tag_config = load_tag_config()
+
+        logger.info("Loaded tag config: active=%s, paused=%s, inactive=%s",
+                     self.tag_config.active_patterns, self.tag_config.paused_patterns,
+                     self.tag_config.inactive_patterns)
+
+    # ------------------------------------------------------------------
+    # _extract_customer_tags
+    # ------------------------------------------------------------------
+    def _extract_customer_tags(self, customer: dict) -> list[str]:
+        """Extract tag strings from a customer record."""
+        raw_tags = customer.get("customerTags") or customer.get("tags")
+
+        if raw_tags is None:
+            return []
+
+        if not isinstance(raw_tags, list):
+            logger.warning("Unexpected tags structure: %s", type(raw_tags))
+            return []
+
+        tags = []
+        for item in raw_tags:
+            if isinstance(item, str):
+                tags.append(item)
+            elif isinstance(item, dict):
+                tag_value = item.get("name") or item.get("value") or item.get("tag")
+                if tag_value and isinstance(tag_value, str):
+                    tags.append(tag_value)
+            else:
+                logger.warning("Unexpected tag item type: %s", type(item))
+
+        return tags
+
+    # ------------------------------------------------------------------
+    # _parse_tags_response
+    # ------------------------------------------------------------------
+    def _parse_tags_response(self, data: Any, email: str) -> AppstleSubscriptionResponse:
+        """Parse Appstle API response using customer tags to determine subscription status."""
+        # Normalize: extract the customer list from the response
+        customers = []
+        if isinstance(data, list):
+            customers = data
+        elif isinstance(data, dict):
+            customers = data.get("content", [])
+            if not customers and data.get("email"):
+                customers = [data]
+
+        if not customers:
+            logger.info("No customers found in Appstle response for email=%s", email)
+            return AppstleSubscriptionResponse(
+                is_valid=False, subscription_status=None, customer_email=email,
+            )
+
+        # Check each customer's tags
+        for customer in customers:
+            tags = self._extract_customer_tags(customer)
+            logger.info("Extracted tags for email=%s: %s", email, tags)
+
+            status = _derive_status_from_tags(tags, self.tag_config)
+            logger.info("Derived status for email=%s: %s (matched from tags)", email, status)
+
+            if status == "active":
+                return AppstleSubscriptionResponse(
+                    is_valid=True, subscription_status="ACTIVE", customer_email=email,
+                )
+            elif status == "paused":
+                return AppstleSubscriptionResponse(
+                    is_valid=False, subscription_status="PAUSED", customer_email=email,
+                )
+            elif status == "inactive":
+                return AppstleSubscriptionResponse(
+                    is_valid=False, subscription_status="CANCELLED", customer_email=email,
+                )
+
+        # No recognized tags found in any customer
+        return AppstleSubscriptionResponse(
+            is_valid=False, subscription_status=None, customer_email=email,
+        )
 
     # ------------------------------------------------------------------
     # verify_subscription
@@ -216,151 +341,8 @@ class SubscriptionAuthService:
                     str(data)[:500],  # Log first 500 chars for debugging
                 )
 
-                # Parse the response to determine subscription status.
-                # The endpoint returns customer data with subscription contracts.
-                # We need to find if any contract has an ACTIVE status.
-                return self._parse_subscription_response(data, email)
-
-    # ------------------------------------------------------------------
-    # _parse_subscription_response
-    # ------------------------------------------------------------------
-    def _parse_subscription_response(
-        self, data: Any, email: str
-    ) -> AppstleSubscriptionResponse:
-        """
-        Parse the Appstle /subscription-contract-details/customers response.
-
-        The response may be:
-        - A paginated object with a "content" list of customers
-        - A list of customers directly
-        - An empty list/object if no customer found
-
-        Each customer may have "subscriptionContracts" with "edges" containing
-        contract nodes with a "status" field (ACTIVE, PAUSED, CANCELLED, EXPIRED, FAILED).
-
-        We consider the customer to have a valid subscription if ANY contract
-        has an ACTIVE status.
-        """
-        # Normalize: extract the customer list from the response
-        customers = []
-        if isinstance(data, list):
-            customers = data
-        elif isinstance(data, dict):
-            # Paginated response: {"content": [...], "pageable": {...}, ...}
-            customers = data.get("content", [])
-            # If "content" is not present, maybe the response IS the customer
-            if not customers and data.get("email"):
-                customers = [data]
-
-        if not customers:
-            logger.info("No customers found in Appstle response for email=%s", email)
-            return AppstleSubscriptionResponse(
-                is_valid=False,
-                subscription_status=None,
-                expiration_date=None,
-                customer_email=email,
-            )
-
-        # Look through all customers (should typically be 1 for an email filter)
-        best_status = None
-        best_expiration = None
-        found_active = False
-
-        for customer in customers:
-            customer_email = customer.get("email") or customer.get("customerEmail")
-
-            # ----- Strategy 1: Check summary-level activeSubscriptions field -----
-            # The Appstle customer-list endpoint returns a summary with
-            # "activeSubscriptions" (int) instead of nested contract objects.
-            active_count = customer.get("activeSubscriptions")
-            if active_count is not None and int(active_count) > 0:
-                found_active = True
-                best_status = "ACTIVE"
-                # Use nextOrderDate as expiration proxy when available
-                next_order = customer.get("nextOrderDate")
-                if next_order and not best_expiration:
-                    try:
-                        best_expiration = datetime.fromisoformat(
-                            str(next_order).replace("Z", "+00:00")
-                        )
-                    except (ValueError, TypeError):
-                        pass
-                break  # Found active, done
-
-            # ----- Strategy 2: Check nested subscription contracts -----
-            contracts = self._extract_contracts(customer)
-
-            for contract in contracts:
-                status = contract.get("status", "").upper()
-
-                if status == "ACTIVE":
-                    found_active = True
-                    best_status = "ACTIVE"
-                    # Try to get next billing date as expiration proxy
-                    next_billing = contract.get("nextBillingDate")
-                    if next_billing and not best_expiration:
-                        try:
-                            best_expiration = datetime.fromisoformat(
-                                str(next_billing).replace("Z", "+00:00")
-                            )
-                        except (ValueError, TypeError):
-                            pass
-                    break  # Found active, no need to check more contracts
-                elif not best_status or status in ("PAUSED", "CANCELLED", "EXPIRED"):
-                    best_status = status
-
-            if found_active:
-                break
-
-            # ----- Strategy 3: Infer from inActiveSubscriptions if no contracts -----
-            # If no contracts found and no activeSubscriptions, check if
-            # inActiveSubscriptions > 0 to determine a non-active status.
-            if not contracts and not best_status:
-                inactive_count = customer.get("inActiveSubscriptions", 0)
-                if inactive_count and int(inactive_count) > 0:
-                    best_status = "EXPIRED"  # Best guess for inactive
-
-        return AppstleSubscriptionResponse(
-            is_valid=found_active,
-            subscription_status=best_status,
-            expiration_date=best_expiration,
-            customer_email=email,
-        )
-
-    # ------------------------------------------------------------------
-    # _extract_contracts
-    # ------------------------------------------------------------------
-    def _extract_contracts(self, customer: dict) -> list:
-        """
-        Extract subscription contracts from a customer object.
-
-        Handles multiple possible response shapes:
-        - customer["subscriptionContracts"]["edges"][*]["node"]
-        - customer["subscriptionContracts"][*]  (flat list)
-        - customer["contracts"][*]
-        """
-        contracts = []
-
-        sub_contracts = customer.get("subscriptionContracts")
-        if sub_contracts:
-            if isinstance(sub_contracts, dict):
-                # GraphQL-style: {"edges": [{"node": {...}}, ...]}
-                edges = sub_contracts.get("edges", [])
-                for edge in edges:
-                    node = edge.get("node") if isinstance(edge, dict) else None
-                    if node:
-                        contracts.append(node)
-            elif isinstance(sub_contracts, list):
-                contracts.extend(sub_contracts)
-
-        # Fallback: check "contracts" key
-        if not contracts:
-            alt_contracts = customer.get("contracts", [])
-            if isinstance(alt_contracts, list):
-                contracts.extend(alt_contracts)
-
-        return contracts
-
+                # Parse the response using customer tags to determine subscription status.
+                return self._parse_tags_response(data, email)
 
     # ------------------------------------------------------------------
     # create_token
