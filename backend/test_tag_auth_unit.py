@@ -515,3 +515,16 @@ class TestRealAppstleStep2Response:
         resp = self.svc._parse_tags_response(data, "user@example.com")
         assert resp.is_valid is True
         assert resp.subscription_status == "ACTIVE"
+
+    def test_single_customer_dict_without_email_field(self):
+        """Step 2 response has no email field — should still be recognized as a customer."""
+        data = {
+            "__typename": "Customer",
+            "id": "gid://shopify/Customer/3101473863",
+            "productSubscriberStatus": "ACTIVE",
+            "tags": [ACTIVE_TAG, "newsletter", "prospect"],
+            "subscriptionContracts": {"__typename": "SubscriptionContractConnection", "nodes": []},
+        }
+        resp = self.svc._parse_tags_response(data, "user@example.com")
+        assert resp.is_valid is True
+        assert resp.subscription_status == "ACTIVE"

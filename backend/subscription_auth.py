@@ -254,7 +254,7 @@ class SubscriptionAuthService:
             customers = data
         elif isinstance(data, dict):
             customers = data.get("content", [])
-            if not customers and data.get("email"):
+            if not customers and (data.get("email") or data.get("tags") or data.get("id")):
                 customers = [data]
 
         if not customers:
