@@ -482,15 +482,16 @@ class SubscriptionAuthService:
         self, email: str, password: str, client_ip: str
     ) -> Dict[str, Any]:
         """
-        Full login flow with password authentication:
+        Full login flow — subscription check always comes first:
         1. Check configuration
         2. Check rate limit for client_ip
-        3. Lookup customer_passwords record by email
-        4a. If record exists: verify password → if mismatch, return 401
-        4b. If no record: validate password rules → if fail, return 400
-        5. Call Appstle API to verify subscription
-        6. If no record + active subscription: create customer_passwords record
-        7. Return success with token, or denial with status-specific message
+        3. Call Appstle API to verify subscription (always, for all users)
+        4. If subscription not valid → deny immediately (no password check)
+        5. Lookup customer_passwords record by email
+        6a. If record exists: verify password → if mismatch, return 401
+        6b. If no record (new user): validate password rules → if fail, return 400
+        7. If new user + active subscription: create customer_passwords record
+        8. Return success with token
 
         Returns a dict with keys:
           - status_code: int (200, 400, 401, 403, 429, 500, 503)
@@ -522,60 +523,7 @@ class SubscriptionAuthService:
                 ).model_dump(),
             }
 
-        # 3. Lookup customer_passwords record by email
-        existing_record = None
-        is_new_user = True
-        if self.password_service:
-            try:
-                existing_record = await self.password_service.get_customer(email)
-                is_new_user = existing_record is None
-            except Exception as exc:
-                logger.error("Error looking up password record for email=%s: %s", email, exc)
-                # Continue without password check if DB is unavailable
-
-        # 4a. Existing user: verify password against stored hash
-        if existing_record:
-            try:
-                password_valid = self.password_service.verify_password(
-                    password, existing_record["password_hash"]
-                )
-            except Exception as exc:
-                logger.error("Error verifying password for email=%s: %s", email, exc)
-                return {
-                    "status_code": 500,
-                    "body": LoginDeniedResponse(
-                        error="An unexpected error occurred",
-                        subscription_status=None,
-                        redirect_url=None,
-                    ).model_dump(),
-                }
-
-            if not password_valid:
-                logger.info("Password mismatch for email=%s", email)
-                return {
-                    "status_code": 401,
-                    "body": LoginDeniedResponse(
-                        error="Invalid email or password",
-                        subscription_status=None,
-                        redirect_url=None,
-                    ).model_dump(),
-                }
-
-        # 4b. New user: validate password rules before proceeding
-        if is_new_user and self.password_service:
-            failed_rules = self.password_service.validate_password(password)
-            if failed_rules:
-                logger.info("Password validation failed for new user email=%s: %s", email, failed_rules)
-                return {
-                    "status_code": 400,
-                    "body": {
-                        "success": False,
-                        "error": "Password validation failed",
-                        "failed_rules": failed_rules,
-                    },
-                }
-
-        # 5. Call Appstle API to verify subscription
+        # 3. Call Appstle API to verify subscription FIRST (for all users)
         try:
             appstle_resp = await self.verify_subscription(email)
         except asyncio.TimeoutError:
@@ -619,47 +567,11 @@ class SubscriptionAuthService:
                 ).model_dump(),
             }
 
-        # 6. Evaluate subscription status
+        # 4. Evaluate subscription status — deny immediately if not active
         raw_status = appstle_resp.subscription_status
         normalized = _normalize_status(raw_status)
 
-        if appstle_resp.is_valid and normalized == "active":
-            # 6a. New user with active subscription: create password record
-            if is_new_user and self.password_service:
-                try:
-                    await self.password_service.create_customer(email, password)
-                    logger.info("Created password record for new user email=%s", email)
-                except Exception as exc:
-                    logger.error("Failed to create password record for email=%s: %s", email, exc)
-                    # Don't block login if record creation fails — user can still log in
-
-            # Success — reset rate limiter and issue token
-            self.rate_limiter.reset(client_ip)
-
-            token = self.create_token(
-                email=email,
-                subscription_status="active",
-                expires_at=appstle_resp.expiration_date,
-            )
-
-            expires_at_iso = (
-                appstle_resp.expiration_date.isoformat()
-                if appstle_resp.expiration_date
-                else None
-            )
-
-            logger.info("Successful login for email=%s", email)
-            return {
-                "status_code": 200,
-                "body": LoginSuccessResponse(
-                    token=token,
-                    email=email,
-                    subscription_status="active",
-                    expires_at=expires_at_iso,
-                ).model_dump(),
-            }
-        else:
-            # Denied — subscription not active
+        if not (appstle_resp.is_valid and normalized == "active"):
             message = _get_denial_message(raw_status)
             logger.info(
                 "Login denied for email=%s: status=%s message=%s",
@@ -673,6 +585,94 @@ class SubscriptionAuthService:
                     redirect_url=self.signup_url or None,
                 ).model_dump(),
             }
+
+        # 5. Subscription is active — now check password
+        existing_record = None
+        is_new_user = True
+        if self.password_service:
+            try:
+                existing_record = await self.password_service.get_customer(email)
+                is_new_user = existing_record is None
+            except Exception as exc:
+                logger.error("Error looking up password record for email=%s: %s", email, exc)
+                # Continue without password check if DB is unavailable
+
+        # 6a. Existing user: verify password against stored hash
+        if existing_record:
+            try:
+                password_valid = self.password_service.verify_password(
+                    password, existing_record["password_hash"]
+                )
+            except Exception as exc:
+                logger.error("Error verifying password for email=%s: %s", email, exc)
+                return {
+                    "status_code": 500,
+                    "body": LoginDeniedResponse(
+                        error="An unexpected error occurred",
+                        subscription_status=None,
+                        redirect_url=None,
+                    ).model_dump(),
+                }
+
+            if not password_valid:
+                logger.info("Password mismatch for email=%s", email)
+                return {
+                    "status_code": 401,
+                    "body": LoginDeniedResponse(
+                        error="Invalid email or password",
+                        subscription_status=None,
+                        redirect_url=None,
+                    ).model_dump(),
+                }
+
+        # 6b. New user: validate password rules
+        if is_new_user and self.password_service:
+            failed_rules = self.password_service.validate_password(password)
+            if failed_rules:
+                logger.info("Password validation failed for new user email=%s: %s", email, failed_rules)
+                return {
+                    "status_code": 400,
+                    "body": {
+                        "success": False,
+                        "error": "Password validation failed",
+                        "failed_rules": failed_rules,
+                    },
+                }
+
+        # 7. New user with active subscription: create password record
+        if is_new_user and self.password_service:
+            try:
+                await self.password_service.create_customer(email, password)
+                logger.info("Created password record for new user email=%s", email)
+            except Exception as exc:
+                logger.error("Failed to create password record for email=%s: %s", email, exc)
+                # Don't block login if record creation fails
+
+        # 8. Success — reset rate limiter and issue token
+        self.rate_limiter.reset(client_ip)
+
+        token = self.create_token(
+            email=email,
+            subscription_status="active",
+            expires_at=appstle_resp.expiration_date,
+        )
+
+        expires_at_iso = (
+            appstle_resp.expiration_date.isoformat()
+            if appstle_resp.expiration_date
+            else None
+        )
+
+        logger.info("Successful login for email=%s", email)
+        return {
+            "status_code": 200,
+            "body": LoginSuccessResponse(
+                token=token,
+                email=email,
+                subscription_status="active",
+                expires_at=expires_at_iso,
+            ).model_dump(),
+        }
 
 
     # ------------------------------------------------------------------
