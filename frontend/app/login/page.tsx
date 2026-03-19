@@ -134,7 +134,7 @@ export default function LoginPage() {
             className="mx-auto h-24 w-auto"
           />
           <p className="mt-4 text-sm text-gray-600">
-            Sign in with your email and password
+            Sign in with your MC Press subscription email
           </p>
         </div>
 
@@ -298,7 +298,7 @@ export default function LoginPage() {
 
         <div className="text-center">
           <p className="text-xs text-gray-500">
-            Enter the email associated with your MC Press subscription.
+            First time here? Just enter your subscription email and choose a password.
           </p>
         </div>
       </div>
