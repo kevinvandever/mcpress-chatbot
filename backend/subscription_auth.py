@@ -88,9 +88,9 @@ class RefreshResponse(BaseModel):
 
 @dataclass(frozen=True)
 class TagConfig:
-    active_patterns: list[str] = field(default_factory=lambda: ["active-subscriber"])
-    paused_patterns: list[str] = field(default_factory=lambda: ["paused-subscriber"])
-    inactive_patterns: list[str] = field(default_factory=lambda: ["inactive-subscriber"])
+    active_patterns: list[str] = field(default_factory=lambda: ["appstle_subscription_active_customer"])
+    paused_patterns: list[str] = field(default_factory=lambda: ["appstle_subscription_paused_customer"])
+    inactive_patterns: list[str] = field(default_factory=lambda: ["appstle_subscription_inactive_customer"])
 
 
 def load_tag_config() -> TagConfig:
@@ -101,9 +101,9 @@ def load_tag_config() -> TagConfig:
         return patterns if patterns else [d.lower() for d in default]
 
     return TagConfig(
-        active_patterns=_parse_env("SUBSCRIPTION_TAG_ACTIVE", ["active-subscriber"]),
-        paused_patterns=_parse_env("SUBSCRIPTION_TAG_PAUSED", ["paused-subscriber"]),
-        inactive_patterns=_parse_env("SUBSCRIPTION_TAG_INACTIVE", ["inactive-subscriber"]),
+        active_patterns=_parse_env("SUBSCRIPTION_TAG_ACTIVE", ["appstle_subscription_active_customer"]),
+        paused_patterns=_parse_env("SUBSCRIPTION_TAG_PAUSED", ["appstle_subscription_paused_customer"]),
+        inactive_patterns=_parse_env("SUBSCRIPTION_TAG_INACTIVE", ["appstle_subscription_inactive_customer"]),
     )
 
 
@@ -294,15 +294,17 @@ class SubscriptionAuthService:
     # ------------------------------------------------------------------
     async def verify_subscription(self, email: str) -> AppstleSubscriptionResponse:
         """
-        Call the Appstle API to check subscription status for the given email.
+        Two-step Appstle API flow to check subscription status via customer tags.
 
-        GET {APPSTLE_API_URL}/api/external/v2/subscription-contract-details/customers?email={email}
-        Headers: X-API-Key: {APPSTLE_API_KEY}
-        Timeout: 10 seconds
+        Step 1: GET {APPSTLE_API_URL}/api/external/v2/subscription-contract-details/customers?email={email}
+                → Extract customerId from the first customer record.
 
-        The endpoint returns a paginated list of customers with subscription contracts.
-        If the response contains any customer data with subscription contracts, the
-        customer has a valid subscription. We look for contracts with ACTIVE status.
+        Step 2: GET {APPSTLE_API_URL}/api/external/v2/subscription-customers/{customerId}
+                → Get full customer details including tags array.
+
+        Step 3: Pass the customer data (with tags) to _parse_tags_response.
+
+        Both endpoints use the same base URL and API key.
 
         Returns an AppstleSubscriptionResponse with parsed fields.
         Raises:
@@ -310,16 +312,18 @@ class SubscriptionAuthService:
             asyncio.TimeoutError on timeout
             ValueError on malformed response
         """
-        url = f"{self.appstle_api_url}/api/external/v2/subscription-contract-details/customers"
         headers = {"X-API-Key": self.appstle_api_key}
-        params = {"email": email}
         timeout = aiohttp.ClientTimeout(total=self.appstle_timeout)
 
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.get(url, headers=headers, params=params) as resp:
+            # Step 1: Look up customerId by email
+            step1_url = f"{self.appstle_api_url}/api/external/v2/subscription-contract-details/customers"
+            params = {"email": email}
+
+            async with session.get(step1_url, headers=headers, params=params) as resp:
                 if resp.status != 200:
                     logger.error(
-                        "Appstle API returned status %d for email=%s",
+                        "Appstle API (step 1) returned status %d for email=%s",
                         resp.status, email,
                     )
                     raise aiohttp.ClientResponseError(
@@ -330,19 +334,80 @@ class SubscriptionAuthService:
                     )
 
                 try:
-                    data = await resp.json()
+                    step1_data = await resp.json()
                 except Exception as exc:
-                    logger.error("Malformed JSON from Appstle API: %s", exc)
+                    logger.error("Malformed JSON from Appstle API (step 1): %s", exc)
                     raise ValueError(f"Malformed Appstle response: {exc}") from exc
 
                 logger.info(
-                    "Appstle API response for email=%s: %s",
-                    email,
-                    str(data)[:500],  # Log first 500 chars for debugging
+                    "Appstle API step 1 response for email=%s: %s",
+                    email, str(step1_data)[:500],
                 )
 
-                # Parse the response using customer tags to determine subscription status.
-                return self._parse_tags_response(data, email)
+            # Extract customerId from step 1 response
+            customer_id = self._extract_customer_id(step1_data)
+            if customer_id is None:
+                logger.info("No customerId found for email=%s — no subscription", email)
+                return AppstleSubscriptionResponse(
+                    is_valid=False, subscription_status=None, customer_email=email,
+                )
+
+            # Step 2: Get full customer details (including tags) by customerId
+            step2_url = f"{self.appstle_api_url}/api/external/v2/subscription-customers/{customer_id}"
+
+            async with session.get(step2_url, headers=headers) as resp:
+                if resp.status != 200:
+                    logger.error(
+                        "Appstle API (step 2) returned status %d for customerId=%s email=%s",
+                        resp.status, customer_id, email,
+                    )
+                    raise aiohttp.ClientResponseError(
+                        request_info=resp.request_info,
+                        history=resp.history,
+                        status=resp.status,
+                        message=f"Appstle API step 2 returned {resp.status}",
+                    )
+
+                try:
+                    step2_data = await resp.json()
+                except Exception as exc:
+                    logger.error("Malformed JSON from Appstle API (step 2): %s", exc)
+                    raise ValueError(f"Malformed Appstle response: {exc}") from exc
+
+                logger.info(
+                    "Appstle API step 2 response for email=%s: %s",
+                    email, str(step2_data)[:500],
+                )
+
+                # Step 3: Parse the customer data (with tags) to determine status
+                return self._parse_tags_response(step2_data, email)
+
+    # ------------------------------------------------------------------
+    # _extract_customer_id
+    # ------------------------------------------------------------------
+    def _extract_customer_id(self, data: Any) -> Optional[int]:
+        """Extract the customerId from the step 1 Appstle API response.
+
+        The response is typically a list of customer records like:
+        [{"customerId": 123, "email": "...", ...}]
+
+        Returns the customerId of the first customer, or None if not found.
+        """
+        customers = []
+        if isinstance(data, list):
+            customers = data
+        elif isinstance(data, dict):
+            customers = data.get("content", [])
+            if not customers and data.get("customerId"):
+                customers = [data]
+
+        for customer in customers:
+            if isinstance(customer, dict):
+                cid = customer.get("customerId")
+                if cid is not None:
+                    return cid
+
+        return None
 
     # ------------------------------------------------------------------
     # create_token

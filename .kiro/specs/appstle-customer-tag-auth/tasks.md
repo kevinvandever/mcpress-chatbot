@@ -78,8 +78,8 @@ Replace the contract-status-based subscription verification in `backend/subscrip
     - Add `SUBSCRIPTION_TAG_ACTIVE`, `SUBSCRIPTION_TAG_PAUSED`, `SUBSCRIPTION_TAG_INACTIVE` with example values and comments
     - _Requirements: 3.1_
 
-- [ ] 6. Write unit tests
-  - [ ]* 6.1 Write unit tests in `backend/test_tag_auth_unit.py`
+- [x] 6. Write unit tests
+  - [x]* 6.1 Write unit tests in `backend/test_tag_auth_unit.py`
     - Test tag extraction from real-shaped Appstle API response
     - Test default config values when no env vars are set
     - Test customer with both `customerTags` and `tags` fields (first one wins)
