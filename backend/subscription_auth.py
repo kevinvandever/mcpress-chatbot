@@ -271,13 +271,9 @@ class SubscriptionAuthService:
             status = _derive_status_from_tags(tags, self.tag_config)
             logger.info("Derived status for email=%s: %s (matched from tags)", email, status)
 
-            if status == "active":
+            if status in ("active", "paused"):
                 return AppstleSubscriptionResponse(
                     is_valid=True, subscription_status="ACTIVE", customer_email=email,
-                )
-            elif status == "paused":
-                return AppstleSubscriptionResponse(
-                    is_valid=False, subscription_status="PAUSED", customer_email=email,
                 )
             elif status == "inactive":
                 return AppstleSubscriptionResponse(

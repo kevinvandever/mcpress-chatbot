@@ -248,13 +248,13 @@ class TestParseTagsResponse:
         assert resp.customer_email == "user@example.com"
 
     def test_list_response_paused(self):
-        """Plain list response → paused customer."""
+        """Plain list response → paused customer is treated as active."""
         data = [
             {"email": "user@example.com", "customerTags": [PAUSED_TAG]}
         ]
         resp = self.svc._parse_tags_response(data, "user@example.com")
-        assert resp.is_valid is False
-        assert resp.subscription_status == "PAUSED"
+        assert resp.is_valid is True
+        assert resp.subscription_status == "ACTIVE"
 
     def test_single_customer_dict_inactive(self):
         """Single customer dict (has email key, no content key) → inactive."""
@@ -329,19 +329,19 @@ class TestLoginFlowWithTags:
         assert "token" in result["body"]
 
     @pytest.mark.asyncio
-    async def test_login_paused_subscriber_denied(self):
-        """Paused tag → 403 with 'Your subscription is paused'."""
+    async def test_login_paused_subscriber_success(self):
+        """Paused tag → 200 (paused is treated as active)."""
         svc = self._make_login_service()
         svc.verify_subscription = AsyncMock(return_value=AppstleSubscriptionResponse(
-            is_valid=False,
-            subscription_status="PAUSED",
+            is_valid=True,
+            subscription_status="ACTIVE",
             customer_email="user@example.com",
         ))
 
         result = await svc.login("user@example.com", "ValidPass1!", "127.0.0.1")
-        assert result["status_code"] == 403
-        assert result["body"]["success"] is False
-        assert result["body"]["error"] == "Your subscription is paused"
+        assert result["status_code"] == 200
+        assert result["body"]["success"] is True
+        assert result["body"]["subscription_status"] == "active"
 
     @pytest.mark.asyncio
     async def test_login_inactive_subscriber_denied(self):
@@ -477,14 +477,15 @@ class TestRealAppstleStep2Response:
         assert resp.subscription_status == "ACTIVE"
 
     def test_paused_customer(self):
+        """Paused customer is treated as active (still has access until billing cycle ends)."""
         data = {
             "__typename": "Customer",
             "id": "gid://shopify/Customer/123",
             "tags": [PAUSED_TAG, "newsletter"],
         }
         resp = self.svc._parse_tags_response(data, "user@example.com")
-        assert resp.is_valid is False
-        assert resp.subscription_status == "PAUSED"
+        assert resp.is_valid is True
+        assert resp.subscription_status == "ACTIVE"
 
     def test_inactive_customer(self):
         data = {
