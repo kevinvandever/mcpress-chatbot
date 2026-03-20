@@ -116,24 +116,14 @@ export default function Home() {
           <div className="flex justify-between items-center py-3">
             {/* Logo + Tagline */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 min-w-0">
-              {/* Logo image + Wordmark */}
-              <div className="flex items-center gap-2 shrink-0">
-                <img
-                  src="/mc-chatmaster-logo.png"
-                  alt="MC ChatMaster"
-                  className="h-9 sm:h-10 w-auto"
-                />
-                <span className="text-lg sm:text-xl font-bold text-black tracking-tight">MC</span>
-                <span className="text-lg sm:text-xl font-bold mx-0.5" style={{ color: '#EF9537' }}>|</span>
-                <span className="text-lg sm:text-xl font-bold" style={{ color: '#990000' }}>CHAT</span>
-                <span className="text-lg sm:text-xl font-bold text-black tracking-tight">MASTER</span>
-              </div>
-              {/* Tagline + Sub-line + Powered note */}
+              {/* Logo image */}
+              <img
+                src="/mc-chatmaster-logo.png"
+                alt="MC ChatMaster"
+                className="h-12 sm:h-14 md:h-16 w-auto shrink-0"
+              />
+              {/* Sub-line + Powered note */}
               <div className="flex flex-col min-w-0">
-                <span className="text-xs sm:text-sm font-medium text-gray-700 leading-tight truncate">
-                  <span className="hidden sm:inline">Instant AI-Powered IBM i Expertise</span>
-                  <span className="sm:hidden">AI-Powered IBM i Expertise</span>
-                </span>
                 <span className="text-[10px] sm:text-xs text-gray-500 leading-tight">Your 24/7 Knowledge Assistant</span>
                 <a
                   href="https://mc-store.com/products/mc-chatmaster"
