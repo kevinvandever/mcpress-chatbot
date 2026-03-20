@@ -19,6 +19,9 @@ tiktoken>=0.5.0
 # Database
 asyncpg>=0.29.0
 
+# Scheduling
+APScheduler>=3.10.0
+
 # HTTP Client
 aiohttp>=3.9.0
 requests>=2.31.0

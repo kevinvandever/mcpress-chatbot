@@ -92,6 +92,27 @@ except Exception as e:
     regenerate_router = None
     set_regen_store = None
 
+# Import ingestion modules
+ingestion_service = None
+ingestion_scheduler_instance = None
+try:
+    try:
+        from ingestion_service import IngestionService
+        from ingestion_routes import router as ingestion_router, set_ingestion_service
+        from ingestion_scheduler import setup_ingestion_scheduler, start_scheduler, stop_scheduler
+        INGESTION_AVAILABLE = True
+        print("✅ Ingestion modules imported (Railway style)")
+    except ImportError:
+        from backend.ingestion_service import IngestionService
+        from backend.ingestion_routes import router as ingestion_router, set_ingestion_service
+        from backend.ingestion_scheduler import setup_ingestion_scheduler, start_scheduler, stop_scheduler
+        INGESTION_AVAILABLE = True
+        print("✅ Ingestion modules imported (local style)")
+except Exception as e:
+    print(f"⚠️ Ingestion modules not available: {e}")
+    INGESTION_AVAILABLE = False
+    ingestion_router = None
+
 # Check vector store preference - try multiple variable names due to Railway caching issues
 use_postgresql_env = os.getenv('USE_POSTGRESQL', '')
 enable_postgresql_env = os.getenv('ENABLE_POSTGRESQL', '')
@@ -576,6 +597,29 @@ async def startup_event():
             import traceback
             print(traceback.format_exc())
 
+    # Initialize Auto Content Ingestion
+    global ingestion_service, ingestion_scheduler_instance
+    if INGESTION_AVAILABLE:
+        try:
+            ingestion_service = IngestionService(
+                vector_store=vector_store,
+                pdf_processor=pdf_processor,
+                category_mapper=category_mapper,
+            )
+            await ingestion_service.ensure_table()
+            await ingestion_service.mark_interrupted_runs()
+            set_ingestion_service(ingestion_service)
+            app.include_router(ingestion_router)
+            print("✅ Ingestion endpoints enabled at /api/ingestion/*")
+
+            # Start monthly scheduler
+            ingestion_scheduler_instance = setup_ingestion_scheduler(ingestion_service)
+            await start_scheduler(ingestion_scheduler_instance)
+        except Exception as e:
+            print(f"⚠️ Could not initialize ingestion service: {e}")
+            import traceback
+            print(traceback.format_exc())
+
 # Shutdown event handler
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -597,6 +641,14 @@ async def shutdown_event():
             print("✅ Code upload system shutdown complete")
         except Exception as e:
             print(f"⚠️  Error during code upload system shutdown: {e}")
+
+    # Shutdown ingestion scheduler
+    if INGESTION_AVAILABLE and ingestion_scheduler_instance:
+        try:
+            await stop_scheduler(ingestion_scheduler_instance)
+            print("✅ Ingestion scheduler shutdown complete")
+        except Exception as e:
+            print(f"⚠️  Error during ingestion scheduler shutdown: {e}")
 
 # Initialize chat_handler without persistence first (works immediately)
 # Will be updated with conversation_service later if available
