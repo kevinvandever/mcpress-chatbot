@@ -200,7 +200,7 @@ export default function HistoryPage() {
         </div>
 
         {/* Conversation Detail View */}
-        <div className={`${selectedConversationId ? 'block' : 'hidden lg:flex'} flex-1 lg:flex flex-col items-center justify-center bg-gray-50`}>
+        <div className={`${selectedConversationId ? 'block' : 'hidden lg:flex'} flex-1 lg:flex flex-col items-center justify-center bg-gray-50 min-w-0 overflow-hidden`}>
           {selectedConversationId ? (
             <ConversationDetail
               conversationId={selectedConversationId}

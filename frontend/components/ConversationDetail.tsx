@@ -161,11 +161,11 @@ export default function ConversationDetail({
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-white h-full">
+    <div className="flex-1 flex flex-col bg-white h-full min-w-0 overflow-hidden">
       {/* Header */}
-      <div className="flex-shrink-0 border-b bg-white px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
+      <div className="flex-shrink-0 border-b bg-white px-4 sm:px-6 py-4">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3 flex-1 min-w-0 overflow-hidden">
             {/* Mobile Back Button */}
             <button
               onClick={onClose}
@@ -221,7 +221,7 @@ export default function ConversationDetail({
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-2 ml-4">
+          <div className="flex items-center gap-1 sm:gap-2 ml-2 sm:ml-4 flex-shrink-0">
             <button
               onClick={() => setShowExportModal(true)}
               className="p-2 text-gray-400 hover:text-blue-600 rounded-lg transition-colors"
@@ -270,22 +270,22 @@ export default function ConversationDetail({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-6 space-y-4">
         {messages.map((message) => (
           <div
             key={message.id}
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-3xl rounded-lg px-4 py-3 ${
+              className={`max-w-[85vw] sm:max-w-xl md:max-w-2xl lg:max-w-3xl rounded-lg px-4 py-3 min-w-0 overflow-hidden ${
                 message.role === 'user'
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-900'
               }`}
             >
-              <div className="text-sm whitespace-pre-wrap break-words">
+              <div className="text-sm whitespace-pre-wrap break-words overflow-hidden">
                 {message.role === 'assistant' ? (
-                  <div className="prose prose-sm max-w-none">
+                  <div className="prose prose-sm max-w-none overflow-x-auto break-words [&_pre]:overflow-x-auto [&_pre]:max-w-full [&_code]:break-all [&_a]:break-all [&_table]:block [&_table]:overflow-x-auto">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>
                       {message.content}
                     </ReactMarkdown>

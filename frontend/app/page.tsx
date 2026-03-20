@@ -116,8 +116,13 @@ export default function Home() {
           <div className="flex justify-between items-center py-3">
             {/* Logo + Tagline */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 min-w-0">
-              {/* Wordmark */}
-              <div className="flex items-center shrink-0">
+              {/* Logo image + Wordmark */}
+              <div className="flex items-center gap-2 shrink-0">
+                <img
+                  src="/mc-chatmaster-logo.png"
+                  alt="MC ChatMaster"
+                  className="h-9 sm:h-10 w-auto"
+                />
                 <span className="text-lg sm:text-xl font-bold text-black tracking-tight">MC</span>
                 <span className="text-lg sm:text-xl font-bold mx-0.5" style={{ color: '#EF9537' }}>|</span>
                 <span className="text-lg sm:text-xl font-bold" style={{ color: '#990000' }}>CHAT</span>
@@ -267,7 +272,7 @@ export default function Home() {
                       <p className="text-sm font-semibold text-gray-700">Instant Mastery Insights: Try These Expert IBM i &amp; RPG Questions</p>
                     </div>
                     <div className="flex flex-col sm:flex-wrap sm:flex-row gap-2">
-                      {/* Orange/Red buttons */}
+                      {/* Interleaved colors for visual rhythm */}
                       <button
                         onClick={() => chatInterfaceRef.current?.setInputValue("How do I modernize legacy RPG code to free-format RPG?")}
                         className="group px-4 py-2 rounded-full text-xs font-medium transition-all transform hover:scale-105 hover:shadow-md focus:ring-2 focus:outline-none text-white"
@@ -278,28 +283,11 @@ export default function Home() {
                         <span className="group-hover:animate-pulse">🔄</span> Modernize Legacy RPG to Free-Format
                       </button>
                       <button
-                        onClick={() => chatInterfaceRef.current?.setInputValue("How do I configure DB2 on IBM i for optimal performance?")}
-                        className="group px-4 py-2 rounded-full text-xs font-medium transition-all transform hover:scale-105 hover:shadow-md focus:ring-2 focus:outline-none text-white"
-                        style={{ backgroundColor: '#990000' }}
-                        onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#7a0000'}
-                        onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#990000'}
-                      >
-                        <span className="group-hover:animate-pulse">💾</span> Master DB2 Config on IBM i
-                      </button>
-                      {/* Purple buttons */}
-                      <button
                         onClick={() => chatInterfaceRef.current?.setInputValue("What are the best practices for RPG programming on IBM i?")}
                         className="group px-4 py-2 rounded-full text-xs font-medium transition-all transform hover:scale-105 hover:shadow-md focus:ring-2 focus:outline-none text-white bg-purple-600 hover:bg-purple-700"
                       >
                         <span className="group-hover:animate-pulse">🔧</span> Optimize Your RPG Skills
                       </button>
-                      <button
-                        onClick={() => chatInterfaceRef.current?.setInputValue("How do I set up high availability with PowerHA on IBM i?")}
-                        className="group px-4 py-2 rounded-full text-xs font-medium transition-all transform hover:scale-105 hover:shadow-md focus:ring-2 focus:outline-none text-white bg-purple-600 hover:bg-purple-700"
-                      >
-                        <span className="group-hover:animate-pulse">🛡️</span> High Availability with PowerHA Essentials
-                      </button>
-                      {/* Green buttons */}
                       <button
                         onClick={() => chatInterfaceRef.current?.setInputValue("What are the key IBM i system administration tasks and best practices?")}
                         className="group px-4 py-2 rounded-full text-xs font-medium transition-all transform hover:scale-105 hover:shadow-md focus:ring-2 focus:outline-none text-white"
@@ -308,6 +296,21 @@ export default function Home() {
                         onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#A1A88B'}
                       >
                         <span className="group-hover:animate-pulse">⚙️</span> Ace IBM i System Admin
+                      </button>
+                      <button
+                        onClick={() => chatInterfaceRef.current?.setInputValue("How do I configure DB2 on IBM i for optimal performance?")}
+                        className="group px-4 py-2 rounded-full text-xs font-medium transition-all transform hover:scale-105 hover:shadow-md focus:ring-2 focus:outline-none text-white"
+                        style={{ backgroundColor: '#990000' }}
+                        onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#7a0000'}
+                        onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#990000'}
+                      >
+                        <span className="group-hover:animate-pulse">💾</span> Master DB2 Config on IBM i
+                      </button>
+                      <button
+                        onClick={() => chatInterfaceRef.current?.setInputValue("How do I set up high availability with PowerHA on IBM i?")}
+                        className="group px-4 py-2 rounded-full text-xs font-medium transition-all transform hover:scale-105 hover:shadow-md focus:ring-2 focus:outline-none text-white bg-purple-600 hover:bg-purple-700"
+                      >
+                        <span className="group-hover:animate-pulse">🛡️</span> High Availability with PowerHA Essentials
                       </button>
                       <button
                         onClick={() => chatInterfaceRef.current?.setInputValue("How do I secure my IBM i environment and protect against threats?")}
