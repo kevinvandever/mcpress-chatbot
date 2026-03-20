@@ -418,19 +418,20 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
       <div 
         ref={messagesContainerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin relative"
+        className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 scrollbar-thin relative"
       >
         {messages.length === 0 && (
           <div className="text-center text-gray-500 mt-8 animate-chat-appear">
             {hasDocuments ? (
               <>
-                <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-blue-100 to-blue-50 rounded-2xl flex items-center justify-center shadow-lg animate-float-subtle">
-                  <svg className="w-10 h-10 text-mc-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-blue-100 to-blue-50 rounded-2xl flex items-center justify-center shadow-lg animate-pulse-gentle">
+                  <svg className="w-12 h-12 text-mc-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                   </svg>
                 </div>
                 <p className="text-xl font-semibold text-gray-700">MC ChatMaster Ready for Your Query! ✨</p>
-                <p className="text-base mt-2 text-gray-600">Your 24/7 Guide to Mastering RPG, DB2, System Administration, and IBM i Best Practices – Fresh Insights Added as MC Press Publishes</p>
+                <p className="text-base mt-2 text-gray-600">Your <span style={{ color: '#EF9537' }}>24/7</span> Guide to <span style={{ color: '#990000' }}>Mastering</span> RPG, DB2, System Administration, and IBM i Best Practices – Fresh Insights Added as MC Press Publishes</p>
+                <p className="text-sm mt-3 text-gray-500">Get Precise, Sourced Answers – Every Response Links to Original MC Press Articles/Books</p>
               </>
             ) : (
               <div className="max-w-lg">
@@ -490,7 +491,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
         
         {messages.map((message, index) => (
           <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-chat-appear`}>
-            <div className={`max-w-4xl ${message.role === 'user' ? 'ml-8' : 'mr-8'}`}>
+            <div className={`max-w-full sm:max-w-4xl ${message.role === 'user' ? 'ml-4 sm:ml-8' : 'mr-4 sm:mr-8'}`}>
               {/* Message Header */}
               <div className={`flex items-center gap-2 mb-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold shadow-md ${
@@ -519,13 +520,13 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
               </div>
 
               {/* Message Content */}
-              <div className={`rounded-xl px-4 py-3 shadow-md transition-all hover:shadow-lg ${
+              <div className={`rounded-xl px-4 py-3 shadow-md transition-all hover:shadow-lg break-words overflow-hidden ${
                 message.role === 'user'
                   ? 'bg-mc-blue text-white'
                   : 'bg-white border border-gray-100 hover:border-gray-200'
               }`}>
                 {message.role === 'assistant' ? (
-                  <div className="prose prose-sm max-w-none">
+                  <div className="prose prose-sm max-w-none break-words">
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={{
@@ -615,6 +616,22 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
                 )}
               </div>
 
+              {/* 📖 Source Link CTA */}
+              {message.role === 'assistant' && message.sources && message.sources.some((s: any) => s.mc_press_url) && (
+                <div className="mt-2 px-4 py-2 text-sm text-gray-600">
+                  📖 Need more details? Dive into the full source:{' '}
+                  <a
+                    href={message.sources.find((s: any) => s.mc_press_url)?.mc_press_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-gray-900"
+                    style={{ color: '#990000' }}
+                  >
+                    {message.sources.find((s: any) => s.mc_press_url)?.filename || 'View Source'}
+                  </a>
+                </div>
+              )}
+
               {/* 📚 COMPACT SOURCE CARDS - Much Less Scrolling! */}
               {message.sources && message.sources.length > 0 && (
                 <CompactSources sources={message.sources} />
@@ -680,14 +697,14 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
       
       {/* Input Area */}
       <div className="border-t border-gray-200 p-6 bg-gradient-to-r from-white to-gray-50 relative">
-        <div className="flex gap-4 items-stretch">
+        <div className="flex flex-col sm:flex-row gap-4 items-stretch">
           <div className="flex-1 relative">
             <textarea
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={hasDocuments ? "Ask MC ChatMaster Anything" : "Upload documents first to start chatting..."}
+              placeholder={hasDocuments ? "Ask MC ChatMaster Anything About IBM i, RPG, DB2..." : "Upload documents first to start chatting..."}
               className="w-full px-6 py-4 border-2 border-gray-200 rounded-2xl focus:border-mc-blue focus:ring-4 focus:ring-blue-100 transition-all text-lg placeholder-gray-400 shadow-sm hover:shadow-md resize-none min-h-[60px] max-h-[120px]"
               disabled={isStreaming}
               rows={1}
@@ -716,7 +733,10 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
           <button
             onClick={sendMessage}
             disabled={!input.trim() || isStreaming}
-            className="bg-mc-blue hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-2xl transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 text-base flex-shrink-0 self-end"
+            className="text-white font-semibold py-3 px-6 rounded-2xl transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 text-base flex-shrink-0 self-end min-h-[44px] w-full sm:w-auto"
+            style={{ backgroundColor: '#990000' }}
+            onMouseEnter={(e) => { if (!e.currentTarget.disabled) e.currentTarget.style.backgroundColor = '#7a0000' }}
+            onMouseLeave={(e) => { if (!e.currentTarget.disabled) e.currentTarget.style.backgroundColor = '#990000' }}
           >
             {isStreaming ? (
               <>
@@ -728,11 +748,12 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
-                <span>Send</span>
+                <span>Ask Expert</span>
               </>
             )}
           </button>
         </div>
+        <p className="text-xs text-gray-400 mt-2 text-center">Unlimited Queries • 24/7 • Sources Always Linked</p>
         
         {/* Smart Suggestions - Disabled for now */}
         {false && suggestedQuestions.length > 0 && !isStreaming && (
@@ -760,7 +781,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
       </div>
       
       {/* Keyboard Shortcuts Footer */}
-      <div className="px-6 py-3 flex items-center justify-center gap-4 text-sm text-gray-500">
+      <div className="hidden sm:flex px-6 py-3 items-center justify-center gap-4 text-sm text-gray-500">
         <div className="flex items-center gap-2">
           <div className="px-2 py-1 bg-gray-100 rounded-md font-mono text-xs">Enter</div>
           <span>Send message</span>

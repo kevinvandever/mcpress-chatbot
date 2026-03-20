@@ -109,21 +109,41 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-50 overflow-x-hidden">
       {/* Header - MC Press Brand Colors */}
-      <header className="bg-white shadow-sm border-b" style={{ borderColor: 'var(--border-primary)' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <img
-                src="/mc-chatmaster-logo.png"
-                alt="MC ChatMaster"
-                className="h-10 w-auto"
-              />
+      <header className="header-bg-ovals bg-white shadow-sm border-b" style={{ borderColor: 'var(--border-primary)' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="flex justify-between items-center py-3">
+            {/* Logo + Tagline */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 min-w-0">
+              {/* Wordmark */}
+              <div className="flex items-center shrink-0">
+                <span className="text-lg sm:text-xl font-bold text-black tracking-tight">MC</span>
+                <span className="text-lg sm:text-xl font-bold mx-0.5" style={{ color: '#EF9537' }}>|</span>
+                <span className="text-lg sm:text-xl font-bold" style={{ color: '#990000' }}>CHAT</span>
+                <span className="text-lg sm:text-xl font-bold text-black tracking-tight">MASTER</span>
+              </div>
+              {/* Tagline + Sub-line + Powered note */}
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs sm:text-sm font-medium text-gray-700 leading-tight truncate">
+                  <span className="hidden sm:inline">Instant AI-Powered IBM i Expertise</span>
+                  <span className="sm:hidden">AI-Powered IBM i Expertise</span>
+                </span>
+                <span className="text-[10px] sm:text-xs text-gray-500 leading-tight">Your 24/7 Knowledge Assistant</span>
+                <a
+                  href="https://mc-store.com/products/mc-chatmaster"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] sm:text-xs hover:underline leading-tight"
+                  style={{ color: '#990000' }}
+                >
+                  Powered by MC Press Knowledge
+                </a>
+              </div>
             </div>
 
             {/* Navigation buttons */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               {userEmail && (
                 <span className="text-sm text-gray-500 hidden sm:inline mr-2">{userEmail}</span>
               )}
@@ -151,22 +171,24 @@ export default function Home() {
             </div>
           </div>
         </div>
-
       </header>
 
 
       {/* Main Content - Simplified to single page */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 main-bg-ovals">
+        <div className="space-y-6 relative z-10">
           {/* Chat Section - Full Width */}
           <div>
               <div className="bg-white rounded-lg shadow-sm border p-6 h-full" style={{ borderColor: 'var(--border-primary)' }}>
-                <h2 className="text-lg font-semibold mb-4 flex items-center" style={{ color: 'var(--text-primary)' }}>
-                  <svg className="w-5 h-5 mr-2" style={{ color: 'var(--mc-green)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                  MC ChatMaster Assistant
-                </h2>
+                <div className="mb-4">
+                  <h2 className="text-xl sm:text-2xl font-bold flex items-center pb-2" style={{ color: 'var(--text-primary)' }}>
+                    <svg className="w-6 h-6 mr-2 shrink-0" style={{ color: 'var(--mc-green)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    MC ChatMaster – Your IBM i Expertise Companion
+                  </h2>
+                  <div style={{ height: '3px', background: 'linear-gradient(to right, #EF9537, #990000)', borderRadius: '2px', maxWidth: '320px' }} />
+                </div>
                 
                 {/* System Status Indicator - MC Press Colors */}
                 {systemStatus === 'loading' && (
@@ -190,10 +212,14 @@ export default function Home() {
                 )}
                 
                 {systemStatus === 'ready' && hasDocuments && (
-                  <div className="mb-4 p-4 rounded-xl border" style={{
-                    borderColor: 'var(--color-success-border)',
-                    backgroundColor: 'var(--color-success-bg)'
-                  }}>
+                  <div
+                    className="mb-4 p-4 rounded-xl border status-bar-tooltip"
+                    data-tooltip="Knowledge base auto-updates with every new MC Press publication"
+                    style={{
+                      borderColor: 'var(--color-success-border)',
+                      backgroundColor: 'var(--color-success-bg)'
+                    }}
+                  >
                     <div className="flex items-center gap-3">
                       <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{
                         backgroundColor: 'var(--mc-green)'
@@ -203,8 +229,8 @@ export default function Home() {
                         </svg>
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>✨ MC ChatMaster Ready!</p>
-                        <p className="text-xs" style={{ color: 'var(--color-success-text)' }}>{bookCount} Books & {articleCount} Articles Loaded • Instant Expertise Active</p>
+                        <p className="text-sm font-semibold mb-1 break-words" style={{ color: 'var(--text-primary)' }}>🚀 MC ChatMaster Primed & Continuously Updating!</p>
+                        <p className="text-xs break-words" style={{ color: 'var(--color-success-text)' }}>📚 {bookCount} Books & {articleCount}+ Articles Loaded – Fresh Insights Added as MC Press Publishes</p>
                       </div>
                     </div>
                   </div>
@@ -238,47 +264,59 @@ export default function Home() {
                       <svg className="w-4 h-4" style={{ color: 'var(--mc-blue)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                       </svg>
-                      <p className="text-sm font-semibold text-gray-700">Instant Insights: Try These RPG & IBM i Questions</p>
+                      <p className="text-sm font-semibold text-gray-700">Instant Mastery Insights: Try These Expert IBM i &amp; RPG Questions</p>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-col sm:flex-wrap sm:flex-row gap-2">
+                      {/* Orange/Red buttons */}
                       <button
-                        onClick={() => chatInterfaceRef.current?.setInputValue("How do I configure DB2 on IBM i?")}
+                        onClick={() => chatInterfaceRef.current?.setInputValue("How do I modernize legacy RPG code to free-format RPG?")}
                         className="group px-4 py-2 rounded-full text-xs font-medium transition-all transform hover:scale-105 hover:shadow-md focus:ring-2 focus:outline-none text-white"
-                        style={{
-                          backgroundColor: 'var(--mc-orange)'
-                        }}
-                        onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-orange-dark)'}
-                        onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-orange)'}
+                        style={{ backgroundColor: '#EF9537' }}
+                        onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#d4802e'}
+                        onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#EF9537'}
+                      >
+                        <span className="group-hover:animate-pulse">🔄</span> Modernize Legacy RPG to Free-Format
+                      </button>
+                      <button
+                        onClick={() => chatInterfaceRef.current?.setInputValue("How do I configure DB2 on IBM i for optimal performance?")}
+                        className="group px-4 py-2 rounded-full text-xs font-medium transition-all transform hover:scale-105 hover:shadow-md focus:ring-2 focus:outline-none text-white"
+                        style={{ backgroundColor: '#990000' }}
+                        onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#7a0000'}
+                        onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#990000'}
                       >
                         <span className="group-hover:animate-pulse">💾</span> Master DB2 Config on IBM i
                       </button>
+                      {/* Purple buttons */}
                       <button
-                        onClick={() => chatInterfaceRef.current?.setInputValue("RPG programming best practices")}
+                        onClick={() => chatInterfaceRef.current?.setInputValue("What are the best practices for RPG programming on IBM i?")}
                         className="group px-4 py-2 rounded-full text-xs font-medium transition-all transform hover:scale-105 hover:shadow-md focus:ring-2 focus:outline-none text-white bg-purple-600 hover:bg-purple-700"
                       >
                         <span className="group-hover:animate-pulse">🔧</span> Optimize Your RPG Skills
                       </button>
                       <button
-                        onClick={() => chatInterfaceRef.current?.setInputValue("IBM i system administration")}
+                        onClick={() => chatInterfaceRef.current?.setInputValue("How do I set up high availability with PowerHA on IBM i?")}
+                        className="group px-4 py-2 rounded-full text-xs font-medium transition-all transform hover:scale-105 hover:shadow-md focus:ring-2 focus:outline-none text-white bg-purple-600 hover:bg-purple-700"
+                      >
+                        <span className="group-hover:animate-pulse">🛡️</span> High Availability with PowerHA Essentials
+                      </button>
+                      {/* Green buttons */}
+                      <button
+                        onClick={() => chatInterfaceRef.current?.setInputValue("What are the key IBM i system administration tasks and best practices?")}
                         className="group px-4 py-2 rounded-full text-xs font-medium transition-all transform hover:scale-105 hover:shadow-md focus:ring-2 focus:outline-none text-white"
-                        style={{
-                          backgroundColor: 'var(--mc-green)'
-                        }}
-                        onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-green-dark)'}
-                        onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-green)'}
+                        style={{ backgroundColor: '#A1A88B' }}
+                        onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#8a9175'}
+                        onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#A1A88B'}
                       >
                         <span className="group-hover:animate-pulse">⚙️</span> Ace IBM i System Admin
                       </button>
                       <button
-                        onClick={() => chatInterfaceRef.current?.setInputValue("Show me code examples for JSON handling")}
+                        onClick={() => chatInterfaceRef.current?.setInputValue("How do I secure my IBM i environment and protect against threats?")}
                         className="group px-4 py-2 rounded-full text-xs font-medium transition-all transform hover:scale-105 hover:shadow-md focus:ring-2 focus:outline-none text-white"
-                        style={{
-                          backgroundColor: 'var(--mc-blue)'
-                        }}
-                        onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-blue-dark)'}
-                        onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = 'var(--mc-blue)'}
+                        style={{ backgroundColor: '#A1A88B' }}
+                        onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#8a9175'}
+                        onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#A1A88B'}
                       >
-                        <span className="group-hover:animate-pulse">💻</span> Explore JSON Code Examples
+                        <span className="group-hover:animate-pulse">🔒</span> Secure Your IBM i Environment
                       </button>
                     </div>
                   </div>
@@ -291,10 +329,43 @@ export default function Home() {
       </main>
 
       {/* Footer - MC Press Brand Colors */}
-      <footer className="bg-white border-t mt-auto" style={{ borderColor: 'var(--border-primary)' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <footer className="footer-bg-ovals bg-white border-t mt-auto" style={{ borderColor: 'var(--border-primary)' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 relative z-10">
           <p className="text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
-            MC ChatMaster: Instant AI-Powered IBM i Expertise
+            MC ChatMaster: Instant AI-Powered IBM i Expertise – Powered by{' '}
+            <a
+              href="https://mcpressonline.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-gray-900"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              MC Press Online
+            </a>
+          </p>
+          <p className="text-center text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+            <a
+              href="https://mcpressonline.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-gray-900"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              mcpressonline.com
+            </a>
+            {' • '}
+            <a
+              href="https://mc-store.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-gray-900"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              mc-store.com
+            </a>
+          </p>
+          <p className="text-center text-xs mt-2" style={{ color: 'var(--text-secondary)' }}>
+            Private • Secure • Continuously Updated Knowledge Base
           </p>
         </div>
       </footer>
