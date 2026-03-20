@@ -125,13 +125,15 @@ async def validate_excel_file(
 
 @router.post("/import/books")
 async def import_book_metadata(
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    author_url_file: Optional[UploadFile] = File(None)
 ):
     """
     Import book metadata from book-metadata.xlsm or .xlsx file with improved transaction handling
     
     Args:
         file: Excel file containing book metadata (URL, Title, Author columns)
+        author_url_file: Optional article Excel file containing author URLs (column L)
         
     Returns:
         ImportResult with processing statistics and any errors
@@ -153,20 +155,37 @@ async def import_book_metadata(
     
     # Log the import request
     logger.info(f"Starting book metadata import from: {file.filename}")
+    if author_url_file and author_url_file.filename:
+        logger.info(f"Author URL file provided: {author_url_file.filename}")
     
     # Save uploaded file to temporary location with correct extension
     original_suffix = Path(file.filename).suffix if file.filename else '.xlsm'
+    author_url_temp_path = None
     with tempfile.NamedTemporaryFile(delete=False, suffix=original_suffix) as temp_file:
         try:
-            # Read and write file content
+            # Read and write book file content
             content = await file.read()
             temp_file.write(content)
             temp_file.flush()
             
             logger.info(f"Saved uploaded file to temporary location: {temp_file.name}")
             
+            # Build author URL mapping if author_url_file is provided
+            author_url_mapping = None
+            if author_url_file and author_url_file.filename:
+                author_url_suffix = Path(author_url_file.filename).suffix if author_url_file.filename else '.xlsm'
+                with tempfile.NamedTemporaryFile(delete=False, suffix=author_url_suffix) as author_temp:
+                    author_url_temp_path = author_temp.name
+                    author_content = await author_url_file.read()
+                    author_temp.write(author_content)
+                    author_temp.flush()
+                
+                logger.info(f"Saved author URL file to temporary location: {author_url_temp_path}")
+                author_url_mapping = excel_service.build_author_url_mapping(author_url_temp_path)
+                logger.info(f"Built author URL mapping with {len(author_url_mapping)} entries")
+            
             # Import book metadata with transaction handling
-            result = await excel_service.import_book_metadata(temp_file.name)
+            result = await excel_service.import_book_metadata(temp_file.name, author_url_mapping=author_url_mapping)
             
             # Log import results with detailed information
             if result.success:
@@ -212,12 +231,19 @@ async def import_book_metadata(
                 }
             )
         finally:
-            # Clean up temporary file
+            # Clean up temporary book file
             try:
                 os.unlink(temp_file.name)
                 logger.debug(f"Cleaned up temporary file: {temp_file.name}")
             except OSError as e:
                 logger.warning(f"Failed to clean up temporary file {temp_file.name}: {e}")
+            # Clean up temporary author URL file
+            if author_url_temp_path:
+                try:
+                    os.unlink(author_url_temp_path)
+                    logger.debug(f"Cleaned up author URL temporary file: {author_url_temp_path}")
+                except OSError as e:
+                    logger.warning(f"Failed to clean up author URL temporary file {author_url_temp_path}: {e}")
 
 
 @router.post("/import/articles")
@@ -313,6 +339,77 @@ async def import_article_metadata(
                 logger.debug(f"Cleaned up temporary file: {temp_file.name}")
             except OSError as e:
                 logger.warning(f"Failed to clean up temporary file {temp_file.name}: {e}")
+
+
+@router.post("/backfill-author-urls")
+async def backfill_author_urls(
+    file: UploadFile = File(...)
+):
+    """
+    Backfill author site_url values from article Excel data.
+    
+    Accepts the article Excel file (export_subset_DMU_v2.xlsx), extracts
+    author name → URL mapping, and upserts each author's site_url.
+    
+    Args:
+        file: Article Excel file (.xlsm) containing author URLs
+        
+    Returns:
+        Stats: mapping_size, authors_checked, authors_updated, authors_not_found
+        
+    Validates: Requirements 2.1, 2.2, 2.3, 3.1, 3.3
+    """
+    if not excel_service:
+        logger.error("Excel import service not available")
+        raise HTTPException(status_code=500, detail="Excel import service not available")
+    
+    # Check file extension - accept .xlsm and .xlsx
+    allowed_extensions = ('.xlsm', '.xlsx')
+    if not file.filename or not file.filename.lower().endswith(allowed_extensions):
+        logger.error(f"Invalid file format for backfill: {file.filename}")
+        raise HTTPException(
+            status_code=400,
+            detail="File must be .xlsm or .xlsx format"
+        )
+    
+    logger.info(f"Starting author URL backfill from: {file.filename}")
+    
+    # Save uploaded file to temporary location
+    temp_file = None
+    try:
+        original_suffix = Path(file.filename).suffix if file.filename else '.xlsx'
+        with tempfile.NamedTemporaryFile(delete=False, suffix=original_suffix) as tmp:
+            temp_file = tmp.name
+            content = await file.read()
+            tmp.write(content)
+            tmp.flush()
+        
+        logger.info(f"Saved uploaded file to temporary location: {temp_file}")
+        
+        # Build author URL mapping from the article Excel
+        author_url_mapping = excel_service.build_author_url_mapping(temp_file)
+        logger.info(f"Built author URL mapping with {len(author_url_mapping)} entries")
+        
+        # Backfill author URLs
+        stats = await excel_service.backfill_author_urls(author_url_mapping)
+        
+        logger.info(f"Backfill complete: {stats}")
+        return stats
+        
+    except Exception as e:
+        logger.error(f"Critical error during author URL backfill: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error during author URL backfill: {str(e)}"
+        )
+    finally:
+        # Clean up temporary file
+        if temp_file:
+            try:
+                os.unlink(temp_file)
+                logger.debug(f"Cleaned up temporary file: {temp_file}")
+            except OSError as e:
+                logger.warning(f"Failed to clean up temporary file {temp_file}: {e}")
 
 
 # Health check endpoint for Excel import service

@@ -18,6 +18,7 @@ from pathlib import Path
 import pandas as pd
 from fuzzywuzzy import fuzz, process
 import asyncpg
+import openpyxl
 from pydantic import BaseModel
 
 from backend.author_service import AuthorService
@@ -617,7 +618,39 @@ class ExcelImportService:
         
         return url
 
-    async def import_book_metadata(self, file_path: str) -> ImportResult:
+    def build_author_url_mapping(self, article_excel_path: str) -> Dict[str, str]:
+        """Build a mapping of author names to their site URLs from article Excel data."""
+        wb = openpyxl.load_workbook(article_excel_path, data_only=True)
+        ws = wb['export_subset']
+
+        mapping: Dict[str, str] = {}
+
+        for row in ws.iter_rows(min_row=2):  # skip header row
+            author_cell = row[9]   # Column J (index 9) - author name
+            url_cell = row[11]     # Column L (index 11) - "Arthor URL"
+
+            author_name = str(author_cell.value).strip() if author_cell.value else ''
+            author_url = str(url_cell.value).strip() if url_cell.value else ''
+
+            if not author_name or author_name.lower() == 'nan':
+                continue
+            if not author_url or author_url.lower() == 'nan':
+                continue
+
+            author_url = self._normalize_url(author_url)
+
+            if not self._is_valid_url(author_url):
+                continue
+
+            # First occurrence wins — don't overwrite existing entries
+            if author_name not in mapping:
+                mapping[author_name] = author_url
+
+        wb.close()
+        print(f"📋 Built author URL mapping: {len(mapping)} unique author→URL entries")
+        return mapping
+
+    async def import_book_metadata(self, file_path: str, author_url_mapping: Optional[Dict[str, str]] = None) -> ImportResult:
         """
         Import book metadata from book-metadata.xlsm with proper transaction handling
         
@@ -669,6 +702,7 @@ class ExcelImportService:
             books_updated = 0
             authors_created = 0
             authors_updated = 0
+            authors_url_updated = 0
             errors = []
             
             await self._ensure_pool()
@@ -746,11 +780,15 @@ class ExcelImportService:
                             
                             for order, author_name in enumerate(authors):
                                 try:
+                                    # Look up author URL from mapping if available
+                                    site_url = author_url_mapping.get(author_name) if author_url_mapping else None
                                     # Create author within the same transaction context
                                     author_id = await self._get_or_create_author_in_transaction(
-                                        conn, author_name
+                                        conn, author_name, site_url
                                     )
                                     authors_created += 1  # This is approximate
+                                    if site_url:
+                                        authors_url_updated += 1
                                     
                                     # Associate author with document in document_authors table
                                     # Check if association already exists to avoid duplicates
@@ -810,6 +848,7 @@ class ExcelImportService:
             print(f"   🎯 Books matched: {books_matched}")
             print(f"   📝 Books updated: {books_updated}")
             print(f"   👥 Authors created: {authors_created}")
+            print(f"   🔗 Authors got URL from mapping: {authors_url_updated}")
             print(f"   ⚠️  Errors: {len([e for e in errors if e.severity == 'error'])}")
             print(f"   ⚠️  Warnings: {len([e for e in errors if e.severity == 'warning'])}")
             
@@ -1042,3 +1081,50 @@ class ExcelImportService:
         
         result.processing_time = time.time() - start_time
         return result
+
+    async def backfill_author_urls(self, author_url_mapping: Dict[str, str]) -> dict:
+        """
+        Backfill author site_url values from an author-URL mapping.
+        
+        Iterates the mapping and calls _get_or_create_author_in_transaction()
+        for each author with their URL. The ON CONFLICT upsert with
+        COALESCE(EXCLUDED.site_url, authors.site_url) handles updates correctly.
+        
+        Args:
+            author_url_mapping: Dict mapping author_name -> author_url
+            
+        Returns:
+            Stats dict with mapping_size, authors_checked, authors_updated, authors_not_found
+        """
+        await self._ensure_pool()
+        
+        authors_checked = 0
+        authors_updated = 0
+        authors_not_found = 0
+        
+        async with self.pool.acquire() as conn:
+            async with conn.transaction():
+                print(f"🔄 Starting backfill for {len(author_url_mapping)} author URL entries")
+                
+                for author_name, site_url in author_url_mapping.items():
+                    authors_checked += 1
+                    try:
+                        author_id = await self._get_or_create_author_in_transaction(
+                            conn, author_name, site_url
+                        )
+                        authors_updated += 1
+                        print(f"✅ Backfilled author '{author_name}' (ID {author_id}) with URL: {site_url}")
+                    except Exception as e:
+                        authors_not_found += 1
+                        print(f"⚠️  Failed to backfill author '{author_name}': {e}")
+                
+                print(f"✅ Backfill transaction committed")
+        
+        stats = {
+            "mapping_size": len(author_url_mapping),
+            "authors_checked": authors_checked,
+            "authors_updated": authors_updated,
+            "authors_not_found": authors_not_found
+        }
+        print(f"🎉 Backfill complete: {stats}")
+        return stats
