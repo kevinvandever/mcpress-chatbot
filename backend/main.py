@@ -17,15 +17,16 @@ if os.getenv("RAILWAY_ENVIRONMENT"):
         from backend.startup_check import check_storage
     check_storage()
 
-from fastapi import FastAPI, UploadFile, File, HTTPException, Query, Depends
+from fastapi import FastAPI, UploadFile, File, HTTPException, Query, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 import asyncio
 import json
+import uuid
 from dotenv import load_dotenv
 from concurrent.futures import ThreadPoolExecutor
 import time
@@ -91,6 +92,30 @@ except Exception as e:
     print(f"⚠️ Regenerate embeddings not available: {e}")
     regenerate_router = None
     set_regen_store = None
+
+# Import UsageGate for freemium question limiting
+try:
+    try:
+        from usage_gate import UsageGate
+    except ImportError:
+        from backend.usage_gate import UsageGate
+    USAGE_GATE_AVAILABLE = True
+    print("✅ UsageGate module loaded")
+except Exception as e:
+    print(f"⚠️ UsageGate not available: {e}")
+    USAGE_GATE_AVAILABLE = False
+
+# Import SubscriptionAuthService for cookie-based auth detection in /chat
+subscription_auth_service = None
+try:
+    try:
+        from subscription_auth import SubscriptionAuthService
+    except ImportError:
+        from backend.subscription_auth import SubscriptionAuthService
+    subscription_auth_service = SubscriptionAuthService()
+    print("✅ SubscriptionAuthService loaded for chat auth detection")
+except Exception as e:
+    print(f"⚠️ SubscriptionAuthService not available for chat: {e}")
 
 # Import ingestion modules
 ingestion_service = None
@@ -230,6 +255,7 @@ app.add_middleware(
     allow_credentials=True,  # Required for authentication
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["X-Anonymous-Id"],  # Allow frontend to read anonymous fingerprint header
 )
 
 # Include auth router
@@ -597,8 +623,23 @@ async def startup_event():
             import traceback
             print(traceback.format_exc())
 
+    # Initialize Usage Gate for freemium question limiting
+    if USAGE_GATE_AVAILABLE:
+        try:
+            database_url = os.getenv("DATABASE_URL")
+            if database_url:
+                usage_gate = UsageGate(database_url)
+                await usage_gate.init()
+                print(f"✅ UsageGate ready (limit={usage_gate.free_question_limit})")
+            else:
+                print("⚠️ DATABASE_URL not set - usage gate disabled")
+        except Exception as e:
+            print(f"⚠️ Could not initialize usage gate: {e}")
+            import traceback
+            print(traceback.format_exc())
+
     # Initialize Auto Content Ingestion
-    global ingestion_service, ingestion_scheduler_instance
+    global ingestion_service, ingestion_scheduler_instance, usage_gate
     if INGESTION_AVAILABLE:
         try:
             ingestion_service = IngestionService(
@@ -665,6 +706,9 @@ category_mapper = get_category_mapper()
 
 # Global upload progress tracking
 upload_progress = {}
+
+# Usage gate for freemium question limiting (initialized in startup_event)
+usage_gate = None
 
 # Thread pool for concurrent processing
 executor = ThreadPoolExecutor(max_workers=3)
@@ -1244,35 +1288,87 @@ async def update_document_metadata(filename: str, request: UpdateMetadataRequest
 
 @app.post("/chat")
 async def chat(
+    request: Request,
     message: ChatMessage,
     credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False))
 ):
-    async def generate():
-        # Use user_id from request body (sent by frontend via guestAuth)
-        # Falls back to JWT auth if needed, then to "guest" as last resort
-        user_id = message.user_id if message.user_id else "guest"
+    # 1. Check cookie-based subscription auth
+    is_authenticated = False
+    user_id = message.user_id if message.user_id else "guest"
+    fingerprint = None
 
-        # Override with JWT auth if credentials provided (admin users)
-        if credentials:
-            try:
-                from auth_routes import get_current_user
-                # Manually call get_current_user with credentials
-                user = await get_current_user(credentials)
-                user_id = str(user.get("id", user_id))  # Use JWT user_id if available
-                print(f"✅ Authenticated user (JWT): {user_id}")
-            except Exception as e:
-                print(f"⚠️ Could not authenticate via JWT, using request user_id: {user_id}")
-        else:
-            print(f"✅ Using user_id from request: {user_id}")
+    session_token = request.cookies.get("session_token")
+    if session_token and subscription_auth_service:
+        try:
+            claims = subscription_auth_service.verify_token(session_token, allow_grace=False)
+            if claims:
+                is_authenticated = True
+                user_id = claims.get("sub", user_id)
+                print(f"✅ Authenticated user (subscription cookie): {user_id}")
+        except Exception:
+            pass
+
+    # Override with JWT auth if credentials provided (admin users)
+    if not is_authenticated and credentials:
+        try:
+            from auth_routes import get_current_user
+            user = await get_current_user(credentials)
+            user_id = str(user.get("id", user_id))
+            is_authenticated = True
+            print(f"✅ Authenticated user (JWT): {user_id}")
+        except Exception as e:
+            print(f"⚠️ Could not authenticate via JWT: {e}")
+
+    # 2. Anonymous path — usage gate
+    if not is_authenticated:
+        fingerprint = request.headers.get("X-Anonymous-Id") or str(uuid.uuid4())
+
+        if usage_gate:
+            result = await usage_gate.check_and_increment(fingerprint)
+            if not result.allowed:
+                return JSONResponse(
+                    status_code=402,
+                    content={
+                        "error": "Free questions exhausted",
+                        "signup_url": result.signup_url,
+                        "usage": result.usage.model_dump()
+                    },
+                    headers={"X-Anonymous-Id": fingerprint}
+                )
+
+        user_id = f"anon:{fingerprint}"
+        print(f"✅ Anonymous user: {user_id}")
+
+    # 3. Stream response
+    async def generate():
+        question_recorded = False
+        usage_info = None
 
         async for chunk in chat_handler.stream_response(
             message.message,
             message.conversation_id,
             user_id
         ):
+            # Record question after first successful content chunk (anonymous only)
+            if not is_authenticated and not question_recorded and usage_gate and fingerprint:
+                if chunk.get("type") == "content":
+                    try:
+                        usage_info = await usage_gate.record_question(fingerprint)
+                    except Exception as e:
+                        print(f"⚠️ Failed to record question: {e}")
+                    question_recorded = True
+
+            # Inject usage into metadata event for anonymous users
+            if not is_authenticated and chunk.get("type") == "metadata" and usage_info:
+                chunk["usage"] = usage_info.model_dump()
+
             yield f"data: {json.dumps(chunk)}\n\n"
 
-    return StreamingResponse(generate(), media_type="text/event-stream")
+    headers = {}
+    if fingerprint:
+        headers["X-Anonymous-Id"] = fingerprint
+
+    return StreamingResponse(generate(), media_type="text/event-stream", headers=headers)
 
 @app.get("/documents")
 async def list_documents():

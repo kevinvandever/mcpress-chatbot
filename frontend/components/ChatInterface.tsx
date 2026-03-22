@@ -5,8 +5,11 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import { useRouter } from 'next/navigation'
 import BookLink from './BookLink'
 import CompactSources from './CompactSources'
+import RemainingQuestionsBanner from './RemainingQuestionsBanner'
+import PaywallOverlay from './PaywallOverlay'
 import { API_URL } from '../config/api'
 import { getOrCreateGuestId } from '../utils/guestAuth'
 
@@ -29,6 +32,8 @@ interface Source {
 
 interface ChatInterfaceProps {
   hasDocuments?: boolean
+  isAuthenticated?: boolean
+  fingerprint?: string | null
 }
 
 export interface ChatInterfaceRef {
@@ -64,7 +69,8 @@ const cleanText = (text: string): string => {
   return cleaned
 }
 
-const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDocuments = false }, ref) => {
+const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDocuments = false, isAuthenticated = false, fingerprint = null }, ref) => {
+  const router = useRouter()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
@@ -76,6 +82,10 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
   const [copiedText, setCopiedText] = useState<string | null>(null)
   const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([])
   const [expandedSources, setExpandedSources] = useState<{[key: string]: boolean}>({})
+  const [remainingQuestions, setRemainingQuestions] = useState<number | null>(null)
+  const [questionsLimit, setQuestionsLimit] = useState<number | null>(null)
+  const [showPaywall, setShowPaywall] = useState(false)
+  const [signupUrl, setSignupUrl] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -111,8 +121,8 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
   }, [messages, autoScroll])
 
   const sendMessage = async () => {
-    if (!input.trim() || isStreaming) {
-      console.log('Blocked send:', { input: input.trim(), isStreaming })
+    if (!input.trim() || isStreaming || showPaywall) {
+      console.log('Blocked send:', { input: input.trim(), isStreaming, showPaywall })
       return
     }
 
@@ -146,17 +156,39 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
     console.log('Sending message:', userMessage)
 
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      }
+      if (!isAuthenticated && fingerprint) {
+        headers['X-Anonymous-Id'] = fingerprint
+      }
+
       const response = await fetch(`${API_URL}/chat`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           message: userMessage,
           conversation_id: 'default',
           user_id: getOrCreateGuestId()  // Use same user_id as conversation history
         }),
       })
+
+      // Handle 402 — free questions exhausted
+      if (response.status === 402) {
+        const body = await response.json()
+        setShowPaywall(true)
+        setSignupUrl(body.signup_url || '')
+        if (body.usage) {
+          setRemainingQuestions(body.usage.questions_remaining ?? 0)
+          setQuestionsLimit(body.usage.questions_limit ?? null)
+        }
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: 'You\'ve used all your free questions. Subscribe to continue chatting with MC ChatMaster.',
+          timestamp: new Date()
+        }])
+        return
+      }
 
       if (!response.ok) throw new Error('Failed to send message')
 
@@ -227,6 +259,10 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
                     updateBookSummary(sources)
                     // Generate smart suggestions based on sources
                     generateSmartSuggestions(sources)
+                  } else if (data.type === 'metadata' && data.usage) {
+                    // Update remaining questions from usage metadata (anonymous users)
+                    setRemainingQuestions(data.usage.questions_remaining ?? null)
+                    setQuestionsLimit(data.usage.questions_limit ?? null)
                   }
                 } catch (e) {
                   console.error('Error parsing SSE data:', e, 'Data:', dataStr)
@@ -679,6 +715,24 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
         )}
       </div>
       
+      {/* Remaining Questions Banner */}
+      {!isAuthenticated && remainingQuestions !== null && questionsLimit !== null && !showPaywall && (
+        <div className="px-6 pt-3">
+          <RemainingQuestionsBanner
+            questionsUsed={questionsLimit - remainingQuestions}
+            questionsLimit={questionsLimit}
+          />
+        </div>
+      )}
+
+      {/* Paywall Overlay */}
+      {showPaywall && (
+        <PaywallOverlay
+          signupUrl={signupUrl}
+          onSignIn={() => router.push('/login')}
+        />
+      )}
+
       {/* Input Area */}
       <div className="border-t border-gray-200 p-6 bg-gradient-to-r from-white to-gray-50 relative">
         <div className="flex flex-col sm:flex-row gap-4 items-stretch">
@@ -690,7 +744,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
               onKeyDown={handleKeyDown}
               placeholder={hasDocuments ? "Ask MC ChatMaster Anything About IBM i, RPG, DB2..." : "Upload documents first to start chatting..."}
               className="w-full px-6 py-4 border-2 border-gray-200 rounded-2xl focus:border-mc-blue focus:ring-4 focus:ring-blue-100 transition-all text-lg placeholder-gray-400 shadow-sm hover:shadow-md resize-none min-h-[60px] max-h-[120px]"
-              disabled={isStreaming}
+              disabled={isStreaming || showPaywall}
               rows={1}
               style={{
                 height: 'auto',
@@ -716,7 +770,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
           </div>
           <button
             onClick={sendMessage}
-            disabled={!input.trim() || isStreaming}
+            disabled={!input.trim() || isStreaming || showPaywall}
             className="text-white font-semibold py-3 px-6 rounded-2xl transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 text-base flex-shrink-0 self-end min-h-[44px] w-full sm:w-auto"
             style={{ backgroundColor: '#990000' }}
             onMouseEnter={(e) => { if (!e.currentTarget.disabled) e.currentTarget.style.backgroundColor = '#7a0000' }}
