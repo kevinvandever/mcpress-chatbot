@@ -616,22 +616,6 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
                 )}
               </div>
 
-              {/* 📖 Source Link CTA */}
-              {message.role === 'assistant' && message.sources && message.sources.some((s: any) => s.mc_press_url) && (
-                <div className="mt-2 px-4 py-2 text-sm text-gray-600">
-                  📖 Need more details? Dive into the full source:{' '}
-                  <a
-                    href={message.sources.find((s: any) => s.mc_press_url)?.mc_press_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline hover:text-gray-900"
-                    style={{ color: '#990000' }}
-                  >
-                    {message.sources.find((s: any) => s.mc_press_url)?.filename || 'View Source'}
-                  </a>
-                </div>
-              )}
-
               {/* 📚 COMPACT SOURCE CARDS - Much Less Scrolling! */}
               {message.sources && message.sources.length > 0 && (
                 <CompactSources sources={message.sources} />
