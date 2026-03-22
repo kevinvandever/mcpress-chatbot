@@ -20,6 +20,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Allow root path through for freemium anonymous access
+  if (pathname === '/') {
+    return NextResponse.next();
+  }
+
   // If user is on /login and already has a session_token, redirect to /
   if (isLoginPage) {
     if (sessionToken) {
