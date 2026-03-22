@@ -570,7 +570,7 @@ async def startup_event():
     
     # Initialize Author Services (Task 6)
     # Note: Services initialize lazily on first use to avoid blocking startup
-    global author_service, doc_author_service
+    global author_service, doc_author_service, usage_gate
     if author_routes_available:
         try:
             database_url = os.getenv('DATABASE_URL')
@@ -639,7 +639,7 @@ async def startup_event():
             print(traceback.format_exc())
 
     # Initialize Auto Content Ingestion
-    global ingestion_service, ingestion_scheduler_instance, usage_gate
+    global ingestion_service, ingestion_scheduler_instance
     if INGESTION_AVAILABLE:
         try:
             ingestion_service = IngestionService(
