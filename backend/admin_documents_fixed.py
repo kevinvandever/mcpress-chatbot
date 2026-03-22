@@ -4,17 +4,58 @@ Admin document management endpoints that properly use the existing database conn
 
 from fastapi import APIRouter, Query, HTTPException, Depends
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 from datetime import datetime
+import asyncio
 import json
 import csv
 import io
 import logging
 import time
 
+# Re-use the existing admin auth dependency
+try:
+    from auth_routes import get_current_user
+except ImportError:
+    from backend.auth_routes import get_current_user
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+# --- Pydantic request/response models for document removal ---
+
+class BulkDeleteRequest(BaseModel):
+    ids: List[int]
+
+class DocumentDeletionDetail(BaseModel):
+    id: int
+    filename: str
+    chunks_deleted: int
+
+class SingleRemovalSummary(BaseModel):
+    deleted: bool
+    document_id: int
+    filename: str
+    title: str
+    chunks_deleted: int
+    author_associations_deleted: int
+    metadata_history_deleted: int
+
+class BulkRemovalSummary(BaseModel):
+    deleted_count: int
+    not_found_ids: List[int]
+    deleted_documents: List[DocumentDeletionDetail]
+    total_chunks_deleted: int
+    total_author_associations_deleted: int
+    total_metadata_history_deleted: int
+
+# --- Reindex state ---
+_reindex_in_progress = False
+_last_reindex_completed_at: Optional[str] = None
+_last_reindex_duration: Optional[float] = None
 
 # Global reference to vector store (will be set by main.py)
 _vector_store = None
@@ -238,7 +279,8 @@ async def list_documents(
                            b.created_at,
                            COALESCE(a.name, b.author, 'Unknown Author') as author_name,
                            a.site_url as author_site_url,
-                           da.author_order
+                           da.author_order,
+                           (SELECT COUNT(*) FROM documents d WHERE d.filename = b.filename) AS chunk_count
                     FROM books b
                     LEFT JOIN document_authors da ON b.id = da.book_id
                     LEFT JOIN authors a ON da.author_id = a.id
@@ -270,7 +312,8 @@ async def list_documents(
                            b.mc_press_url, 
                            COALESCE(b.article_url, '') as article_url,
                            b.created_at,
-                           COALESCE(b.author, 'Unknown Author') as author_name
+                           COALESCE(b.author, 'Unknown Author') as author_name,
+                           (SELECT COUNT(*) FROM documents d WHERE d.filename = b.filename) AS chunk_count
                     FROM books b
                     WHERE 1=1
                 """
@@ -355,6 +398,7 @@ async def list_documents(
                             'mc_press_url': row['mc_press_url'],
                             'article_url': row['article_url'],
                             'created_at': row['created_at'].isoformat() if row.get('created_at') else None,
+                            'chunk_count': row['chunk_count'] or 0,
                             'authors': []
                         }
                     
@@ -393,6 +437,7 @@ async def list_documents(
                         'mc_press_url': row['mc_press_url'],
                         'article_url': row['article_url'],
                         'created_at': row['created_at'].isoformat() if row.get('created_at') else None,
+                        'chunk_count': row['chunk_count'] or 0,
                         'author': row['author_name'],
                         'authors': [{'name': row['author_name'], 'site_url': None, 'order': 0}] if row['author_name'] else []
                     }
@@ -573,93 +618,208 @@ async def bulk_update_documents(ids: List[int], updates: Dict[str, Any]):
         logger.error(f"Error in bulk update: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.delete("/documents/{doc_id}")
-async def delete_document(doc_id: int):
-    """Delete a document and all its embeddings"""
+async def _do_reindex():
+    """Background task to reindex the vector index."""
+    global _reindex_in_progress, _last_reindex_completed_at, _last_reindex_duration
+    start = time.time()
+    try:
+        pool = await get_db_connection()
+        async with pool.acquire() as conn:
+            await conn.execute("REINDEX INDEX documents_embedding_idx")
+        elapsed = time.time() - start
+        _last_reindex_completed_at = datetime.utcnow().isoformat()
+        _last_reindex_duration = round(elapsed, 2)
+        logger.info(f"✅ Vector index rebuild completed in {_last_reindex_duration}s")
+    except Exception as e:
+        logger.error(f"❌ Vector index rebuild failed: {e}")
+    finally:
+        _reindex_in_progress = False
+
+
+@router.post("/documents/reindex")
+async def reindex_documents(current_user=Depends(get_current_user)):
+    """Trigger a background vector index rebuild."""
+    global _reindex_in_progress
+    if _reindex_in_progress:
+        raise HTTPException(status_code=409, detail="Rebuild already in progress")
+
+    _reindex_in_progress = True
+    asyncio.create_task(_do_reindex())
+
+    return {"status": "started", "message": "Vector index rebuild initiated"}
+
+
+@router.get("/documents/reindex/status")
+async def reindex_status(current_user=Depends(get_current_user)):
+    """Return the current status of the vector index rebuild."""
+    return {
+        "in_progress": _reindex_in_progress,
+        "last_completed_at": _last_reindex_completed_at,
+        "last_duration_seconds": _last_reindex_duration,
+    }
+
+
+@router.delete("/documents/{doc_id}", response_model=SingleRemovalSummary)
+async def delete_document(doc_id: int, current_user=Depends(get_current_user)):
+    """Delete a document and all related data with cascading cleanup"""
     try:
         pool = await get_db_connection()
 
         async with pool.acquire() as conn:
-            # Get filename before deletion
-            filename = await conn.fetchval(
-                "SELECT filename FROM books WHERE id = $1",
+            # Fetch the book record to get filename and title
+            book = await conn.fetchrow(
+                "SELECT id, filename, title FROM books WHERE id = $1",
                 doc_id
             )
 
-            if not filename:
+            if not book:
                 raise HTTPException(status_code=404, detail="Document not found")
 
-            # Delete from books table (cascade will handle metadata_history)
-            await conn.execute("DELETE FROM books WHERE id = $1", doc_id)
+            filename = book["filename"]
+            title = book["title"] or filename
 
-            # Delete all chunks from documents table
-            result = await conn.execute(
-                "DELETE FROM documents WHERE filename = $1",
-                filename
-            )
+            async with conn.transaction():
+                # 1. Delete author associations
+                da_result = await conn.execute(
+                    "DELETE FROM document_authors WHERE book_id = $1",
+                    doc_id
+                )
+                author_associations_deleted = int(da_result.split()[-1])
 
-            chunks_deleted = int(result.split()[-1])
+                # 2. Delete metadata history
+                mh_result = await conn.execute(
+                    "DELETE FROM metadata_history WHERE book_id = $1",
+                    doc_id
+                )
+                metadata_history_deleted = int(mh_result.split()[-1])
+
+                # 3. Delete chunks from documents table by filename
+                chunks_result = await conn.execute(
+                    "DELETE FROM documents WHERE filename = $1",
+                    filename
+                )
+                chunks_deleted = int(chunks_result.split()[-1])
+
+                # 4. Delete the book record itself
+                await conn.execute(
+                    "DELETE FROM books WHERE id = $1",
+                    doc_id
+                )
 
             # Invalidate cache after successful deletion
             invalidate_cache()
-            logger.info(f"🗑️ Document {doc_id} ({filename}) deleted, cache invalidated")
+            logger.info(
+                f"🗑️ Document {doc_id} ({filename}) deleted: "
+                f"{chunks_deleted} chunks, {author_associations_deleted} author assocs, "
+                f"{metadata_history_deleted} history rows"
+            )
 
-            return {
-                "deleted": True,
-                "filename": filename,
-                "chunks_deleted": chunks_deleted
-            }
+            return SingleRemovalSummary(
+                deleted=True,
+                document_id=doc_id,
+                filename=filename,
+                title=title,
+                chunks_deleted=chunks_deleted,
+                author_associations_deleted=author_associations_deleted,
+                metadata_history_deleted=metadata_history_deleted,
+            )
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error deleting document {doc_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
-@router.delete("/documents/bulk")
-async def bulk_delete_documents(ids: List[int]):
-    """Delete multiple documents"""
+@router.delete("/documents/bulk", response_model=BulkRemovalSummary)
+async def bulk_delete_documents(request: BulkDeleteRequest, current_user=Depends(get_current_user)):
+    """Delete multiple documents with cascading cleanup"""
+    if not request.ids:
+        raise HTTPException(status_code=400, detail="No document IDs provided")
+
     try:
         pool = await get_db_connection()
 
         async with pool.acquire() as conn:
-            # Get filenames
+            # Query books for all provided IDs to partition into found vs not_found
             rows = await conn.fetch(
-                "SELECT id, filename FROM books WHERE id = ANY($1)",
-                ids
+                "SELECT id, filename, title FROM books WHERE id = ANY($1)",
+                request.ids
             )
 
-            if not rows:
-                raise HTTPException(status_code=404, detail="No documents found")
+            found_ids = {row["id"] for row in rows}
+            not_found_ids = [id for id in request.ids if id not in found_ids]
 
-            filenames = [row['filename'] for row in rows]
+            deleted_documents: List[DocumentDeletionDetail] = []
+            total_chunks_deleted = 0
+            total_author_associations_deleted = 0
+            total_metadata_history_deleted = 0
 
-            # Delete from books
-            await conn.execute("DELETE FROM books WHERE id = ANY($1)", ids)
+            # For each found document, perform cascading delete inside a transaction
+            for row in rows:
+                doc_id = row["id"]
+                filename = row["filename"]
 
-            # Delete chunks from documents
-            result = await conn.execute(
-                "DELETE FROM documents WHERE filename = ANY($1)",
-                filenames
-            )
+                async with conn.transaction():
+                    # 1. Delete author associations
+                    da_result = await conn.execute(
+                        "DELETE FROM document_authors WHERE book_id = $1",
+                        doc_id
+                    )
+                    author_associations_deleted = int(da_result.split()[-1])
 
-            chunks_deleted = int(result.split()[-1])
+                    # 2. Delete metadata history
+                    mh_result = await conn.execute(
+                        "DELETE FROM metadata_history WHERE book_id = $1",
+                        doc_id
+                    )
+                    metadata_history_deleted = int(mh_result.split()[-1])
 
-            # Invalidate cache after successful bulk deletion
+                    # 3. Delete chunks from documents table by filename
+                    chunks_result = await conn.execute(
+                        "DELETE FROM documents WHERE filename = $1",
+                        filename
+                    )
+                    chunks_deleted = int(chunks_result.split()[-1])
+
+                    # 4. Delete the book record itself
+                    await conn.execute(
+                        "DELETE FROM books WHERE id = $1",
+                        doc_id
+                    )
+
+                # Accumulate totals
+                total_chunks_deleted += chunks_deleted
+                total_author_associations_deleted += author_associations_deleted
+                total_metadata_history_deleted += metadata_history_deleted
+
+                deleted_documents.append(DocumentDeletionDetail(
+                    id=doc_id,
+                    filename=filename,
+                    chunks_deleted=chunks_deleted,
+                ))
+
+            # Invalidate cache after successful deletion
             invalidate_cache()
-            logger.info(f"🗑️ Bulk delete of {len(rows)} documents completed, cache invalidated")
+            logger.info(
+                f"🗑️ Bulk delete of {len(deleted_documents)} documents completed: "
+                f"{total_chunks_deleted} chunks, {total_author_associations_deleted} author assocs, "
+                f"{total_metadata_history_deleted} history rows"
+            )
 
-            return {
-                "deleted": len(rows),
-                "filenames": filenames,
-                "chunks_deleted": chunks_deleted
-            }
+            return BulkRemovalSummary(
+                deleted_count=len(deleted_documents),
+                not_found_ids=not_found_ids,
+                deleted_documents=deleted_documents,
+                total_chunks_deleted=total_chunks_deleted,
+                total_author_associations_deleted=total_author_associations_deleted,
+                total_metadata_history_deleted=total_metadata_history_deleted,
+            )
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error in bulk delete: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 @router.get("/documents/export")
 async def export_documents_csv():

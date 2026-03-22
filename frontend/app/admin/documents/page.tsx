@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import AdminLayout from '@/components/AdminLayout';
 import apiClient from '../../../config/axios';
 import { API_URL } from '../../../config/api';
@@ -61,6 +61,39 @@ export default function DocumentsManagement() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteSummary, setDeleteSummary] = useState<{
+    chunks_deleted: number;
+    author_associations_deleted: number;
+    metadata_history_deleted: number;
+  } | null>(null);
+
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const selectAllCheckboxRef = useRef<HTMLInputElement>(null);
+
+  // Bulk delete state
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
+  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
+  const [bulkDeleteError, setBulkDeleteError] = useState<string | null>(null);
+  const [bulkDeleteSummary, setBulkDeleteSummary] = useState<any>(null);
+
+  // Reindex state
+  const [reindexLoading, setReindexLoading] = useState(false);
+  const [showReindexDialog, setShowReindexDialog] = useState(false);
+  const [reindexStatus, setReindexStatus] = useState<string | null>(null);
+  const reindexPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Update indeterminate state on the "select all" checkbox
+  useEffect(() => {
+    if (selectAllCheckboxRef.current) {
+      const docsWithIds = documents.filter(doc => doc.id !== undefined);
+      const allSelected = docsWithIds.length > 0 && docsWithIds.every(doc => selectedIds.has(doc.id!));
+      const someSelected = docsWithIds.some(doc => selectedIds.has(doc.id!));
+      selectAllCheckboxRef.current.indeterminate = someSelected && !allSelected;
+    }
+  }, [selectedIds, documents]);
 
   // Debounced search to avoid too many API calls
   const [searchInput, setSearchInput] = useState('');
@@ -70,6 +103,7 @@ export default function DocumentsManagement() {
       if (searchInput !== searchTerm) {
         setSearchTerm(searchInput);
         setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page when searching
+        setSelectedIds(new Set()); // Clear selections on search change
       }
     }, 300); // 300ms debounce
     
@@ -257,21 +291,128 @@ export default function DocumentsManagement() {
   };
 
   const handleDelete = async () => {
-    if (!selectedDoc) return;
+    if (!selectedDoc || !selectedDoc.id) return;
+    
+    setDeleteLoading(true);
+    setDeleteError(null);
+    setDeleteSummary(null);
     
     try {
-      const encodedFilename = encodeURIComponent(selectedDoc.filename);
-      await apiClient.delete(`${API_URL}/documents/${encodedFilename}`);
-      setShowDeleteDialog(false);
-      setSelectedDoc(null);
+      const response = await apiClient.delete(`${API_URL}/admin/documents/${selectedDoc.id}`);
+      const summary = response.data;
       
-      // Force refresh to get updated data with cache bypass
-      console.log('🔄 Forcing cache refresh after successful deletion...');
+      setDeleteSummary({
+        chunks_deleted: summary.chunks_deleted,
+        author_associations_deleted: summary.author_associations_deleted,
+        metadata_history_deleted: summary.metadata_history_deleted,
+      });
+      
+      // Refresh the document list after successful deletion
       await fetchDocuments(true, pagination.page, searchTerm, sortField, sortDirection);
-    } catch (err) {
-      setError('Error deleting document');
-      console.error('Delete error:', err);
+      setSelectedDoc(null);
+    } catch (err: unknown) {
+      const errorMessage = (err as { response?: { data?: { detail?: string } }; message?: string })?.response?.data?.detail
+        || (err as { message?: string })?.message
+        || 'Error deleting document';
+      setDeleteError(errorMessage);
+    } finally {
+      setDeleteLoading(false);
     }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+
+    setBulkDeleteLoading(true);
+    setBulkDeleteError(null);
+    setBulkDeleteSummary(null);
+
+    try {
+      const response = await apiClient.delete(`${API_URL}/admin/documents/bulk`, {
+        data: { ids: [...selectedIds] },
+      });
+      setBulkDeleteSummary(response.data);
+
+      // Clear selections, close detail panel, refresh list
+      setSelectedIds(new Set());
+      setSelectedDoc(null);
+      await fetchDocuments(true, pagination.page, searchTerm, sortField, sortDirection);
+    } catch (err: unknown) {
+      const errorMessage =
+        (err as { response?: { data?: { detail?: string } }; message?: string })?.response?.data
+          ?.detail ||
+        (err as { message?: string })?.message ||
+        'Error deleting documents';
+      setBulkDeleteError(errorMessage);
+    } finally {
+      setBulkDeleteLoading(false);
+    }
+  };
+
+  // Cleanup reindex polling on unmount
+  useEffect(() => {
+    return () => {
+      if (reindexPollRef.current) {
+        clearInterval(reindexPollRef.current);
+        reindexPollRef.current = null;
+      }
+    };
+  }, []);
+
+  const handleReindex = async () => {
+    setReindexLoading(true);
+    setReindexStatus(null);
+    setShowReindexDialog(false);
+
+    const startTime = Date.now();
+
+    try {
+      await apiClient.post(`${API_URL}/admin/documents/reindex`);
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 409) {
+        // Already in progress — start polling anyway
+      } else {
+        const errorMessage =
+          (err as { response?: { data?: { detail?: string } }; message?: string })?.response?.data?.detail ||
+          (err as { message?: string })?.message ||
+          'Failed to start vector index rebuild';
+        setReindexStatus(`Error: ${errorMessage}`);
+        setReindexLoading(false);
+        return;
+      }
+    }
+
+    // Poll status every 3 seconds
+    reindexPollRef.current = setInterval(async () => {
+      try {
+        const statusRes = await apiClient.get(`${API_URL}/admin/documents/reindex/status`);
+        const data = statusRes.data;
+
+        if (!data.in_progress) {
+          // Rebuild finished
+          if (reindexPollRef.current) {
+            clearInterval(reindexPollRef.current);
+            reindexPollRef.current = null;
+          }
+          setReindexLoading(false);
+
+          if (data.last_duration_seconds != null) {
+            setReindexStatus(`Rebuild completed in ${data.last_duration_seconds.toFixed(1)}s`);
+          } else {
+            const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+            setReindexStatus(`Rebuild completed in ~${elapsed}s`);
+          }
+        }
+      } catch {
+        if (reindexPollRef.current) {
+          clearInterval(reindexPollRef.current);
+          reindexPollRef.current = null;
+        }
+        setReindexLoading(false);
+        setReindexStatus('Error: Failed to check rebuild status');
+      }
+    }, 3000);
   };
 
   // Helper function to format author display - FIXED MULTI-AUTHOR LOGIC
@@ -310,6 +451,25 @@ export default function DocumentsManagement() {
             placeholder="Search by title, author, or filename..."
           />
           <button
+            onClick={() => setShowReindexDialog(true)}
+            disabled={reindexLoading}
+            className={`px-4 py-2 text-sm font-medium rounded-md border whitespace-nowrap ${
+              reindexLoading
+                ? 'bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed'
+                : 'bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
+            }`}
+            title="Rebuild the vector search index"
+          >
+            {reindexLoading ? (
+              <span className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
+                Rebuilding...
+              </span>
+            ) : (
+              'Rebuild Vector Index'
+            )}
+          </button>
+          <button
             onClick={() => {
               console.log('🔄 Manual refresh requested');
               fetchDocuments(true, pagination.page, searchTerm, sortField, sortDirection);
@@ -332,6 +492,35 @@ export default function DocumentsManagement() {
           </button>
         </div>
 
+        {/* Reindex Status Message */}
+        {reindexStatus && (
+          <div className={`flex-shrink-0 mb-3 p-3 rounded text-sm ${
+            reindexStatus.startsWith('Error')
+              ? 'bg-red-50 border border-red-200 text-red-700'
+              : 'bg-green-50 border border-green-200 text-green-700'
+          }`}>
+            {reindexStatus}
+            <button
+              onClick={() => setReindexStatus(null)}
+              className="ml-2 text-xs underline hover:no-underline"
+            >
+              dismiss
+            </button>
+          </div>
+        )}
+
+        {/* Bulk Delete Button */}
+        {selectedIds.size > 0 && (
+          <div className="flex-shrink-0 mb-3">
+            <button
+              onClick={() => setShowBulkDeleteDialog(true)}
+              className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+            >
+              Delete {selectedIds.size} selected
+            </button>
+          </div>
+        )}
+
         {/* Main Content Area */}
         <div className="flex-1 min-h-0 flex flex-col">
           {/* Documents Table */}
@@ -353,6 +542,26 @@ export default function DocumentsManagement() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50 sticky top-0">
                     <tr>
+                      <th className="w-10 px-2 py-3">
+                        <input
+                          ref={selectAllCheckboxRef}
+                          type="checkbox"
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          checked={documents.filter(doc => doc.id !== undefined).length > 0 && documents.filter(doc => doc.id !== undefined).every(doc => selectedIds.has(doc.id!))}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              const newSelected = new Set(selectedIds);
+                              documents.forEach(doc => { if (doc.id !== undefined) newSelected.add(doc.id); });
+                              setSelectedIds(newSelected);
+                            } else {
+                              const newSelected = new Set(selectedIds);
+                              documents.forEach(doc => { if (doc.id !== undefined) newSelected.delete(doc.id); });
+                              setSelectedIds(newSelected);
+                            }
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </th>
                       <th
                         onClick={() => handleSort('title')}
                         className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
@@ -368,6 +577,9 @@ export default function DocumentsManagement() {
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Type
                       </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Chunks
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -379,6 +591,24 @@ export default function DocumentsManagement() {
                           selectedDoc?.filename === doc.filename ? 'bg-blue-100' : ''
                         }`}
                       >
+                        <td className="w-10 px-2 py-2">
+                          <input
+                            type="checkbox"
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            checked={doc.id !== undefined && selectedIds.has(doc.id)}
+                            onChange={(e) => {
+                              if (doc.id === undefined) return;
+                              const newSelected = new Set(selectedIds);
+                              if (e.target.checked) {
+                                newSelected.add(doc.id);
+                              } else {
+                                newSelected.delete(doc.id);
+                              }
+                              setSelectedIds(newSelected);
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </td>
                         <td className="px-4 py-2">
                           <div className="text-sm font-medium text-gray-900 truncate max-w-xs">
                             {doc.title || doc.filename}
@@ -397,6 +627,9 @@ export default function DocumentsManagement() {
                           }`}>
                             {doc.document_type || 'book'}
                           </span>
+                        </td>
+                        <td className="px-4 py-2 text-sm text-gray-700">
+                          {doc.chunk_count !== undefined ? doc.chunk_count : 'N/A'}
                         </td>
                       </tr>
                     ))}
@@ -417,6 +650,7 @@ export default function DocumentsManagement() {
                   onClick={() => {
                     const newPage = Math.max(1, pagination.page - 1);
                     setPagination(prev => ({ ...prev, page: newPage }));
+                    setSelectedIds(new Set()); // Clear selections on page change
                   }}
                   disabled={pagination.page <= 1}
                   className="px-3 py-1 text-sm border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -430,6 +664,7 @@ export default function DocumentsManagement() {
                   onClick={() => {
                     const newPage = Math.min(pagination.totalPages, pagination.page + 1);
                     setPagination(prev => ({ ...prev, page: newPage }));
+                    setSelectedIds(new Set()); // Clear selections on page change
                   }}
                   disabled={pagination.page >= pagination.totalPages}
                   className="px-3 py-1 text-sm border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -633,21 +868,211 @@ export default function DocumentsManagement() {
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg max-w-md w-full mx-6 p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-2">Confirm Delete</h3>
-            <p className="text-sm text-gray-500 mt-2">
-              Are you sure you want to delete &quot;{selectedDoc?.title}&quot;? This action cannot be undone.
+
+            {/* Document details */}
+            <div className="mt-3 mb-4 p-3 bg-gray-50 rounded border border-gray-200">
+              <p className="text-sm font-medium text-gray-900 mb-2">{selectedDoc?.title || selectedDoc?.filename}</p>
+              <div className="flex items-center gap-3">
+                <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
+                  selectedDoc?.document_type === 'article'
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-blue-100 text-blue-800'
+                }`}>
+                  {selectedDoc?.document_type || 'book'}
+                </span>
+                <span className="text-xs text-gray-600">
+                  {selectedDoc?.chunk_count !== undefined ? `${selectedDoc.chunk_count} chunks` : 'N/A chunks'}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-sm text-gray-500">
+              Are you sure you want to delete this document and all its associated data? This action cannot be undone.
             </p>
+
+            {/* Error message */}
+            {deleteError && (
+              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                {deleteError}
+              </div>
+            )}
+
+            {/* Success summary */}
+            {deleteSummary && (
+              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+                <p className="font-medium mb-1">Document deleted successfully</p>
+                <ul className="text-xs space-y-0.5">
+                  <li>Chunks deleted: {deleteSummary.chunks_deleted}</li>
+                  <li>Author associations removed: {deleteSummary.author_associations_deleted}</li>
+                  <li>Metadata history entries removed: {deleteSummary.metadata_history_deleted}</li>
+                </ul>
+              </div>
+            )}
+
             <div className="mt-4 flex space-x-3 justify-end">
+              {deleteSummary ? (
+                <button
+                  onClick={() => {
+                    setShowDeleteDialog(false);
+                    setDeleteSummary(null);
+                    setDeleteError(null);
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700"
+                >
+                  Close
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => {
+                      setShowDeleteDialog(false);
+                      setDeleteError(null);
+                    }}
+                    disabled={deleteLoading}
+                    className="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    disabled={deleteLoading}
+                    className={`px-4 py-2 text-sm font-medium text-white rounded ${
+                      deleteLoading
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-red-600 hover:bg-red-700'
+                    }`}
+                  >
+                    {deleteLoading ? 'Deleting...' : 'Delete'}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Delete Confirmation Dialog */}
+      {showBulkDeleteDialog && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg max-w-lg w-full mx-6 p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Confirm Bulk Delete</h3>
+
+            {!bulkDeleteSummary && (
+              <>
+                {/* Selected documents list */}
+                <div className="mt-3 mb-4 p-3 bg-gray-50 rounded border border-gray-200">
+                  <p className="text-xs font-medium text-gray-500 uppercase mb-2">
+                    {selectedIds.size} document{selectedIds.size !== 1 ? 's' : ''} selected
+                  </p>
+                  <div className="max-h-40 overflow-y-auto space-y-1">
+                    {documents
+                      .filter((doc) => doc.id !== undefined && selectedIds.has(doc.id))
+                      .map((doc) => (
+                        <div key={doc.id} className="text-sm text-gray-900 truncate">
+                          {doc.title || doc.filename}
+                        </div>
+                      ))}
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-gray-200 text-xs text-gray-600">
+                    Total chunks:{' '}
+                    {documents
+                      .filter((doc) => doc.id !== undefined && selectedIds.has(doc.id))
+                      .reduce((sum, doc) => sum + (doc.chunk_count || 0), 0)}
+                  </div>
+                </div>
+
+                <p className="text-sm text-red-600 font-medium">
+                  This action cannot be undone. All selected documents and their associated data will be permanently deleted.
+                </p>
+              </>
+            )}
+
+            {/* Error message */}
+            {bulkDeleteError && (
+              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                {bulkDeleteError}
+              </div>
+            )}
+
+            {/* Success summary */}
+            {bulkDeleteSummary && (
+              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+                <p className="font-medium mb-1">Bulk delete completed</p>
+                <ul className="text-xs space-y-0.5">
+                  <li>Documents deleted: {bulkDeleteSummary.deleted_count}</li>
+                  <li>Total chunks deleted: {bulkDeleteSummary.total_chunks_deleted}</li>
+                  <li>Author associations removed: {bulkDeleteSummary.total_author_associations_deleted}</li>
+                  <li>Metadata history entries removed: {bulkDeleteSummary.total_metadata_history_deleted}</li>
+                  {bulkDeleteSummary.not_found_ids && bulkDeleteSummary.not_found_ids.length > 0 && (
+                    <li className="text-yellow-700">
+                      Not found IDs: {bulkDeleteSummary.not_found_ids.join(', ')}
+                    </li>
+                  )}
+                </ul>
+              </div>
+            )}
+
+            <div className="mt-4 flex space-x-3 justify-end">
+              {bulkDeleteSummary ? (
+                <button
+                  onClick={() => {
+                    setShowBulkDeleteDialog(false);
+                    setBulkDeleteSummary(null);
+                    setBulkDeleteError(null);
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700"
+                >
+                  Close
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => {
+                      setShowBulkDeleteDialog(false);
+                      setBulkDeleteError(null);
+                    }}
+                    disabled={bulkDeleteLoading}
+                    className="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleBulkDelete}
+                    disabled={bulkDeleteLoading}
+                    className={`px-4 py-2 text-sm font-medium text-white rounded ${
+                      bulkDeleteLoading
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-red-600 hover:bg-red-700'
+                    }`}
+                  >
+                    {bulkDeleteLoading ? 'Deleting...' : `Delete ${selectedIds.size} document${selectedIds.size !== 1 ? 's' : ''}`}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Reindex Confirmation Dialog */}
+      {showReindexDialog && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg max-w-md w-full mx-6 p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Rebuild Vector Index</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              This will rebuild the vector search index. The operation may take a few minutes but search will remain available during the rebuild.
+            </p>
+            <div className="flex space-x-3 justify-end">
               <button
-                onClick={() => setShowDeleteDialog(false)}
+                onClick={() => setShowReindexDialog(false)}
                 className="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded hover:bg-gray-100"
               >
                 Cancel
               </button>
               <button
-                onClick={handleDelete}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded hover:bg-red-700"
+                onClick={handleReindex}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700"
               >
-                Delete
+                Rebuild Index
               </button>
             </div>
           </div>

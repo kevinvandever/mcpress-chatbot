@@ -1316,18 +1316,6 @@ async def get_books():
         "books": documents
     }
 
-@app.delete("/documents/{filename}")
-async def delete_document(filename: str):
-    try:
-        await vector_store.delete_document(filename)
-        # Invalidate cache after deletion
-        global _cache_timestamp
-        _cache_timestamp = 0
-        print(f"🗑️  Deleted {filename} - cache invalidated")
-        return {"status": "success", "message": f"Deleted {filename}"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
 @app.post("/upload-async")
 async def upload_pdf_async(file: UploadFile = File(...)):
     """Upload PDF asynchronously to avoid timeouts"""
