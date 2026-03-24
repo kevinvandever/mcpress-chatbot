@@ -2,13 +2,6 @@
 
 import { useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-
-interface SubscriptionError {
-  error: string;
-  subscription_status?: string;
-  redirect_url?: string;
-}
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -17,7 +10,6 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [failedRules, setFailedRules] = useState<string[]>([]);
   const [needsPasswordSetup, setNeedsPasswordSetup] = useState(false);
-  const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionError | null>(null);
   const [loading, setLoading] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
   const router = useRouter();
@@ -52,7 +44,6 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     setFailedRules([]);
-    setSubscriptionInfo(null);
     setLoading(true);
 
     try {
@@ -83,14 +74,6 @@ export default function LoginPage() {
           break;
         case 401:
           setError('Invalid email or password.');
-          break;
-        case 403:
-          // Subscription issue — show status-specific message + Subscribe Now
-          setSubscriptionInfo({
-            error: data.error || 'An active subscription is required to access the chatbot.',
-            subscription_status: data.subscription_status,
-            redirect_url: data.redirect_url,
-          });
           break;
         case 429:
           setError('Too many login attempts. Please try again later.');
@@ -134,7 +117,7 @@ export default function LoginPage() {
             className="mx-auto h-24 w-auto"
           />
           <p className="mt-4 text-sm text-gray-600">
-            Sign in with your MC Press subscription email
+            Sign in to access MC ChatMaster
           </p>
         </div>
 
@@ -248,32 +231,6 @@ export default function LoginPage() {
                   </ul>
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* 403 subscription issue — status-specific message + Subscribe Now */}
-          {subscriptionInfo && (
-            <div className="rounded-lg bg-amber-50 border border-amber-200 p-4 space-y-3">
-              <div className="flex items-start">
-                <svg className="h-5 w-5 text-amber-400 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                <span className="text-sm text-amber-800">{subscriptionInfo.error}</span>
-              </div>
-              {subscriptionInfo.redirect_url && (
-                <a
-                  href={subscriptionInfo.redirect_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center w-full py-2.5 px-4 border border-transparent text-sm font-medium rounded-lg text-white transition-all hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
-                  style={{ backgroundColor: '#D97706' }}
-                >
-                  Subscribe Now
-                  <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </a>
-              )}
             </div>
           )}
 

@@ -15,7 +15,7 @@ export default function PaywallOverlay({ signupUrl, onSignIn }: PaywallOverlayPr
           </svg>
         </div>
         <p className="text-gray-700 text-sm mb-4">
-          You've used all your free questions. Subscribe to continue chatting.
+          We hope you've enjoyed exploring MC ChatMaster! To continue asking questions, subscribe to get unlimited access.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <button

@@ -6,7 +6,6 @@ import ChatInterface, { ChatInterfaceRef } from '@/components/ChatInterface'
 import BackToTopButton from '@/components/BackToTopButton'
 import { API_URL } from '@/config/api'
 import { useAuthRefresh } from '@/hooks/useAuthRefresh'
-import { getOrCreateAnonymousId } from '@/utils/anonymousId'
 
 export default function Home() {
   const [isInitializing, setIsInitializing] = useState(true)
@@ -16,15 +15,14 @@ export default function Home() {
   const [articleCount, setArticleCount] = useState(0)
   const [systemStatus, setSystemStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [userEmail, setUserEmail] = useState<string | null>(null)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [fingerprint, setFingerprint] = useState<string | null>(null)
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null)
   const chatInterfaceRef = useRef<ChatInterfaceRef>(null)
   const router = useRouter()
 
   // Silent token refresh — schedules refresh ~5 min before JWT expiry
   useAuthRefresh()
 
-  // Fetch user info from cookie-based session — allow anonymous access if session is invalid
+  // Fetch user info from cookie-based session — redirect to login if unauthenticated
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
@@ -32,19 +30,18 @@ export default function Home() {
         if (res.ok) {
           const data = await res.json()
           setUserEmail(data.email || null)
-          setIsAuthenticated(true)
+          setSubscriptionStatus(data.subscription_status || 'free')
         } else {
-          // Session invalid or expired — allow anonymous access
-          setIsAuthenticated(false)
-          setFingerprint(getOrCreateAnonymousId())
+          // Session invalid or expired — redirect to login
+          router.push('/login')
         }
       } catch {
-        setIsAuthenticated(false)
-        setFingerprint(getOrCreateAnonymousId())
+        // Network error — redirect to login
+        router.push('/login')
       }
     }
     fetchUserInfo()
-  }, [])
+  }, [router])
 
   // Check if documents are available
   useEffect(() => {
@@ -145,46 +142,31 @@ export default function Home() {
 
             {/* Navigation buttons */}
             <div className="flex items-center gap-2 shrink-0">
-              {isAuthenticated && userEmail && (
+              {userEmail && (
                 <span className="text-sm text-gray-500 hidden sm:inline mr-2">{userEmail}</span>
               )}
 
-              {isAuthenticated ? (
-                <>
-                  <button
-                    onClick={() => router.push('/history')}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                    title="View conversation history"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="hidden sm:inline">History</span>
-                  </button>
+              <button
+                onClick={() => router.push('/history')}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                title="View conversation history"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="hidden sm:inline">History</span>
+              </button>
 
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                    title="Logout"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    <span className="hidden sm:inline">Logout</span>
-                  </button>
-                </>
-              ) : (
-                <a
-                  href="/login"
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors"
-                  style={{ backgroundColor: 'var(--mc-blue)' }}
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                  <span className="hidden sm:inline">Sign In</span>
-                </a>
-              )}
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Logout"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                <span className="hidden sm:inline">Logout</span>
+              </button>
             </div>
           </div>
         </div>
@@ -337,7 +319,7 @@ export default function Home() {
                   </div>
                 )}
                 
-                <ChatInterface ref={chatInterfaceRef} hasDocuments={hasDocuments} isAuthenticated={isAuthenticated} fingerprint={fingerprint} />
+                <ChatInterface ref={chatInterfaceRef} hasDocuments={hasDocuments} subscriptionStatus={subscriptionStatus} />
               </div>
             </div>
         </div>
