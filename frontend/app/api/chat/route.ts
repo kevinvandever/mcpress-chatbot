@@ -34,7 +34,7 @@ export async function POST(request: Request) {
       });
     }
 
-    // Stream the SSE response through
+    // Stream the SSE response through with explicit flushing
     if (!backendResponse.body) {
       return new Response(JSON.stringify({ error: 'No response body' }), {
         status: 502,
@@ -42,12 +42,33 @@ export async function POST(request: Request) {
       });
     }
 
-    return new Response(backendResponse.body, {
+    // Use TransformStream to forward each chunk immediately without buffering
+    const { readable, writable } = new TransformStream();
+    const writer = writable.getWriter();
+    const reader = backendResponse.body.getReader();
+
+    // Pipe in background — each chunk is flushed as it arrives
+    (async () => {
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          await writer.write(value);
+        }
+      } catch (e) {
+        // Stream interrupted (client disconnected, etc.)
+      } finally {
+        writer.close().catch(() => {});
+      }
+    })();
+
+    return new Response(readable, {
       status: backendResponse.status,
       headers: {
         'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
+        'Cache-Control': 'no-cache, no-transform',
         'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no',
       },
     });
   } catch (error) {
