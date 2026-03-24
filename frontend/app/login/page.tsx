@@ -12,6 +12,8 @@ export default function LoginPage() {
   const [needsPasswordSetup, setNeedsPasswordSetup] = useState(false);
   const [loading, setLoading] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
+  const [showSubscriptionPrompt, setShowSubscriptionPrompt] = useState(false);
+  const [subscriptionSignupUrl, setSubscriptionSignupUrl] = useState('');
   const router = useRouter();
 
   const passwordRules = [
@@ -54,7 +56,24 @@ export default function LoginPage() {
       });
 
       if (response.ok) {
-        // 200: Success — redirect to chat
+        const data = await response.json();
+        // Check if free-tier user has exhausted questions
+        if (data.subscription_status === 'free') {
+          try {
+            const usageRes = await fetch('/api/auth/usage');
+            if (usageRes.ok) {
+              const usageData = await usageRes.json();
+              if (usageData.allowed === false) {
+                setSubscriptionSignupUrl(usageData.signup_url || '');
+                setShowSubscriptionPrompt(true);
+                setLoading(false);
+                return;
+              }
+            }
+          } catch {
+            // Usage check failed — let them through
+          }
+        }
         router.push('/');
         router.refresh();
         return;
@@ -120,6 +139,40 @@ export default function LoginPage() {
             Sign in or create a free account to get started
           </p>
         </div>
+
+        {/* Subscription required — free questions exhausted */}
+        {showSubscriptionPrompt ? (
+          <div className="space-y-6">
+            <div className="rounded-lg bg-amber-50 border border-amber-200 p-5 text-center space-y-3">
+              <p className="text-sm font-medium text-amber-800">
+                You've used all your free questions.
+              </p>
+              <p className="text-sm text-amber-700">
+                Subscribe to MC ChatMaster for unlimited access to AI-powered IBM i expertise.
+              </p>
+            </div>
+            <a
+              href={subscriptionSignupUrl || '#'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full text-center py-3 px-4 text-sm font-medium rounded-lg text-white transition-all hover:scale-[1.02]"
+              style={{ backgroundColor: 'var(--mc-blue, #0066CC)' }}
+            >
+              Subscribe Now
+            </a>
+            <button
+              onClick={() => {
+                setShowSubscriptionPrompt(false);
+                router.push('/');
+                router.refresh();
+              }}
+              className="block w-full text-center py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              Continue to site anyway
+            </button>
+          </div>
+        ) : (
+        <>
 
         {/* First-time setup welcome message */}
         {needsPasswordSetup && (
@@ -262,6 +315,8 @@ export default function LoginPage() {
             No subscription? No problem — try MC ChatMaster free with a limited number of questions.
           </p>
         </div>
+        </>
+        )}
       </div>
     </div>
   );
