@@ -16,6 +16,8 @@ export default function Home() {
   const [systemStatus, setSystemStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null)
+  const [usageExhausted, setUsageExhausted] = useState(false)
+  const [signupUrl, setSignupUrl] = useState('')
   const chatInterfaceRef = useRef<ChatInterfaceRef>(null)
   const router = useRouter()
 
@@ -30,13 +32,28 @@ export default function Home() {
         if (res.ok) {
           const data = await res.json()
           setUserEmail(data.email || null)
-          setSubscriptionStatus(data.subscription_status || 'free')
+          const status = data.subscription_status || 'free'
+          setSubscriptionStatus(status)
+
+          // For free-tier users, check if they've exhausted their questions
+          if (status === 'free') {
+            try {
+              const usageRes = await fetch('/api/auth/usage')
+              if (usageRes.ok) {
+                const usageData = await usageRes.json()
+                if (usageData.allowed === false) {
+                  setUsageExhausted(true)
+                  setSignupUrl(usageData.signup_url || '')
+                }
+              }
+            } catch {
+              // Usage check failed — don't block, just skip
+            }
+          }
         } else {
-          // Session invalid or expired — redirect to login
           router.push('/login')
         }
       } catch {
-        // Network error — redirect to login
         router.push('/login')
       }
     }
@@ -326,7 +343,7 @@ export default function Home() {
                   </div>
                 )}
                 
-                <ChatInterface ref={chatInterfaceRef} hasDocuments={hasDocuments} subscriptionStatus={subscriptionStatus} />
+                <ChatInterface ref={chatInterfaceRef} hasDocuments={hasDocuments} subscriptionStatus={subscriptionStatus} initialUsageExhausted={usageExhausted} initialSignupUrl={signupUrl} />
               </div>
             </div>
         </div>

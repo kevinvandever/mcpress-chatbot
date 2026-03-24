@@ -1286,6 +1286,34 @@ async def update_document_metadata(filename: str, request: UpdateMetadataRequest
         print(f"❌ Error updating metadata for {filename}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to update document: {str(e)}")
 
+@app.get("/api/auth/usage")
+async def get_usage_status(request: Request):
+    """Check free-tier usage status for the current user."""
+    session_token = request.cookies.get("session_token")
+    if not session_token or not subscription_auth_service:
+        return JSONResponse(status_code=401, content={"error": "Authentication required"})
+
+    claims = subscription_auth_service.verify_token(session_token, allow_grace=False)
+    if not claims:
+        return JSONResponse(status_code=401, content={"error": "Invalid or expired token"})
+
+    subscription_status = claims.get("subscription_status", "free")
+    if subscription_status == "active":
+        return {"subscription_status": "active"}
+
+    email = claims.get("sub", "")
+    if not email or not usage_gate:
+        return {"subscription_status": "free", "usage": {"questions_used": 0, "questions_limit": 5, "questions_remaining": 5}}
+
+    result = await usage_gate.check_usage(email)
+    return {
+        "subscription_status": "free",
+        "allowed": result.allowed,
+        "usage": result.usage.model_dump(),
+        "signup_url": result.signup_url,
+    }
+
+
 @app.post("/chat")
 async def chat(
     request: Request,
@@ -1351,7 +1379,10 @@ async def chat(
 
             # Inject usage into metadata event for free-tier users only
             if subscription_status != "active" and chunk.get("type") == "metadata" and usage_info:
-                chunk["usage"] = usage_info.model_dump()
+                usage_data = usage_info.model_dump()
+                if usage_info.questions_remaining == 0:
+                    usage_data["signup_url"] = os.getenv("SUBSCRIPTION_SIGNUP_URL", "")
+                chunk["usage"] = usage_data
 
             yield f"data: {json.dumps(chunk)}\n\n"
 

@@ -33,6 +33,8 @@ interface Source {
 interface ChatInterfaceProps {
   hasDocuments?: boolean
   subscriptionStatus?: string | null
+  initialUsageExhausted?: boolean
+  initialSignupUrl?: string
 }
 
 export interface ChatInterfaceRef {
@@ -68,7 +70,7 @@ const cleanText = (text: string): string => {
   return cleaned
 }
 
-const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDocuments = false, subscriptionStatus = null }, ref) => {
+const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDocuments = false, subscriptionStatus = null, initialUsageExhausted = false, initialSignupUrl = '' }, ref) => {
   const router = useRouter()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -83,8 +85,8 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
   const [expandedSources, setExpandedSources] = useState<{[key: string]: boolean}>({})
   const [remainingQuestions, setRemainingQuestions] = useState<number | null>(null)
   const [questionsLimit, setQuestionsLimit] = useState<number | null>(null)
-  const [showPaywall, setShowPaywall] = useState(false)
-  const [signupUrl, setSignupUrl] = useState('')
+  const [showPaywall, setShowPaywall] = useState(initialUsageExhausted)
+  const [signupUrl, setSignupUrl] = useState(initialSignupUrl)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -257,8 +259,14 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
                     generateSmartSuggestions(sources)
                   } else if (data.type === 'metadata' && data.usage) {
                     // Update remaining questions from usage metadata (free-tier users)
-                    setRemainingQuestions(data.usage.questions_remaining ?? null)
+                    const remaining = data.usage.questions_remaining ?? null
+                    setRemainingQuestions(remaining)
                     setQuestionsLimit(data.usage.questions_limit ?? null)
+                    // Show paywall immediately when last free question is used
+                    if (remaining === 0) {
+                      setShowPaywall(true)
+                      setSignupUrl(data.usage.signup_url || process.env.NEXT_PUBLIC_SIGNUP_URL || '')
+                    }
                   }
                 } catch (e) {
                   console.error('Error parsing SSE data:', e, 'Data:', dataStr)
