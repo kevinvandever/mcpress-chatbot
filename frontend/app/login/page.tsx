@@ -117,7 +117,7 @@ export default function LoginPage() {
             className="mx-auto h-24 w-auto"
           />
           <p className="mt-4 text-sm text-gray-600">
-            Sign in to access MC ChatMaster
+            Sign in or create a free account to get started
           </p>
         </div>
 
@@ -254,9 +254,12 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="text-center">
+        <div className="text-center space-y-2">
           <p className="text-xs text-gray-500">
-            First time here? Just enter your subscription email and choose a password.
+            First time here? Just enter your email and choose a password.
+          </p>
+          <p className="text-xs text-gray-400">
+            No subscription? No problem — try MC ChatMaster free with a limited number of questions.
           </p>
         </div>
       </div>

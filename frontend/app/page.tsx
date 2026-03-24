@@ -143,7 +143,14 @@ export default function Home() {
             {/* Navigation buttons */}
             <div className="flex items-center gap-2 shrink-0">
               {userEmail && (
-                <span className="text-sm text-gray-500 hidden sm:inline mr-2">{userEmail}</span>
+                <div className="hidden sm:flex items-center gap-2 mr-2">
+                  <span className="text-sm text-gray-500">{userEmail}</span>
+                  {subscriptionStatus === 'free' && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                      Free Plan
+                    </span>
+                  )}
+                </div>
               )}
 
               <button

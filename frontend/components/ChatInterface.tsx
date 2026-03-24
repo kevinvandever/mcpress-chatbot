@@ -162,6 +162,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
       const response = await fetch(`${API_URL}/chat`, {
         method: 'POST',
         headers,
+        credentials: 'include',
         body: JSON.stringify({
           message: userMessage,
           conversation_id: 'default',
