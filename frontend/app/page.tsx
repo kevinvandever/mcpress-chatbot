@@ -162,10 +162,20 @@ export default function Home() {
               {userEmail && (
                 <div className="hidden sm:flex items-center gap-2 mr-2">
                   <span className="text-sm text-gray-500">{userEmail}</span>
-                  {subscriptionStatus === 'free' && (
+                  {subscriptionStatus === 'free' && !usageExhausted && (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
                       Free Plan
                     </span>
+                  )}
+                  {subscriptionStatus === 'free' && usageExhausted && (
+                    <a
+                      href={signupUrl || '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200 hover:bg-red-200 transition-colors cursor-pointer"
+                    >
+                      Subscribe for More
+                    </a>
                   )}
                 </div>
               )}
