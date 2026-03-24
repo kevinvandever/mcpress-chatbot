@@ -6,6 +6,7 @@ import ChatInterface, { ChatInterfaceRef } from '@/components/ChatInterface'
 import BackToTopButton from '@/components/BackToTopButton'
 import { API_URL } from '@/config/api'
 import { useAuthRefresh } from '@/hooks/useAuthRefresh'
+import { setAuthUserId, clearAuthUserId } from '@/utils/guestAuth'
 
 export default function Home() {
   const [isInitializing, setIsInitializing] = useState(true)
@@ -32,6 +33,9 @@ export default function Home() {
         if (res.ok) {
           const data = await res.json()
           setUserEmail(data.email || null)
+          if (data.email) {
+            setAuthUserId(data.email)
+          }
           const status = data.subscription_status || 'free'
           setSubscriptionStatus(status)
 
@@ -112,6 +116,7 @@ export default function Home() {
     } catch {
       // Continue with redirect even if the API call fails
     }
+    clearAuthUserId()
     router.push('/login')
     router.refresh()
   }

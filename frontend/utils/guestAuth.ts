@@ -1,14 +1,13 @@
 /**
  * Guest User Authentication Utility
  *
- * Manages lightweight guest authentication for code upload and chat features.
- * Auto-generates a guest user ID (UUID) on first visit and stores in localStorage.
- *
- * Future: This will be replaced with MCPress SSO token validation when the app
- * is integrated behind MCPressOnline authentication.
+ * Manages user identification for conversation tracking.
+ * When a user is authenticated, their email is used as the user ID.
+ * Falls back to 'guest' for unauthenticated sessions.
  */
 
 const GUEST_USER_ID_KEY = 'guestUserId';
+const AUTH_USER_ID_KEY = 'authUserId';
 
 /**
  * Generate a new UUID v4
@@ -22,29 +21,53 @@ function generateUUID(): string {
 }
 
 /**
- * Get or create guest user ID
+ * Set the authenticated user's ID (email) in localStorage.
+ * Call this after successful login / fetching user info.
+ */
+export function setAuthUserId(email: string): void {
+  if (typeof window !== 'undefined' && email) {
+    localStorage.setItem(AUTH_USER_ID_KEY, email);
+  }
+}
+
+/**
+ * Clear the authenticated user's ID from localStorage.
+ * Call this on logout.
+ */
+export function clearAuthUserId(): void {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(AUTH_USER_ID_KEY);
+  }
+}
+
+/**
+ * Get the current user ID for conversation tracking.
  *
- * For this admin-only app, we use a consistent 'guest' user ID
- * so all conversations are accessible regardless of browser/session.
- *
- * @returns Guest user ID ('guest')
+ * Returns the authenticated user's email if available,
+ * otherwise falls back to 'guest'.
  */
 export function getOrCreateGuestId(): string {
-  // Use consistent 'guest' user ID for admin-only app
-  // This ensures all conversations are accessible regardless of browser/session
+  if (typeof window === 'undefined') {
+    return 'guest';
+  }
+
+  // Prefer authenticated user ID (email)
+  const authUserId = localStorage.getItem(AUTH_USER_ID_KEY);
+  if (authUserId) {
+    return authUserId;
+  }
+
+  // Fallback for unauthenticated sessions
   return 'guest';
 }
 
 /**
  * Get current guest ID without creating a new one
- *
- * @returns Guest user ID if exists, null otherwise
  */
 export function getGuestId(): string | null {
   if (typeof window === 'undefined') {
     return null;
   }
-
   return localStorage.getItem(GUEST_USER_ID_KEY);
 }
 
@@ -60,8 +83,6 @@ export function clearGuestId(): void {
 
 /**
  * Initialize guest auth on app load
- *
- * Call this early in app initialization to ensure guest ID is ready
  */
 export function initGuestAuth(): void {
   getOrCreateGuestId();
