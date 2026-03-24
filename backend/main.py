@@ -255,7 +255,7 @@ app.add_middleware(
     allow_credentials=True,  # Required for authentication
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
-    expose_headers=["X-Anonymous-Id"],  # Allow frontend to read anonymous fingerprint header
+    expose_headers=[],
 )
 
 # Include auth router
@@ -1292,52 +1292,43 @@ async def chat(
     message: ChatMessage,
     credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False))
 ):
-    # 1. Check cookie-based subscription auth
-    is_authenticated = False
-    user_id = message.user_id if message.user_id else "guest"
-    fingerprint = None
-
+    # 1. Verify session token (required)
     session_token = request.cookies.get("session_token")
-    if session_token and subscription_auth_service:
-        try:
-            claims = subscription_auth_service.verify_token(session_token, allow_grace=False)
-            if claims:
-                is_authenticated = True
-                user_id = claims.get("sub", user_id)
-                print(f"✅ Authenticated user (subscription cookie): {user_id}")
-        except Exception:
-            pass
+    email = ""
+    subscription_status = "free"
+    user_id = message.user_id if message.user_id else "guest"
 
-    # Override with JWT auth if credentials provided (admin users)
-    if not is_authenticated and credentials:
+    if session_token and subscription_auth_service:
+        claims = subscription_auth_service.verify_token(session_token, allow_grace=False)
+        if claims:
+            email = claims.get("sub", "")
+            subscription_status = claims.get("subscription_status", "free")
+            user_id = email or user_id
+            print(f"✅ Authenticated user: {email} (subscription_status={subscription_status})")
+        else:
+            return JSONResponse(status_code=401, content={"error": "Invalid or expired token"})
+    elif credentials:
+        # Admin JWT auth fallback
         try:
             from auth_routes import get_current_user
             user = await get_current_user(credentials)
             user_id = str(user.get("id", user_id))
-            is_authenticated = True
-            print(f"✅ Authenticated user (JWT): {user_id}")
+            subscription_status = "active"  # Admin users have full access
+            print(f"✅ Authenticated admin user (JWT): {user_id}")
         except Exception as e:
-            print(f"⚠️ Could not authenticate via JWT: {e}")
+            return JSONResponse(status_code=401, content={"error": "Authentication required"})
+    else:
+        return JSONResponse(status_code=401, content={"error": "Authentication required"})
 
-    # 2. Anonymous path — usage gate
-    if not is_authenticated:
-        fingerprint = request.headers.get("X-Anonymous-Id") or str(uuid.uuid4())
-
-        if usage_gate:
-            result = await usage_gate.check_and_increment(fingerprint)
-            if not result.allowed:
-                return JSONResponse(
-                    status_code=402,
-                    content={
-                        "error": "Free questions exhausted",
-                        "signup_url": result.signup_url,
-                        "usage": result.usage.model_dump()
-                    },
-                    headers={"X-Anonymous-Id": fingerprint}
-                )
-
-        user_id = f"anon:{fingerprint}"
-        print(f"✅ Anonymous user: {user_id}")
+    # 2. Usage gate for free-tier users only
+    if subscription_status != "active" and usage_gate:
+        result = await usage_gate.check_usage(email)
+        if not result.allowed:
+            return JSONResponse(status_code=402, content={
+                "error": "Free questions exhausted",
+                "signup_url": result.signup_url,
+                "usage": result.usage.model_dump()
+            })
 
     # 3. Stream response
     async def generate():
@@ -1349,26 +1340,22 @@ async def chat(
             message.conversation_id,
             user_id
         ):
-            # Record question after first successful content chunk (anonymous only)
-            if not is_authenticated and not question_recorded and usage_gate and fingerprint:
+            # Record question after first content chunk (free-tier users only)
+            if subscription_status != "active" and not question_recorded and usage_gate and email:
                 if chunk.get("type") == "content":
                     try:
-                        usage_info = await usage_gate.record_question(fingerprint)
+                        usage_info = await usage_gate.record_question(email)
                     except Exception as e:
                         print(f"⚠️ Failed to record question: {e}")
                     question_recorded = True
 
-            # Inject usage into metadata event for anonymous users
-            if not is_authenticated and chunk.get("type") == "metadata" and usage_info:
+            # Inject usage into metadata event for free-tier users only
+            if subscription_status != "active" and chunk.get("type") == "metadata" and usage_info:
                 chunk["usage"] = usage_info.model_dump()
 
             yield f"data: {json.dumps(chunk)}\n\n"
 
-    headers = {}
-    if fingerprint:
-        headers["X-Anonymous-Id"] = fingerprint
-
-    return StreamingResponse(generate(), media_type="text/event-stream", headers=headers)
+    return StreamingResponse(generate(), media_type="text/event-stream")
 
 @app.get("/documents")
 async def list_documents():

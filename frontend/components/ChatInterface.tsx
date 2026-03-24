@@ -32,8 +32,7 @@ interface Source {
 
 interface ChatInterfaceProps {
   hasDocuments?: boolean
-  isAuthenticated?: boolean
-  fingerprint?: string | null
+  subscriptionStatus?: string | null
 }
 
 export interface ChatInterfaceRef {
@@ -69,7 +68,7 @@ const cleanText = (text: string): string => {
   return cleaned
 }
 
-const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDocuments = false, isAuthenticated = false, fingerprint = null }, ref) => {
+const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDocuments = false, subscriptionStatus = null }, ref) => {
   const router = useRouter()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -158,9 +157,6 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
     try {
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-      }
-      if (!isAuthenticated && fingerprint) {
-        headers['X-Anonymous-Id'] = fingerprint
       }
 
       const response = await fetch(`${API_URL}/chat`, {
@@ -260,7 +256,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
                     // Generate smart suggestions based on sources
                     generateSmartSuggestions(sources)
                   } else if (data.type === 'metadata' && data.usage) {
-                    // Update remaining questions from usage metadata (anonymous users)
+                    // Update remaining questions from usage metadata (free-tier users)
                     setRemainingQuestions(data.usage.questions_remaining ?? null)
                     setQuestionsLimit(data.usage.questions_limit ?? null)
                   }
@@ -716,7 +712,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
       </div>
       
       {/* Remaining Questions Banner */}
-      {!isAuthenticated && remainingQuestions !== null && questionsLimit !== null && !showPaywall && (
+      {subscriptionStatus === 'free' && remainingQuestions !== null && questionsLimit !== null && !showPaywall && (
         <div className="px-6 pt-3">
           <RemainingQuestionsBanner
             questionsUsed={questionsLimit - remainingQuestions}

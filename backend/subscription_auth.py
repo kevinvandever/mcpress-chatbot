@@ -486,15 +486,15 @@ class SubscriptionAuthService:
         1. Check configuration
         2. Check rate limit for client_ip
         3. Call Appstle API to verify subscription (always, for all users)
-        4. If subscription not valid → deny immediately (no password check)
+        4. Determine subscription_status: "active" (subscribed) or "free" (no subscription)
         5. Lookup customer_passwords record by email
         6a. If record exists: verify password → if mismatch, return 401
         6b. If no record (new user): validate password rules → if fail, return 400
-        7. If new user + active subscription: create customer_passwords record
-        8. Return success with token
+        7. If new user: create customer_passwords record
+        8. Return success with token (subscription_status="active" or "free")
 
         Returns a dict with keys:
-          - status_code: int (200, 400, 401, 403, 429, 500, 503)
+          - status_code: int (200, 400, 401, 429, 500, 503)
           - body: LoginSuccessResponse | LoginDeniedResponse (as dict)
         """
         import asyncio
@@ -567,26 +567,20 @@ class SubscriptionAuthService:
                 ).model_dump(),
             }
 
-        # 4. Evaluate subscription status — deny immediately if not active
+        # 4. Determine subscription status — free-tier users are allowed to continue
         raw_status = appstle_resp.subscription_status
         normalized = _normalize_status(raw_status)
 
-        if not (appstle_resp.is_valid and normalized == "active"):
-            message = _get_denial_message(raw_status)
+        if appstle_resp.is_valid and normalized == "active":
+            subscription_status = "active"
+        else:
+            subscription_status = "free"
             logger.info(
-                "Login denied for email=%s: status=%s message=%s",
-                email, raw_status, message,
+                "Free-tier login for email=%s: appstle_status=%s",
+                email, raw_status,
             )
-            return {
-                "status_code": 403,
-                "body": LoginDeniedResponse(
-                    error=message,
-                    subscription_status=normalized,
-                    redirect_url=self.signup_url or None,
-                ).model_dump(),
-            }
 
-        # 5. Subscription is active — now check password
+        # 5. Check password (regardless of subscription status)
         existing_record = None
         is_new_user = True
         if self.password_service:
@@ -639,7 +633,7 @@ class SubscriptionAuthService:
                     },
                 }
 
-        # 7. New user with active subscription: create password record
+        # 7. New user: create password record
         if is_new_user and self.password_service:
             try:
                 await self.password_service.create_customer(email, password)
@@ -653,7 +647,7 @@ class SubscriptionAuthService:
 
         token = self.create_token(
             email=email,
-            subscription_status="active",
+            subscription_status=subscription_status,
             expires_at=appstle_resp.expiration_date,
         )
 
@@ -663,13 +657,13 @@ class SubscriptionAuthService:
             else None
         )
 
-        logger.info("Successful login for email=%s", email)
+        logger.info("Successful login for email=%s subscription_status=%s", email, subscription_status)
         return {
             "status_code": 200,
             "body": LoginSuccessResponse(
                 token=token,
                 email=email,
-                subscription_status="active",
+                subscription_status=subscription_status,
                 expires_at=expires_at_iso,
             ).model_dump(),
         }
@@ -683,10 +677,10 @@ class SubscriptionAuthService:
         Refresh flow:
         1. Verify existing token with grace window (allow 5 min expired)
         2. Re-verify subscription with Appstle API
-        3. Issue new token if still active, or return 403
+        3. Issue new token with current subscription_status ("active" or "free")
 
         Returns a dict with keys:
-          - status_code: int (200, 401, 403, 503)
+          - status_code: int (200, 401, 503)
           - body: RefreshResponse (as dict)
         """
         import asyncio
@@ -736,30 +730,24 @@ class SubscriptionAuthService:
                 ).model_dump(),
             }
 
-        # 4. Check if still active
+        # 4. Determine subscription status
         normalized = _normalize_status(appstle_resp.subscription_status)
 
         if appstle_resp.is_valid and normalized == "active":
-            new_token = self.create_token(
-                email=email,
-                subscription_status="active",
-                expires_at=appstle_resp.expiration_date,
-            )
-            logger.info("Token refreshed for email=%s", email)
-            return {
-                "status_code": 200,
-                "body": RefreshResponse(
-                    success=True,
-                    token=new_token,
-                ).model_dump(),
-            }
+            subscription_status = "active"
         else:
-            logger.info("Refresh denied for email=%s: subscription no longer active", email)
-            return {
-                "status_code": 403,
-                "body": RefreshResponse(
-                    success=False,
-                    error="Subscription no longer active",
-                    redirect_url=self.signup_url or None,
-                ).model_dump(),
-            }
+            subscription_status = "free"
+
+        new_token = self.create_token(
+            email=email,
+            subscription_status=subscription_status,
+            expires_at=appstle_resp.expiration_date,
+        )
+        logger.info("Token refreshed for email=%s subscription_status=%s", email, subscription_status)
+        return {
+            "status_code": 200,
+            "body": RefreshResponse(
+                success=True,
+                token=new_token,
+            ).model_dump(),
+        }
