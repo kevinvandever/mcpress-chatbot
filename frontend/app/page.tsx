@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import ChatInterface, { ChatInterfaceRef } from '@/components/ChatInterface'
 import BackToTopButton from '@/components/BackToTopButton'
+import DisqusFeedback from '@/components/DisqusFeedback'
 import { API_URL } from '@/config/api'
 import { useAuthRefresh } from '@/hooks/useAuthRefresh'
 import { setAuthUserId, clearAuthUserId } from '@/utils/guestAuth'
@@ -361,6 +362,9 @@ export default function Home() {
                 <ChatInterface ref={chatInterfaceRef} hasDocuments={hasDocuments} subscriptionStatus={subscriptionStatus} initialUsageExhausted={usageExhausted} initialSignupUrl={signupUrl} />
               </div>
             </div>
+
+          {/* Community Feedback Section */}
+          <DisqusFeedback />
         </div>
       </main>
 
