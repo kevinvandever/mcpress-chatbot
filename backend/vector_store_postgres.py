@@ -554,7 +554,7 @@ class PostgresVectorStore:
             deleted_count = int(result.split()[-1])
             logger.info(f"Deleted {deleted_count} chunks for {filename}")
 
-    async def update_document_metadata(self, filename: str, title: str, author: str, category: str = None, mc_press_url: str = None, article_url: str = None):
+    async def update_document_metadata(self, filename: str, title: str, author: str, category: str = None, mc_press_url: str = None, article_url: str = None, publication_year: int = None, rpg_era: str = None):
         """Update document metadata in books table, documents table, and optionally authors table"""
         # Only init if pool doesn't exist
         if not self.pool:
@@ -634,6 +634,16 @@ class PostgresVectorStore:
                     if 'article_url' in existing_columns:
                         update_parts.append(f"article_url = ${param_idx}")
                         params.append(article_url)
+                        param_idx += 1
+                    
+                    if 'publication_year' in existing_columns and publication_year is not None:
+                        update_parts.append(f"publication_year = ${param_idx}")
+                        params.append(publication_year)
+                        param_idx += 1
+                    
+                    if 'rpg_era' in existing_columns and rpg_era is not None:
+                        update_parts.append(f"rpg_era = ${param_idx}")
+                        params.append(rpg_era)
                         param_idx += 1
                     
                     query = f"""

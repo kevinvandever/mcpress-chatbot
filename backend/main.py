@@ -297,6 +297,30 @@ try:
 except Exception as e:
     print(f"⚠️ Migration 004 endpoint not available: {e}")
 
+# Migration 006: Temporal Metadata (publication_year, rpg_era)
+try:
+    try:
+        from run_migration_006 import router as migration_006_router
+    except ImportError:
+        from backend.run_migration_006 import router as migration_006_router
+    
+    app.include_router(migration_006_router)
+    print("✅ Migration 006 endpoint enabled at /run-migration-006")
+except Exception as e:
+    print(f"⚠️ Migration 006 endpoint not available: {e}")
+
+# Temporal Enrichment: Bulk RPG era metadata population
+try:
+    try:
+        from temporal_enrichment import router as temporal_enrichment_router
+    except ImportError:
+        from backend.temporal_enrichment import router as temporal_enrichment_router
+    
+    app.include_router(temporal_enrichment_router)
+    print("✅ Temporal enrichment endpoint enabled at /api/temporal/enrich")
+except Exception as e:
+    print(f"⚠️ Temporal enrichment endpoint not available: {e}")
+
 print(f"🚀 Backend version: {__version__}")
 pdf_processor = PDFProcessorFull()
 
@@ -1171,6 +1195,8 @@ class UpdateMetadataRequest(BaseModel):
     category: Optional[str] = None
     mc_press_url: Optional[str] = None
     article_url: Optional[str] = None
+    publication_year: Optional[int] = None
+    rpg_era: Optional[str] = None
 
 @app.post("/complete-upload")
 async def complete_upload_with_metadata(request: CompleteUploadRequest):
@@ -1263,7 +1289,9 @@ async def update_document_metadata(filename: str, request: UpdateMetadataRequest
             request.author.strip() if request.author else '', 
             request.category.strip() if request.category else None, 
             request.mc_press_url.strip() if request.mc_press_url else None,
-            request.article_url.strip() if request.article_url else None
+            request.article_url.strip() if request.article_url else None,
+            publication_year=request.publication_year,
+            rpg_era=request.rpg_era.strip() if request.rpg_era else None
         )
         
         # Invalidate the documents cache so changes are visible immediately
@@ -1277,7 +1305,9 @@ async def update_document_metadata(filename: str, request: UpdateMetadataRequest
             "author": request.author.strip() if request.author else '',
             "category": request.category.strip() if request.category else None,
             "mc_press_url": request.mc_press_url.strip() if request.mc_press_url else None,
-            "article_url": request.article_url.strip() if request.article_url else None
+            "article_url": request.article_url.strip() if request.article_url else None,
+            "publication_year": request.publication_year,
+            "rpg_era": request.rpg_era.strip() if request.rpg_era else None
         }
     except ValueError as e:
         # Validation errors from vector_store

@@ -66,6 +66,11 @@ RESPONSE_CONFIG = {
     "include_confidence_score": os.getenv("INCLUDE_CONFIDENCE_SCORE", "true").lower() == "true"
 }
 
+# Temporal RAG Configuration
+TEMPORAL_CONFIG = {
+    "era_boost_amount": float(os.getenv("ERA_BOOST_AMOUNT", "0.10")),
+}
+
 # --- Email Service Configuration (for password reset) ---
 EMAIL_SMTP_HOST = os.getenv("EMAIL_SMTP_HOST")
 EMAIL_SMTP_PORT = int(os.getenv("EMAIL_SMTP_PORT", "587"))

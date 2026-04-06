@@ -6,11 +6,100 @@ import logging
 from datetime import datetime
 import tiktoken
 import asyncpg
-from .config import OPENAI_CONFIG, SEARCH_CONFIG, RESPONSE_CONFIG
+from .config import OPENAI_CONFIG, SEARCH_CONFIG, RESPONSE_CONFIG, TEMPORAL_CONFIG
 
 # Set up logging for source relevance debugging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+class IntentDetector:
+    """Classifies user queries by RPG era intent using keyword matching."""
+
+    MODERN_SIGNALS: set = {
+        "free-form", "fully free", "fully-free", "dcl-s", "dcl-proc",
+        "dcl-ds", "dcl-pi", "dcl-pr", "/free", "**free", "vs code",
+        "rdi", "sql embedded", "ibm i 7.3", "ibm i 7.4", "ibm i 7.5",
+        "modern rpg", "free format rpg",
+    }
+
+    LEGACY_SIGNALS: set = {
+        "c-spec", "h-spec", "d-spec", "f-spec", "o-spec",
+        "fixed-format", "fixed format", "rpg iii", "rpg/400", "rpg-400",
+        "s/36", "s/38", "rpgle fixed", "column-based", "column based",
+        "specifications", "c spec", "h spec", "d spec", "f spec", "o spec",
+    }
+
+    def detect_era(self, query: str) -> str:
+        """
+        Returns 'modern', 'legacy', or 'neutral'.
+        Must complete in <5ms for queries up to 500 chars.
+        Uses case-insensitive keyword matching against MODERN_SIGNALS and LEGACY_SIGNALS.
+        If both modern and legacy signals are found, returns 'neutral' (ambiguous).
+        """
+        if not query:
+            return "neutral"
+
+        query_lower = query.lower()
+
+        has_modern = any(signal in query_lower for signal in self.MODERN_SIGNALS)
+        has_legacy = any(signal in query_lower for signal in self.LEGACY_SIGNALS)
+
+        if has_modern and has_legacy:
+            return "neutral"
+        if has_modern:
+            return "modern"
+        if has_legacy:
+            return "legacy"
+        return "neutral"
+
+
+# Era sets for temporal boost matching
+_MODERN_ERAS = {"free-form", "fully-free"}
+_LEGACY_ERAS = {"fixed-format", "rpg-iv"}
+
+
+def apply_temporal_boost(documents: list, era_intent: str, boost_amount: float = 0.10) -> list:
+    """
+    Adjusts document distance scores based on era match.
+
+    - For 'modern' intent: reduces distance for docs with rpg_era in {'free-form', 'fully-free'}
+    - For 'legacy' intent: reduces distance for docs with rpg_era in {'fixed-format', 'rpg-iv'}
+    - For 'neutral' intent: no adjustment
+    - Documents with rpg_era=None or 'general': no adjustment
+
+    Returns a new list of documents with 'adjusted_distance' field added.
+    Logs original distance, boost, and adjusted distance per document.
+    """
+    result = []
+    for doc in documents:
+        original_distance = doc.get("distance", 0.0)
+        rpg_era = doc.get("rpg_era")
+        boost = 0.0
+
+        if era_intent != "neutral" and rpg_era not in (None, "general"):
+            if era_intent == "modern" and rpg_era in _MODERN_ERAS:
+                boost = boost_amount
+            elif era_intent == "legacy" and rpg_era in _LEGACY_ERAS:
+                boost = boost_amount
+
+        adjusted_distance = max(0, original_distance - boost)
+
+        logger.info(
+            "Temporal boost: file=%s era=%s intent=%s original=%.4f boost=%.4f adjusted=%.4f",
+            doc.get("metadata", {}).get("filename", "unknown"),
+            rpg_era,
+            era_intent,
+            original_distance,
+            boost,
+            adjusted_distance,
+        )
+
+        new_doc = {**doc, "adjusted_distance": adjusted_distance}
+        result.append(new_doc)
+
+    return result
+
 
 class ChatHandler:
     def __init__(self, vector_store, conversation_service=None):
@@ -150,7 +239,7 @@ class ChatHandler:
         
         # Filter results by relevance threshold
         logger.info("Step 2: Filtering results by relevance...")
-        relevant_docs = self._filter_relevant_documents(search_results, message)
+        relevant_docs = await self._filter_relevant_documents(search_results, message)
         logger.info(f"Step 2 Result: {len(relevant_docs)} documents passed filtering")
         
         # Build context
@@ -215,7 +304,51 @@ class ChatHandler:
                 - It's fine to show enthusiasm about clever solutions or elegant code
                 - Use analogies to make complex concepts click
                 - Still be precise with technical terms and code — don't sacrifice accuracy for vibes
-                - Avoid corporate/stiff language ("it should be noted that", "one must consider")"""
+                - Avoid corporate/stiff language ("it should be noted that", "one must consider")
+
+                RPG ERA AWARENESS:
+                RPG has evolved dramatically over 30+ years. You MUST distinguish between these two major eras:
+
+                Fixed-Format RPG (Legacy):
+                - Uses columnar specification types: H-specs (control), F-specs (file), D-specs (definition), C-specs (calculation), O-specs (output)
+                - Code position matters — operations, factors, and results occupy fixed columns
+                - Associated with RPG III, RPG/400, and early RPG IV (pre-2013)
+
+                Modern Free-Form RPG:
+                - Uses declarative keywords: dcl-s (scalar), dcl-ds (data structure), dcl-proc (procedure), dcl-pi (procedure interface), dcl-pr (prototype)
+                - Free-form calculation blocks (/free … /end-free) or fully-free source (**free)
+                - Associated with RPG IV free-form (2013+) and fully-free RPG (2019+)
+
+                Few-Shot Examples — Same Operation in Both Eras:
+
+                Example 1 — Declaring a standalone variable:
+                Fixed-format (D-spec):
+                ```rpg
+                D myName          S             50A
+                ```
+                Modern free-form:
+                ```rpg
+                dcl-s myName char(50);
+                ```
+
+                Example 2 — Calling a procedure and capturing the return value:
+                Fixed-format (C-spec):
+                ```rpg
+                C                   EVAL      result = getTotal(custId)
+                ```
+                Modern free-form:
+                ```rpg
+                result = getTotal(custId);
+                ```
+
+                Default Behavior:
+                - When the user does NOT specify an RPG era, ALWAYS default to modern free-form RPG syntax and conventions.
+                - Only use fixed-format examples when the user explicitly asks about legacy/fixed-format RPG, C-specs, or older RPG versions.
+
+                Era Mismatch Flagging:
+                - If the retrieved source material uses a DIFFERENT RPG era than what the user is asking about, flag it with a brief note before your answer.
+                - Example: "Note: the source material uses RPG IV fixed-format syntax. Here's the modern free-form equivalent..."
+                - This helps the user understand the era context without confusion."""
             }
         ]
         
@@ -332,6 +465,16 @@ If this question is clearly off-topic (not related to IBM i/midrange technologie
             if metadata.get("type"):
                 source_info += f", Type: {metadata['type']}"
             
+            # Era annotation: include only when rpg_era is set and not "general"
+            rpg_era = doc.get("rpg_era")
+            if rpg_era is not None and rpg_era != "general":
+                source_info += f", Era: {rpg_era}"
+            
+            # Year annotation: include only when publication_year is set
+            publication_year = doc.get("publication_year")
+            if publication_year is not None:
+                source_info += f", Year: {publication_year}"
+            
             source_info += "]"
             
             context_parts.append(f"{source_info}\n{doc['content']}\n")
@@ -368,10 +511,11 @@ If this question is clearly off-topic (not related to IBM i/midrange technologie
         # General questions - broader matching allowed
         return SEARCH_CONFIG["relevance_threshold"]  # 0.55 default
 
-    def _filter_relevant_documents(self, documents: List[Dict[str, Any]], query: str) -> List[Dict[str, Any]]:
+    async def _filter_relevant_documents(self, documents: List[Dict[str, Any]], query: str) -> List[Dict[str, Any]]:
         """
         Filter documents by relevance threshold and log the decision process
-        Handles both pgvector distance and fallback similarity metrics
+        Handles both pgvector distance and fallback similarity metrics.
+        Applies temporal re-ranking when era intent is detected.
         """
         RELEVANCE_THRESHOLD = self._get_dynamic_threshold(query)
         MAX_SOURCES = SEARCH_CONFIG["max_sources"]
@@ -383,10 +527,38 @@ If this question is clearly off-topic (not related to IBM i/midrange technologie
         logger.info(f"Initial search returned {len(documents)} documents")
         logger.info(f"Distance threshold: {RELEVANCE_THRESHOLD} (lower distance = better match)")
 
+        # --- Temporal re-ranking ---
+        # 1. Detect era intent from the query
+        intent_detector = IntentDetector()
+        era_intent = intent_detector.detect_era(query)
+        logger.info(f"🕰️ Era intent detected: '{era_intent}'")
+
+        # 2. Extract filenames and look up rpg_era metadata
+        filenames = [
+            doc.get("metadata", {}).get("filename", "")
+            for doc in documents
+        ]
+        era_lookup = await self._lookup_rpg_eras(filenames)
+
+        # 3. Attach rpg_era to each document
+        for doc in documents:
+            filename = doc.get("metadata", {}).get("filename", "")
+            era_info = era_lookup.get(filename, {"rpg_era": "general", "publication_year": None})
+            doc["rpg_era"] = era_info["rpg_era"]
+            doc["publication_year"] = era_info["publication_year"]
+
+        # 4. Apply temporal boost
+        boost_amount = TEMPORAL_CONFIG["era_boost_amount"]
+        documents = apply_temporal_boost(documents, era_intent, boost_amount)
+
+        # 5. Re-sort by adjusted_distance and filter by threshold
+        documents = sorted(documents, key=lambda x: x.get("adjusted_distance", x.get("distance", 2.0)))
+
         filtered_docs = []
         for i, doc in enumerate(documents):
-            distance = doc.get("distance", 2.0)  # pgvector distance or fallback distance
-            similarity = doc.get("similarity", 0.0)  # Pre-calculated similarity (0-1)
+            adjusted_distance = doc.get("adjusted_distance", doc.get("distance", 2.0))
+            distance = doc.get("distance", 2.0)
+            similarity = doc.get("similarity", 0.0)
 
             metadata = doc.get("metadata", {})
             filename = metadata.get("filename", "Unknown")
@@ -394,17 +566,17 @@ If this question is clearly off-topic (not related to IBM i/midrange technologie
 
             # Log with appropriate precision
             logger.info(f"  Result {i+1}: {filename} (Page {page})")
-            logger.info(f"    Distance: {distance:.4f}, Similarity: {similarity:.4f} ({similarity*100:.1f}%)")
+            logger.info(f"    Distance: {distance:.4f}, Adjusted: {adjusted_distance:.4f}, Similarity: {similarity:.4f} ({similarity*100:.1f}%)")
 
-            # Filter by distance threshold (works for both pgvector and fallback)
-            if distance <= RELEVANCE_THRESHOLD:
+            # Filter by adjusted distance threshold
+            if adjusted_distance <= RELEVANCE_THRESHOLD:
                 filtered_docs.append(doc)
-                logger.info(f"    ✅ INCLUDED - Distance {distance:.4f} <= threshold {RELEVANCE_THRESHOLD}")
+                logger.info(f"    ✅ INCLUDED - Adjusted distance {adjusted_distance:.4f} <= threshold {RELEVANCE_THRESHOLD}")
             else:
-                logger.info(f"    ❌ EXCLUDED - Distance {distance:.4f} > threshold {RELEVANCE_THRESHOLD}")
+                logger.info(f"    ❌ EXCLUDED - Adjusted distance {adjusted_distance:.4f} > threshold {RELEVANCE_THRESHOLD}")
 
-        # Limit to MAX_SOURCES and sort by relevance (lowest distance first)
-        filtered_docs = sorted(filtered_docs, key=lambda x: x.get("distance", 2.0))[:MAX_SOURCES]
+        # Limit to MAX_SOURCES (already sorted by adjusted_distance)
+        filtered_docs = filtered_docs[:MAX_SOURCES]
 
         logger.info(f"✅ Final result: {len(filtered_docs)} relevant documents included (max {MAX_SOURCES})")
 
@@ -453,11 +625,70 @@ If this question is clearly off-topic (not related to IBM i/midrange technologie
                     "mc_press_url": enriched_metadata.get("mc_press_url", metadata.get("mc_press_url", "")),
                     "article_url": enriched_metadata.get("article_url"),
                     "document_type": enriched_metadata.get("document_type", "book"),
-                    "authors": enriched_metadata.get("authors", [])
+                    "authors": enriched_metadata.get("authors", []),
+                    "publication_year": enriched_metadata.get("publication_year"),
+                    "rpg_era": enriched_metadata.get("rpg_era", "general"),
                 })
         
         return sources
     
+    async def _lookup_rpg_eras(self, filenames: List[str]) -> Dict[str, Dict[str, Any]]:
+        """Look up rpg_era and publication_year for a batch of filenames.
+
+        Returns a dict mapping filename -> {"rpg_era": str, "publication_year": int|None}.
+        Filenames not found in the books table default to {"rpg_era": "general", "publication_year": None}.
+        Uses a single query for the entire batch to avoid repeated DB round-trips.
+        """
+        default_entry: Dict[str, Any] = {"rpg_era": "general", "publication_year": None}
+
+        if not filenames:
+            return {}
+
+        # De-duplicate while preserving the caller's list
+        unique_filenames = list(set(filenames))
+
+        try:
+            database_url = os.getenv("DATABASE_URL")
+            if not database_url:
+                logger.warning("DATABASE_URL not available for rpg_era lookup")
+                return {fn: dict(default_entry) for fn in filenames}
+
+            conn = await asyncpg.connect(database_url)
+            try:
+                rows = await conn.fetch(
+                    """
+                    SELECT filename, rpg_era, publication_year
+                    FROM books
+                    WHERE filename = ANY($1)
+                    """,
+                    unique_filenames,
+                )
+
+                result: Dict[str, Dict[str, Any]] = {}
+                for row in rows:
+                    result[row["filename"]] = {
+                        "rpg_era": row["rpg_era"] or "general",
+                        "publication_year": row["publication_year"],
+                    }
+
+                # Fill in defaults for filenames not found
+                for fn in filenames:
+                    if fn not in result:
+                        result[fn] = dict(default_entry)
+
+                logger.info(
+                    "rpg_era lookup: queried %d unique filenames, found %d in books table",
+                    len(unique_filenames),
+                    len(rows),
+                )
+                return result
+            finally:
+                await conn.close()
+
+        except Exception as e:
+            logger.error(f"Error looking up rpg_eras: {e}")
+            return {fn: dict(default_entry) for fn in filenames}
+
     async def _enrich_source_metadata(self, filename: str) -> Dict[str, Any]:
         """Enrich source with full book and author metadata from database"""
         try:
@@ -480,7 +711,9 @@ If this question is clearly off-topic (not related to IBM i/midrange technologie
                         b.author as legacy_author,
                         b.mc_press_url,
                         b.article_url,
-                        b.document_type
+                        b.document_type,
+                        b.publication_year,
+                        b.rpg_era
                     FROM books b
                     WHERE b.filename = $1
                     LIMIT 1
@@ -531,7 +764,9 @@ If this question is clearly off-topic (not related to IBM i/midrange technologie
                     "mc_press_url": book_data['mc_press_url'] or "",
                     "article_url": book_data['article_url'],
                     "document_type": book_data['document_type'] or "book",
-                    "authors": authors_list
+                    "authors": authors_list,
+                    "publication_year": book_data['publication_year'],
+                    "rpg_era": book_data['rpg_era'] or "general",
                 }
             finally:
                 await conn.close()
