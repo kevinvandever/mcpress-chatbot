@@ -796,6 +796,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
           </button>
         </div>
         <p className="text-xs text-gray-400 mt-2 text-center">Unlimited Queries • 24/7 • Sources Always Linked</p>
+        <p className="text-xs text-gray-400 mt-1 text-center">MC ChatMaster is powered by AI and can make mistakes — so it&apos;s always a good idea to double-check cited sources. Also, just a heads up: it isn&apos;t able to help with coding.</p>
         
         {/* Smart Suggestions - Disabled for now */}
         {false && suggestedQuestions.length > 0 && !isStreaming && (
