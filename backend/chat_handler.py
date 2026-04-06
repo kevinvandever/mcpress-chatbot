@@ -655,9 +655,24 @@ If this question is clearly off-topic (not related to IBM i/midrange technologie
 
             conn = await asyncpg.connect(database_url)
             try:
+                # Check if temporal columns exist before querying them
+                temporal_cols = await conn.fetch("""
+                    SELECT column_name FROM information_schema.columns
+                    WHERE table_name = 'books' AND column_name IN ('publication_year', 'rpg_era')
+                """)
+                temporal_col_names = {row['column_name'] for row in temporal_cols}
+                
+                if 'rpg_era' not in temporal_col_names:
+                    logger.info("rpg_era column not yet available — returning defaults")
+                    return {fn: dict(default_entry) for fn in filenames}
+                
+                select_parts = ["filename", "rpg_era"]
+                if 'publication_year' in temporal_col_names:
+                    select_parts.append("publication_year")
+                
                 rows = await conn.fetch(
-                    """
-                    SELECT filename, rpg_era, publication_year
+                    f"""
+                    SELECT {', '.join(select_parts)}
                     FROM books
                     WHERE filename = ANY($1)
                     """,
@@ -668,7 +683,7 @@ If this question is clearly off-topic (not related to IBM i/midrange technologie
                 for row in rows:
                     result[row["filename"]] = {
                         "rpg_era": row["rpg_era"] or "general",
-                        "publication_year": row["publication_year"],
+                        "publication_year": row.get("publication_year"),
                     }
 
                 # Fill in defaults for filenames not found
@@ -702,18 +717,27 @@ If this question is clearly off-topic (not related to IBM i/midrange technologie
             conn = await asyncpg.connect(database_url)
             
             try:
+                # Check which temporal columns exist (safe for pre-migration state)
+                temporal_cols = await conn.fetch("""
+                    SELECT column_name FROM information_schema.columns
+                    WHERE table_name = 'books' AND column_name IN ('publication_year', 'rpg_era')
+                """)
+                temporal_col_names = {row['column_name'] for row in temporal_cols}
+                
+                # Build SELECT dynamically to avoid errors if temporal columns don't exist yet
+                select_fields = [
+                    "b.id", "b.filename", "b.title",
+                    "b.author as legacy_author", "b.mc_press_url",
+                    "b.article_url", "b.document_type",
+                ]
+                if 'publication_year' in temporal_col_names:
+                    select_fields.append("b.publication_year")
+                if 'rpg_era' in temporal_col_names:
+                    select_fields.append("b.rpg_era")
+                
                 # Get book metadata
-                book_data = await conn.fetchrow("""
-                    SELECT 
-                        b.id,
-                        b.filename,
-                        b.title,
-                        b.author as legacy_author,
-                        b.mc_press_url,
-                        b.article_url,
-                        b.document_type,
-                        b.publication_year,
-                        b.rpg_era
+                book_data = await conn.fetchrow(f"""
+                    SELECT {', '.join(select_fields)}
                     FROM books b
                     WHERE b.filename = $1
                     LIMIT 1
@@ -759,14 +783,14 @@ If this question is clearly off-topic (not related to IBM i/midrange technologie
                     logger.info(f"Using legacy author: {author_names}")
                 
                 return {
-                    "title": book_data['title'] or filename.replace('.pdf', ''),  # Add title field
+                    "title": book_data['title'] or filename.replace('.pdf', ''),
                     "author": author_names,
                     "mc_press_url": book_data['mc_press_url'] or "",
                     "article_url": book_data['article_url'],
                     "document_type": book_data['document_type'] or "book",
                     "authors": authors_list,
-                    "publication_year": book_data['publication_year'],
-                    "rpg_era": book_data['rpg_era'] or "general",
+                    "publication_year": book_data.get('publication_year'),
+                    "rpg_era": (book_data.get('rpg_era') or "general"),
                 }
             finally:
                 await conn.close()
