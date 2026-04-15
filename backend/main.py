@@ -662,6 +662,17 @@ async def startup_event():
             import traceback
             print(traceback.format_exc())
 
+    # Register migration 006 endpoint
+    try:
+        try:
+            from run_migration_006 import router as migration_006_router
+        except ImportError:
+            from backend.run_migration_006 import router as migration_006_router
+        app.include_router(migration_006_router)
+        print("✅ Migration 006 endpoint enabled at /api/migrations/006-add-total-pages")
+    except Exception as e:
+        print(f"⚠️ Could not enable migration 006 endpoint: {e}")
+
     # Initialize Auto Content Ingestion
     global ingestion_service, ingestion_scheduler_instance
     if INGESTION_AVAILABLE:
