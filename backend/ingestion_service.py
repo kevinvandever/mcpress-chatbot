@@ -2,11 +2,19 @@
 Auto Content Ingestion Service
 
 Discovers, downloads, and processes new PDF content from the MC Press Online
-repository. Deduplicates against existing books, processes through the existing
+FTP server. Deduplicates against existing books, processes through the existing
 PDFProcessorFull → PostgresVectorStore pipeline, and logs each run.
+
+FTP credentials are read from environment variables:
+  FTP_HOST     – FTP server IP/hostname (default: 209.142.66.171)
+  FTP_PORT     – FTP port (default: 21)
+  FTP_USER     – FTP username
+  FTP_PASSWORD  – FTP password
+  FTP_REMOTE_DIR – Remote directory containing PDFs (default: /)
 """
 
 import asyncio
+import ftplib
 import json
 import logging
 import os
@@ -14,10 +22,7 @@ import tempfile
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
-from html.parser import HTMLParser
 from typing import Optional
-
-import aiohttp
 
 logger = logging.getLogger(__name__)
 
@@ -35,42 +40,26 @@ class IngestionRunResult:
     errors: list = field(default_factory=list)
 
 
-class PDFLinkParser(HTMLParser):
-    """Extracts PDF links from HTML directory listings."""
-
-    def __init__(self):
-        super().__init__()
-        self.pdf_links: list[str] = []
-
-    def handle_starttag(self, tag, attrs):
-        if tag.lower() == "a":
-            for attr_name, attr_value in attrs:
-                if attr_name.lower() == "href" and attr_value:
-                    if attr_value.lower().endswith(".pdf"):
-                        # Extract just the filename (no path components)
-                        filename = attr_value.rsplit("/", 1)[-1]
-                        self.pdf_links.append(filename)
-
-
-def parse_pdf_links(html: str) -> list[str]:
-    """Parse HTML and return list of PDF filenames found in <a> href attributes."""
-    parser = PDFLinkParser()
-    parser.feed(html)
-    return parser.pdf_links
-
-
 class IngestionService:
     def __init__(
         self,
         vector_store,
         pdf_processor,
         category_mapper,
-        source_url: str = "https://prod.mcpressonline.com/images/ngpdfs",
     ):
         self.vector_store = vector_store
         self.pdf_processor = pdf_processor
         self.category_mapper = category_mapper
-        self.source_url = source_url.rstrip("/")
+
+        # FTP configuration from environment variables
+        self.ftp_host = os.getenv("FTP_HOST", "209.142.66.171")
+        self.ftp_port = int(os.getenv("FTP_PORT", "21"))
+        self.ftp_user = os.getenv("FTP_USER", "")
+        self.ftp_password = os.getenv("FTP_PASSWORD", "")
+        self.ftp_remote_dir = os.getenv("FTP_REMOTE_DIR", "/")
+
+        # Used for logging in ingestion_runs table
+        self.source_url = f"ftp://{self.ftp_host}:{self.ftp_port}{self.ftp_remote_dir}"
         self._running = False
 
     async def ensure_table(self) -> None:
@@ -115,17 +104,34 @@ class IngestionService:
     # Discovery & Deduplication
     # ------------------------------------------------------------------
 
+    def _connect_ftp(self) -> ftplib.FTP:
+        """Create and return an authenticated FTP connection."""
+        if not self.ftp_user or not self.ftp_password:
+            raise RuntimeError(
+                "FTP credentials not configured. Set FTP_USER and FTP_PASSWORD environment variables."
+            )
+        ftp = ftplib.FTP()
+        ftp.connect(self.ftp_host, self.ftp_port, timeout=60)
+        ftp.login(self.ftp_user, self.ftp_password)
+        if self.ftp_remote_dir and self.ftp_remote_dir != "/":
+            ftp.cwd(self.ftp_remote_dir)
+        logger.info(f"✅ Connected to FTP {self.ftp_host}:{self.ftp_port}")
+        return ftp
+
     async def discover_remote_files(self) -> list[str]:
-        """Fetch HTML listing from source URL and parse out PDF filenames."""
-        timeout = aiohttp.ClientTimeout(total=60)
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.get(self.source_url) as resp:
-                if resp.status != 200:
-                    raise RuntimeError(
-                        f"Source returned HTTP {resp.status}: {self.source_url}"
-                    )
-                html = await resp.text()
-        return parse_pdf_links(html)
+        """List PDF files on the FTP server."""
+        def _list_files():
+            ftp = self._connect_ftp()
+            try:
+                all_files = ftp.nlst()
+                return [f for f in all_files if f.lower().endswith(".pdf")]
+            finally:
+                try:
+                    ftp.quit()
+                except Exception:
+                    ftp.close()
+
+        return await asyncio.get_event_loop().run_in_executor(None, _list_files)
 
     async def get_existing_filenames(self) -> set[str]:
         """Query books table for all known filenames."""
@@ -155,24 +161,25 @@ class IngestionService:
         return filename.lower().endswith(".pdf") and file_size > 0
 
     async def download_pdf(self, filename: str, dest_dir: str) -> str:
-        """Download a single PDF with retry. Returns local file path."""
-        url = f"{self.source_url}/{filename}"
+        """Download a single PDF from FTP with retry. Returns local file path."""
         dest_path = os.path.join(dest_dir, filename)
         delays = (5, 15, 60)
         max_retries = 3
 
+        def _download():
+            ftp = self._connect_ftp()
+            try:
+                with open(dest_path, "wb") as f:
+                    ftp.retrbinary(f"RETR {filename}", f.write)
+            finally:
+                try:
+                    ftp.quit()
+                except Exception:
+                    ftp.close()
+
         for attempt in range(max_retries):
             try:
-                timeout = aiohttp.ClientTimeout(total=600)  # 10 min
-                async with aiohttp.ClientSession(timeout=timeout) as session:
-                    async with session.get(url) as resp:
-                        if resp.status == 404:
-                            raise FileNotFoundError(f"HTTP 404 for {filename}")
-                        if resp.status != 200:
-                            raise RuntimeError(f"HTTP {resp.status} downloading {filename}")
-                        with open(dest_path, "wb") as f:
-                            async for chunk in resp.content.iter_chunked(8192):
-                                f.write(chunk)
+                await asyncio.get_event_loop().run_in_executor(None, _download)
 
                 file_size = os.path.getsize(dest_path)
                 if not self.validate_pdf_file(filename, file_size):
@@ -182,9 +189,14 @@ class IngestionService:
 
                 return dest_path
 
-            except FileNotFoundError:
-                raise  # Don't retry 404s
+            except ftplib.error_perm as e:
+                # Permanent FTP errors (e.g., file not found) — don't retry
+                if os.path.exists(dest_path):
+                    os.remove(dest_path)
+                raise FileNotFoundError(f"FTP error for {filename}: {e}")
             except Exception as e:
+                if os.path.exists(dest_path):
+                    os.remove(dest_path)
                 if attempt == max_retries - 1:
                     raise
                 logger.warning(
