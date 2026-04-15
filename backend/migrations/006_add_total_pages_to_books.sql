@@ -1,4 +1,13 @@
--- Migration 006: Add total_pages column to books table
--- Required by the ingestion service to store page count from PDF processing
+-- Migration 006: Add missing columns to books table
+-- Required by the ingestion service for PDF processing metadata
 
 ALTER TABLE books ADD COLUMN IF NOT EXISTS total_pages INTEGER;
+ALTER TABLE books ADD COLUMN IF NOT EXISTS processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE books ADD COLUMN IF NOT EXISTS document_type TEXT DEFAULT 'book';
+ALTER TABLE books ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE books ADD COLUMN IF NOT EXISTS tags TEXT[];
+ALTER TABLE books ADD COLUMN IF NOT EXISTS mc_press_url TEXT;
+ALTER TABLE books ADD COLUMN IF NOT EXISTS article_url TEXT;
+ALTER TABLE books ADD COLUMN IF NOT EXISTS year INTEGER;
+ALTER TABLE books ADD COLUMN IF NOT EXISTS file_hash TEXT;
+ALTER TABLE books ADD COLUMN IF NOT EXISTS subcategory TEXT;

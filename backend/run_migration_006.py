@@ -34,9 +34,22 @@ async def run_migration_006(current_user: Dict[str, Any] = Depends(get_current_u
         import asyncpg
         conn = await asyncpg.connect(database_url)
         try:
-            await conn.execute("ALTER TABLE books ADD COLUMN IF NOT EXISTS total_pages INTEGER")
-            logger.info("✅ Migration 006: total_pages column added to books table")
-            return {"status": "success", "message": "total_pages column added to books table"}
+            statements = [
+                "ALTER TABLE books ADD COLUMN IF NOT EXISTS total_pages INTEGER",
+                "ALTER TABLE books ADD COLUMN IF NOT EXISTS processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+                "ALTER TABLE books ADD COLUMN IF NOT EXISTS document_type TEXT DEFAULT 'book'",
+                "ALTER TABLE books ADD COLUMN IF NOT EXISTS description TEXT",
+                "ALTER TABLE books ADD COLUMN IF NOT EXISTS tags TEXT[]",
+                "ALTER TABLE books ADD COLUMN IF NOT EXISTS mc_press_url TEXT",
+                "ALTER TABLE books ADD COLUMN IF NOT EXISTS article_url TEXT",
+                "ALTER TABLE books ADD COLUMN IF NOT EXISTS year INTEGER",
+                "ALTER TABLE books ADD COLUMN IF NOT EXISTS file_hash TEXT",
+                "ALTER TABLE books ADD COLUMN IF NOT EXISTS subcategory TEXT",
+            ]
+            for stmt in statements:
+                await conn.execute(stmt)
+            logger.info("✅ Migration 006: all missing columns added to books table")
+            return {"status": "success", "message": "All missing columns added to books table"}
         finally:
             await conn.close()
 
