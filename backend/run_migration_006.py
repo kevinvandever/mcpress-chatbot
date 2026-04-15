@@ -48,8 +48,27 @@ async def run_migration_006(current_user: Dict[str, Any] = Depends(get_current_u
             ]
             for stmt in statements:
                 await conn.execute(stmt)
-            logger.info("✅ Migration 006: all missing columns added to books table")
-            return {"status": "success", "message": "All missing columns added to books table"}
+
+            # Add unique constraint on filename if not present
+            has_unique = await conn.fetchval("""
+                SELECT COUNT(*) FROM pg_constraint
+                WHERE conrelid = 'books'::regclass AND contype = 'u'
+                AND array_to_string(conkey, ',') = (
+                    SELECT attnum::text FROM pg_attribute
+                    WHERE attrelid = 'books'::regclass AND attname = 'filename'
+                )
+            """)
+            if has_unique == 0:
+                # Remove duplicates first (keep lowest id)
+                await conn.execute("""
+                    DELETE FROM books a USING books b
+                    WHERE a.id > b.id AND a.filename = b.filename
+                """)
+                await conn.execute("ALTER TABLE books ADD CONSTRAINT books_filename_unique UNIQUE (filename)")
+                logger.info("✅ Added unique constraint on books.filename")
+
+            logger.info("✅ Migration 006: all missing columns and constraints added to books table")
+            return {"status": "success", "message": "All missing columns and unique constraint added to books table"}
         finally:
             await conn.close()
 
