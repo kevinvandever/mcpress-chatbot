@@ -78,6 +78,17 @@ async def run_migration_006(current_user: Dict[str, Any] = Depends(get_current_u
             if updated_count > 0:
                 logger.info(f"✅ Reclassified {updated_count} articles (numeric filenames) from 'book' to 'article'")
 
+            # Also reclassify mcpressonline.com-prefixed entries as articles
+            result2 = await conn.execute("""
+                UPDATE books
+                SET document_type = 'article'
+                WHERE document_type = 'book'
+                AND filename LIKE 'mcpressonline.com-%'
+            """)
+            updated_count2 = int(result2.split()[-1])
+            if updated_count2 > 0:
+                logger.info(f"✅ Reclassified {updated_count2} mcpressonline.com entries from 'book' to 'article'")
+
             logger.info("✅ Migration 006: all missing columns and constraints added to books table")
             return {"status": "success", "message": "All missing columns, unique constraint, and article reclassification applied"}
         finally:
