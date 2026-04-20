@@ -68,15 +68,15 @@ async def run_migration_006(current_user: Dict[str, Any] = Depends(get_current_u
                 logger.info("✅ Added unique constraint on books.filename")
 
             # Fix document_type: numeric filenames are articles, not books
-            updated = await conn.fetchval("""
+            result = await conn.execute("""
                 UPDATE books
                 SET document_type = 'article'
                 WHERE document_type = 'book'
                 AND filename ~ '^[0-9]+\\.pdf$'
-                RETURNING COUNT(*)
             """)
-            if updated and updated > 0:
-                logger.info(f"✅ Reclassified {updated} articles (numeric filenames) from 'book' to 'article'")
+            updated_count = int(result.split()[-1])
+            if updated_count > 0:
+                logger.info(f"✅ Reclassified {updated_count} articles (numeric filenames) from 'book' to 'article'")
 
             logger.info("✅ Migration 006: all missing columns and constraints added to books table")
             return {"status": "success", "message": "All missing columns, unique constraint, and article reclassification applied"}
