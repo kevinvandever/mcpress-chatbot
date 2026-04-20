@@ -214,12 +214,15 @@ class IngestionService:
     def _build_metadata(self, filename: str, author: str, category: str) -> dict:
         """Build metadata dict for a processed document."""
         title = filename.rsplit(".pdf", 1)[0] if filename.lower().endswith(".pdf") else filename
+        # Detect document type: numeric filenames are articles, descriptive names are books
+        name_without_ext = filename.rsplit(".pdf", 1)[0] if filename.lower().endswith(".pdf") else filename
+        doc_type = "article" if name_without_ext.isdigit() else "book"
         return {
             "filename": filename,
             "title": title,
             "author": author or "Unknown",
             "category": category or "Uncategorized",
-            "document_type": "book",
+            "document_type": doc_type,
         }
 
     async def process_and_store(self, file_path: str, filename: str) -> dict:
@@ -246,15 +249,17 @@ class IngestionService:
                 await conn.execute(
                     """
                     INSERT INTO books (filename, title, document_type, category, total_pages, processed_at)
-                    VALUES ($1, $2, 'book', $3, $4, CURRENT_TIMESTAMP)
+                    VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
                     ON CONFLICT (filename) DO UPDATE SET
                         title = EXCLUDED.title,
+                        document_type = EXCLUDED.document_type,
                         category = EXCLUDED.category,
                         total_pages = EXCLUDED.total_pages,
                         processed_at = EXCLUDED.processed_at
                     """,
                     filename,
                     metadata["title"],
+                    metadata["document_type"],
                     category,
                     total_pages,
                 )
