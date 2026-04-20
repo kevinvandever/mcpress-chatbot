@@ -2,6 +2,7 @@
 
 import { useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -244,15 +245,14 @@ export default function LoginPage() {
                   )}
                 </button>
               </div>
-              {/* TODO: Re-enable when email-based password reset is implemented */}
-              {/* <div className="mt-1 text-right">
+              <div className="mt-1 text-right">
                 <Link
                   href="/forgot-password"
                   className="text-sm text-blue-600 hover:text-blue-800"
                 >
                   Forgot Password?
                 </Link>
-              </div> */}
+              </div>
             </div>
           </div>
 
