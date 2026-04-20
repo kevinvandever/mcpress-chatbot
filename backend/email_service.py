@@ -111,7 +111,9 @@ class EmailService:
             server.ehlo()
             server.starttls()
             server.ehlo()
-            server.login(self.from_address, self.smtp_password)
+            # SendGrid requires username "apikey" (literal); other SMTP providers use the from address
+            smtp_username = os.getenv("EMAIL_SMTP_USERNAME", "apikey")
+            server.login(smtp_username, self.smtp_password)
             server.send_message(msg)
 
     def _build_reset_url(self, token: str) -> str:
