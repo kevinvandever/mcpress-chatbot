@@ -138,6 +138,7 @@ class EmailService:
         Returns:
             HTML string for the email body
         """
+        logo_url = "https://mc-chatmaster.netlify.app/mc-chatmaster-logo.png"
         return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -145,26 +146,24 @@ class EmailService:
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{self.EMAIL_SUBJECT}</title>
 </head>
-<body style="margin:0;padding:0;background-color:#f0f4f8;font-family:Arial,Helvetica,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0f4f8;padding:40px 0;">
+<body style="margin:0;padding:0;background-color:#f0f2f7;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0f2f7;padding:40px 0;">
     <tr>
       <td align="center">
-        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
-          <!-- Header -->
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(135,141,188,0.15);">
+          <!-- Header with logo -->
           <tr>
-            <td style="background:linear-gradient(135deg,#1e3a5f 0%,#2563eb 100%);padding:32px 40px;text-align:center;">
-              <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:700;letter-spacing:0.5px;">
-                MC ChatMaster
-              </h1>
-              <p style="margin:8px 0 0;color:#93c5fd;font-size:14px;">
-                AI-Powered Technical Documentation Assistant
+            <td style="background:linear-gradient(135deg,#4B5296 0%,#878DBC 100%);padding:32px 40px;text-align:center;">
+              <img src="{logo_url}" alt="MC ChatMaster" width="220" style="display:block;margin:0 auto 12px;max-width:220px;height:auto;" />
+              <p style="margin:0;color:#C3C7E2;font-size:13px;letter-spacing:0.3px;">
+                Instant AI-Powered IBM i Expertise
               </p>
             </td>
           </tr>
           <!-- Body -->
           <tr>
             <td style="padding:40px;">
-              <h2 style="margin:0 0 16px;color:#1e3a5f;font-size:22px;">Password Reset Request</h2>
+              <h2 style="margin:0 0 16px;color:#4B5296;font-size:22px;">Password Reset Request</h2>
               <p style="margin:0 0 24px;color:#4b5563;font-size:16px;line-height:1.6;">
                 We received a request to reset the password for your MC ChatMaster account.
                 Click the button below to set a new password.
@@ -172,7 +171,7 @@ class EmailService:
               <!-- CTA Button -->
               <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 24px;">
                 <tr>
-                  <td style="border-radius:6px;background-color:#2563eb;">
+                  <td style="border-radius:6px;background-color:#4B5296;">
                     <a href="{reset_url}"
                        target="_blank"
                        style="display:inline-block;padding:14px 32px;color:#ffffff;font-size:16px;font-weight:600;text-decoration:none;border-radius:6px;">
@@ -183,14 +182,14 @@ class EmailService:
               </table>
               <!-- Expiry notice -->
               <p style="margin:0 0 16px;color:#6b7280;font-size:14px;line-height:1.5;">
-                ⏰ This link will expire in <strong>1 hour</strong>. After that you'll need to request a new reset.
+                &#9200; This link will expire in <strong>1 hour</strong>. After that you'll need to request a new reset.
               </p>
               <!-- Fallback link -->
               <p style="margin:0 0 24px;color:#6b7280;font-size:13px;line-height:1.5;">
                 If the button doesn't work, copy and paste this URL into your browser:<br>
-                <a href="{reset_url}" style="color:#2563eb;word-break:break-all;">{reset_url}</a>
+                <a href="{reset_url}" style="color:#6970A9;word-break:break-all;">{reset_url}</a>
               </p>
-              <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+              <hr style="border:none;border-top:1px solid #C3C7E2;margin:24px 0;">
               <!-- Disclaimer -->
               <p style="margin:0;color:#9ca3af;font-size:13px;line-height:1.5;">
                 If you didn't request a password reset, you can safely ignore this email.
@@ -200,8 +199,8 @@ class EmailService:
           </tr>
           <!-- Footer -->
           <tr>
-            <td style="background-color:#f9fafb;padding:24px 40px;text-align:center;border-top:1px solid #e5e7eb;">
-              <p style="margin:0;color:#9ca3af;font-size:12px;">
+            <td style="background-color:#f8f8fb;padding:24px 40px;text-align:center;border-top:1px solid #C3C7E2;">
+              <p style="margin:0;color:#A3A2A2;font-size:12px;">
                 &copy; MC ChatMaster &mdash; MC Press Online
               </p>
             </td>
