@@ -83,20 +83,8 @@ export default function Home() {
           }
           const docCount = Array.isArray(documents) ? documents.length : 0
           if (Array.isArray(documents)) {
-            // Books have descriptive filenames; articles from FTP have short numeric filenames
-            const books = documents.filter((d: any) => {
-              const name = (d.filename || '').replace('.pdf', '')
-              // Articles from FTP have purely numeric filenames (e.g., "28979.pdf")
-              const isNumericName = /^\d+$/.test(name)
-              return d.document_type === 'book' && !isNumericName
-            })
-            const articles = documents.filter((d: any) => {
-              const name = (d.filename || '').replace('.pdf', '')
-              const isNumericName = /^\d+$/.test(name)
-              return d.document_type === 'article' || isNumericName
-            })
-            setBookCount(books.length)
-            setArticleCount(articles.length)
+            setBookCount(documents.filter((d: any) => d.document_type === 'book').length)
+            setArticleCount(documents.filter((d: any) => d.document_type !== 'book').length)
           }
           setHasDocuments(docCount > 0)
           setSystemStatus('ready')
