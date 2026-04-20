@@ -83,8 +83,20 @@ export default function Home() {
           }
           const docCount = Array.isArray(documents) ? documents.length : 0
           if (Array.isArray(documents)) {
-            setBookCount(documents.filter((d: any) => d.document_type === 'book').length)
-            setArticleCount(documents.filter((d: any) => d.document_type === 'article').length)
+            // Books have descriptive filenames; articles from FTP have short numeric filenames
+            const books = documents.filter((d: any) => {
+              const name = (d.filename || '').replace('.pdf', '')
+              // Articles from FTP have purely numeric filenames (e.g., "28979.pdf")
+              const isNumericName = /^\d+$/.test(name)
+              return d.document_type === 'book' && !isNumericName
+            })
+            const articles = documents.filter((d: any) => {
+              const name = (d.filename || '').replace('.pdf', '')
+              const isNumericName = /^\d+$/.test(name)
+              return d.document_type === 'article' || isNumericName
+            })
+            setBookCount(books.length)
+            setArticleCount(articles.length)
           }
           setHasDocuments(docCount > 0)
           setSystemStatus('ready')
@@ -126,7 +138,7 @@ export default function Home() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <img src="/mc-chatmaster-logo.png" alt="MC ChatMaster" className="h-12 w-auto mx-auto mb-4" />
+          <img src="/mc-chatmaster-logo.png" alt="MC ChatMaster" className="h-32 sm:h-40 w-auto mx-auto mb-6" />
           <div className="w-8 h-8 border-4 rounded-full animate-spin mx-auto"
             style={{ borderColor: 'var(--mc-blue-lighter)', borderTopColor: 'var(--mc-blue)' }} />
         </div>
