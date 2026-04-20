@@ -256,8 +256,10 @@ async def _get_token_failure_reason(token_str: str) -> str:
 @router.post("/forgot-password")
 async def forgot_password(body: ForgotPasswordRequest, request: Request):
     """
-    Verify subscription ownership and issue a reset token directly.
-    No email required — the Appstle subscription check proves identity.
+    Email-based password reset flow.
+    Generates a reset token and sends it to the user's email.
+    Returns a generic success message regardless of whether the email exists
+    (to prevent email enumeration).
     """
     email = body.email.lower().strip()
 
@@ -272,14 +274,28 @@ async def forgot_password(body: ForgotPasswordRequest, request: Request):
             content={"error": f"Password reset service init failed: {exc}"},
         )
 
+    # 1b. Check if email service is available
+    try:
+        from email_service import EmailService
+    except ImportError:
+        from backend.email_service import EmailService
+
+    email_svc = EmailService()
+    if not email_svc.enabled:
+        logger.warning("Email service disabled — forgot-password unavailable")
+        return JSONResponse(
+            status_code=503,
+            content={"error": "Password reset is temporarily unavailable"},
+        )
+
     # 2. Check rate limit
     try:
         rate_ok = await rts.check_rate_limit(email)
     except Exception as exc:
         logger.error("Rate limit check failed for email=%s: %s", email, exc)
         return JSONResponse(
-            status_code=503,
-            content={"error": f"Rate limit check failed: {exc}"},
+            status_code=429,
+            content={"error": "Too many reset requests. Please try again later."},
         )
 
     if not rate_ok:
@@ -289,53 +305,46 @@ async def forgot_password(body: ForgotPasswordRequest, request: Request):
             content={"error": "Too many reset requests. Please try again later."},
         )
 
-    # 3. Verify the email has an active Appstle subscription (proves identity)
-    try:
-        appstle_resp = await auth_service.verify_subscription(email)
-    except Exception as exc:
-        logger.error("Appstle verification failed for forgot-password email=%s: %s", email, exc)
-        return JSONResponse(
-            status_code=503,
-            content={"error": "Subscription verification temporarily unavailable. Please try again later."},
-        )
-
-    if not appstle_resp.is_valid:
-        logger.info("Forgot-password: no active subscription for email=%s", email)
-        return JSONResponse(
-            status_code=403,
-            content={"error": "No active subscription found for this email address."},
-        )
-
-    # 4. Check if email exists in customer_passwords
+    # 3. Check if email exists in customer_passwords
+    #    Return same success message either way to prevent email enumeration
     try:
         customer = await ps.get_customer(email)
     except Exception as exc:
         logger.error("Error looking up customer for forgot-password email=%s: %s", email, exc)
+        # Return success to prevent enumeration
         return JSONResponse(
-            status_code=500,
-            content={"error": f"Customer lookup failed: {exc}"},
+            status_code=200,
+            content={"success": True, "message": "If an account exists with that email, you will receive a password reset link shortly."},
         )
 
     if not customer:
-        logger.info("Forgot-password: no password record for email=%s (never set a password)", email)
-        return JSONResponse(
-            status_code=404,
-            content={"error": "No password has been set for this account. Please log in to create one."},
-        )
-
-    # 5. Generate reset token and return it directly (no email needed)
-    try:
-        token = await rts.create_reset_token(email)
-        logger.info("Reset token issued for email=%s (subscription-verified)", email)
+        logger.info("Forgot-password: no password record for email=%s", email)
+        # Return same success message to prevent enumeration
         return JSONResponse(
             status_code=200,
-            content={"token": token},
+            content={"success": True, "message": "If an account exists with that email, you will receive a password reset link shortly."},
+        )
+
+    # 4. Generate reset token and send via email
+    try:
+        token = await rts.create_reset_token(email)
+        sent = await email_svc.send_reset_email(email, token)
+        if not sent:
+            logger.error("Failed to send reset email to %s", email)
+            return JSONResponse(
+                status_code=500,
+                content={"error": "Unable to send reset email. Please try again later."},
+            )
+        logger.info("Reset email sent to %s", email)
+        return JSONResponse(
+            status_code=200,
+            content={"success": True, "message": "If an account exists with that email, you will receive a password reset link shortly."},
         )
     except Exception as exc:
         logger.error("Error creating reset token for email=%s: %s", email, exc)
         return JSONResponse(
             status_code=500,
-            content={"error": f"Token creation failed: {exc}"},
+            content={"error": "Unable to send reset email. Please try again later."},
         )
 
 
