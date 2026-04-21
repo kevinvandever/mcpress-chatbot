@@ -321,6 +321,18 @@ try:
 except Exception as e:
     print(f"⚠️ Temporal enrichment endpoint not available: {e}")
 
+# Subscription Status Test Endpoint (temporary — for bugfix exploration)
+try:
+    try:
+        from subscription_test_endpoint import router as subscription_test_router
+    except ImportError:
+        from backend.subscription_test_endpoint import router as subscription_test_router
+    
+    app.include_router(subscription_test_router)
+    print("✅ Subscription test endpoint enabled at /api/test/subscription-decision")
+except Exception as e:
+    print(f"⚠️ Subscription test endpoint not available: {e}")
+
 print(f"🚀 Backend version: {__version__}")
 pdf_processor = PDFProcessorFull()
 
