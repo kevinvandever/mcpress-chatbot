@@ -138,6 +138,23 @@ class ExcelLookupService:
         return authors
 
     # ------------------------------------------------------------------
+    # URL normalization
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def normalize_url(url: str) -> str:
+        """
+        Normalize URL format, fixing common typos like
+        "ww.mcpressonline.com" → "www.mcpressonline.com".
+        """
+        if not url or not url.strip():
+            return url
+        url = url.strip()
+        url = re.sub(r'://ww\.mcpressonline\.com', '://www.mcpressonline.com', url, flags=re.IGNORECASE)
+        url = re.sub(r'^ww\.mcpressonline\.com', 'www.mcpressonline.com', url, flags=re.IGNORECASE)
+        return url
+
+    # ------------------------------------------------------------------
     # ID extraction helpers
     # ------------------------------------------------------------------
 
@@ -250,6 +267,10 @@ class ExcelLookupService:
                 if url and url.lower() == "nan":
                     url = None
 
+                # Normalize URL (fix ww. → www.)
+                if url:
+                    url = self.normalize_url(url)
+
                 self._article_mapping[article_id] = ExcelMetadataEntry(
                     title=title,
                     author=author,
@@ -328,6 +349,10 @@ class ExcelLookupService:
                     author = ""
                 if url and url.lower() == "nan":
                     url = None
+
+                # Normalize URL (fix ww. → www.)
+                if url:
+                    url = self.normalize_url(url)
 
                 if not title and not author:
                     continue

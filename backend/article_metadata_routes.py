@@ -133,3 +133,30 @@ async def get_metadata_diagnostics(
     diagnostics = await service.get_diagnostics(detailed=detailed)
 
     return asdict(diagnostics)
+
+
+@router.post("/api/articles/fix-urls")
+async def fix_article_urls(
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    """
+    Fix malformed article_url values in the books table.
+
+    Corrects 'ww.mcpressonline.com' → 'www.mcpressonline.com' typos.
+    Returns count of URLs fixed.
+    """
+    service = _get_service()
+    await service._ensure_pool()
+
+    async with service.pool.acquire() as conn:
+        # Find and fix bad URLs
+        result = await conn.execute("""
+            UPDATE books
+            SET article_url = REPLACE(article_url, '://ww.mcpressonline.com', '://www.mcpressonline.com')
+            WHERE article_url LIKE '%://ww.mcpressonline.com%'
+              AND article_url NOT LIKE '%://www.mcpressonline.com%'
+        """)
+        fixed_count = int(result.split()[-1]) if result else 0
+
+    logger.info("Fixed %d article URLs (ww. → www.)", fixed_count)
+    return {"fixed_count": fixed_count, "detail": "Corrected ww.mcpressonline.com → www.mcpressonline.com"}
