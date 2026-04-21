@@ -155,6 +155,7 @@ class MetadataBackfillService:
                   AND (
                       title ~ '^[0-9]+$'
                       OR author IN ('Unknown', 'Unknown Author')
+                      OR author IS NULL
                   )
                 ORDER BY id
             """)
@@ -255,42 +256,64 @@ class MetadataBackfillService:
                     author_changed = (
                         new_authors
                         and new_authors != ["Unknown Author"]
-                        and old_author in ("Unknown", "Unknown Author")
+                        and (old_author in ("Unknown", "Unknown Author", None) or old_author is None)
                     )
 
                     # Update books table
+                    article_url = resolved.article_url
                     async with self.pool.acquire() as conn:
                         if title_changed and author_changed:
                             await conn.execute(
                                 """
                                 UPDATE books
-                                SET title = $1, author = $2
+                                SET title = $1, author = $2,
+                                    article_url = COALESCE(NULLIF($4, ''), article_url)
                                 WHERE id = $3
                                 """,
                                 new_title,
                                 ", ".join(new_authors),
                                 article_id,
+                                article_url or '',
                             )
                             titles_updated += 1
                             authors_updated += 1
                         elif title_changed:
                             await conn.execute(
                                 """
-                                UPDATE books SET title = $1 WHERE id = $2
+                                UPDATE books
+                                SET title = $1,
+                                    article_url = COALESCE(NULLIF($3, ''), article_url)
+                                WHERE id = $2
                                 """,
                                 new_title,
                                 article_id,
+                                article_url or '',
                             )
                             titles_updated += 1
                         elif author_changed:
                             await conn.execute(
                                 """
-                                UPDATE books SET author = $1 WHERE id = $2
+                                UPDATE books
+                                SET author = $1,
+                                    article_url = COALESCE(NULLIF($3, ''), article_url)
+                                WHERE id = $2
                                 """,
                                 ", ".join(new_authors),
                                 article_id,
+                                article_url or '',
                             )
                             authors_updated += 1
+                        elif article_url:
+                            # Even if title/author didn't change, update URL if we have one
+                            await conn.execute(
+                                """
+                                UPDATE books
+                                SET article_url = COALESCE(NULLIF($2, ''), article_url)
+                                WHERE id = $1
+                                """,
+                                article_id,
+                                article_url,
+                            )
 
                     # Create / link authors in the multi-author system
                     if author_changed and new_authors:
@@ -465,7 +488,7 @@ class MetadataBackfillService:
                 """
                 SELECT COUNT(*) FROM books
                 WHERE document_type = 'article'
-                  AND author IN ('Unknown', 'Unknown Author')
+                  AND (author IN ('Unknown', 'Unknown Author') OR author IS NULL)
                 """
             )
 
@@ -475,7 +498,7 @@ class MetadataBackfillService:
                 SELECT COUNT(*) FROM books
                 WHERE document_type = 'article'
                   AND title ~ '^[0-9]+$'
-                  AND author IN ('Unknown', 'Unknown Author')
+                  AND (author IN ('Unknown', 'Unknown Author') OR author IS NULL)
                 """
             )
 
@@ -488,6 +511,7 @@ class MetadataBackfillService:
                   AND (
                       title ~ '^[0-9]+$'
                       OR author IN ('Unknown', 'Unknown Author')
+                      OR author IS NULL
                   )
                 ORDER BY id
                 {limit_clause}
