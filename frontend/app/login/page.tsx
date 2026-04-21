@@ -15,6 +15,8 @@ export default function LoginPage() {
   const [checkingSession, setCheckingSession] = useState(true);
   const [showSubscriptionPrompt, setShowSubscriptionPrompt] = useState(false);
   const [subscriptionSignupUrl, setSubscriptionSignupUrl] = useState('');
+  const [denialMessage, setDenialMessage] = useState('');
+  const [resubscribeUrl, setResubscribeUrl] = useState('');
   const router = useRouter();
 
   const passwordRules = [
@@ -47,6 +49,8 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     setFailedRules([]);
+    setDenialMessage('');
+    setResubscribeUrl('');
     setLoading(true);
 
     try {
@@ -94,6 +98,10 @@ export default function LoginPage() {
           break;
         case 401:
           setError('Invalid email or password.');
+          break;
+        case 403:
+          setDenialMessage(data.error || 'Your subscription does not allow access.');
+          setResubscribeUrl(data.redirect_url || '');
           break;
         case 429:
           setError('Too many login attempts. Please try again later.');
@@ -186,6 +194,31 @@ export default function LoginPage() {
                 <li key={rule}>{rule}</li>
               ))}
             </ul>
+          </div>
+        )}
+
+        {/* Subscription denied — expired or cancelled */}
+        {denialMessage && (
+          <div className="space-y-4">
+            <div className="rounded-lg bg-amber-50 border border-amber-200 p-5 text-center space-y-3">
+              <svg className="mx-auto h-8 w-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm font-medium text-amber-800">
+                {denialMessage}
+              </p>
+            </div>
+            {resubscribeUrl && (
+              <a
+                href={resubscribeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full text-center py-3 px-4 text-sm font-medium rounded-lg text-white transition-all hover:scale-[1.02]"
+                style={{ backgroundColor: 'var(--mc-blue, #0066CC)' }}
+              >
+                Resubscribe
+              </a>
+            )}
           </div>
         )}
 

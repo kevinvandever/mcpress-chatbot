@@ -25,7 +25,6 @@ try:
     from backend.subscription_auth import (
         SubscriptionAuthService,
         AppstleSubscriptionResponse,
-        _normalize_status,
         LoginSuccessResponse,
         LoginDeniedResponse,
     )
@@ -33,7 +32,6 @@ except ImportError:
     from subscription_auth import (
         SubscriptionAuthService,
         AppstleSubscriptionResponse,
-        _normalize_status,
         LoginSuccessResponse,
         LoginDeniedResponse,
     )
@@ -78,116 +76,135 @@ async def test_subscription_decision(req: SubscriptionTestRequest):
     - Token creation (step 8)
 
     It constructs an AppstleSubscriptionResponse from the provided
-    contract data and then runs the EXACT same step 4 logic from
-    the login method to determine subscription_status.
+    contract data and then runs the EXACT same 5-scenario step 4
+    logic from the FIXED login method to determine subscription_status.
 
-    The contract data (product_subscriber_status, next_billing_date)
-    represents what the Appstle API step 2 response contains. The
-    current code ignores this data and uses tags instead — that's
-    the bug we're testing.
+    The 5 scenarios match the fixed login() method in subscription_auth.py:
+    1. ACTIVE → subscription_status="active" (200)
+    2. PAUSED + nextBillingDate in future → subscription_status="active" (200)
+    3. PAUSED + nextBillingDate in past or null → 403 denial (expired)
+    4. CANCELLED → 403 denial (cancelled)
+    5. No subscription → subscription_status="free" (200)
     """
     # Parse next_billing_date if provided
     parsed_billing_date = None
     if req.next_billing_date:
         try:
-            parsed_billing_date = datetime.fromisoformat(req.next_billing_date)
+            parsed_billing_date = datetime.fromisoformat(
+                req.next_billing_date.replace("Z", "+00:00")
+            )
         except (ValueError, TypeError):
             parsed_billing_date = None
 
-    # Build an AppstleSubscriptionResponse that represents what
-    # _parse_tags_response CURRENTLY returns for the given contract data.
-    #
-    # This is the crux of the bug: _parse_tags_response uses customer tags
-    # (which are unreliable) instead of productSubscriberStatus and
-    # nextBillingDate from the contract data.
-    #
-    # Current _parse_tags_response behavior:
-    # - If tags contain "active" or "paused" pattern → is_valid=True, status="ACTIVE"
-    # - If tags contain "inactive" pattern → is_valid=False, status="CANCELLED"
-    # - No recognized tags → is_valid=False, status=None
-    #
-    # Since we're simulating with contract data, we map:
-    # - ACTIVE → tags would show "active" → is_valid=True, status="ACTIVE"
-    # - PAUSED → tags would show "paused" → is_valid=True, status="ACTIVE" (BUG!)
-    # - CANCELLED → tags would show "inactive" → is_valid=False, status="CANCELLED"
-    # - None/no subscription → is_valid=False, status=None
-
+    # Build an AppstleSubscriptionResponse with contract fields populated,
+    # exactly as _parse_contract_response() would return from the Appstle API.
     if not req.has_subscription:
         appstle_resp = AppstleSubscriptionResponse(
             is_valid=False,
             subscription_status=None,
             expiration_date=None,
             customer_email=req.email,
-        )
-    elif req.product_subscriber_status and req.product_subscriber_status.upper() == "ACTIVE":
-        appstle_resp = AppstleSubscriptionResponse(
-            is_valid=True,
-            subscription_status="ACTIVE",
-            expiration_date=None,
-            customer_email=req.email,
-        )
-    elif req.product_subscriber_status and req.product_subscriber_status.upper() == "PAUSED":
-        # BUG: _parse_tags_response treats PAUSED same as ACTIVE via tags
-        # The tag "appstle_subscription_paused_customer" maps to is_valid=True, status="ACTIVE"
-        appstle_resp = AppstleSubscriptionResponse(
-            is_valid=True,
-            subscription_status="ACTIVE",
-            expiration_date=None,
-            customer_email=req.email,
-        )
-    elif req.product_subscriber_status and req.product_subscriber_status.upper() == "CANCELLED":
-        appstle_resp = AppstleSubscriptionResponse(
-            is_valid=False,
-            subscription_status="CANCELLED",
-            expiration_date=None,
-            customer_email=req.email,
+            product_subscriber_status=None,
+            next_billing_date=None,
         )
     else:
         appstle_resp = AppstleSubscriptionResponse(
-            is_valid=False,
+            is_valid=True,
             subscription_status=req.product_subscriber_status,
             expiration_date=None,
             customer_email=req.email,
+            product_subscriber_status=req.product_subscriber_status,
+            next_billing_date=parsed_billing_date,
         )
 
     # ---------------------------------------------------------------
-    # Run the EXACT same step 4 logic from the login method
-    # This is copied verbatim from SubscriptionAuthService.login()
+    # Run the EXACT same 5-scenario step 4 logic from the FIXED
+    # login method in SubscriptionAuthService.login()
     # ---------------------------------------------------------------
-    raw_status = appstle_resp.subscription_status
-    normalized = _normalize_status(raw_status)
+    status_upper = (appstle_resp.product_subscriber_status or "").upper()
+    next_billing = appstle_resp.next_billing_date
 
-    if appstle_resp.is_valid and normalized == "active":
+    if status_upper == "ACTIVE":
+        # Scenario 1: ACTIVE subscriber → full access
         subscription_status = "active"
+        result_body = LoginSuccessResponse(
+            token="test-token-not-real",
+            email=req.email,
+            subscription_status=subscription_status,
+            expires_at=None,
+        ).model_dump()
+        result_status_code = 200
+
+    elif status_upper == "PAUSED":
+        if next_billing is not None:
+            # Make comparison timezone-aware
+            now = datetime.now(timezone.utc)
+            if next_billing.tzinfo is None:
+                next_billing = next_billing.replace(tzinfo=timezone.utc)
+            if next_billing > now:
+                # Scenario 2: PAUSED + nextBillingDate in future → active (paid time remaining)
+                subscription_status = "active"
+                result_body = LoginSuccessResponse(
+                    token="test-token-not-real",
+                    email=req.email,
+                    subscription_status=subscription_status,
+                    expires_at=None,
+                ).model_dump()
+                result_status_code = 200
+            else:
+                # Scenario 3: PAUSED + nextBillingDate in past → deny
+                subscription_status = "paused"
+                result_body = LoginDeniedResponse(
+                    error="Your subscription has expired. Resubscribe to continue.",
+                    subscription_status="paused",
+                    redirect_url=_service.signup_url,
+                ).model_dump()
+                result_status_code = 403
+        else:
+            # Scenario 3b: PAUSED + null nextBillingDate → deny
+            subscription_status = "paused"
+            result_body = LoginDeniedResponse(
+                error="Your subscription has expired. Resubscribe to continue.",
+                subscription_status="paused",
+                redirect_url=_service.signup_url,
+            ).model_dump()
+            result_status_code = 403
+
+    elif status_upper == "CANCELLED":
+        # Scenario 4: CANCELLED → deny
+        subscription_status = "cancelled"
+        result_body = LoginDeniedResponse(
+            error="Your subscription has been cancelled. Resubscribe to continue.",
+            subscription_status="cancelled",
+            redirect_url=_service.signup_url,
+        ).model_dump()
+        result_status_code = 403
+
     else:
+        # Scenario 5: No subscription record (None/not found) → free-tier
         subscription_status = "free"
-
-    # Build the response exactly as the login method would
-    result_body = LoginSuccessResponse(
-        token="test-token-not-real",
-        email=req.email,
-        subscription_status=subscription_status,
-        expires_at=None,
-    ).model_dump()
-    result_status_code = 200
-
-    # Note: The current code NEVER returns 403 from step 4.
-    # There is no denial path. This is the bug.
+        result_body = LoginSuccessResponse(
+            token="test-token-not-real",
+            email=req.email,
+            subscription_status=subscription_status,
+            expires_at=None,
+        ).model_dump()
+        result_status_code = 200
 
     debug_info = {
         "input_product_subscriber_status": req.product_subscriber_status,
         "input_next_billing_date": req.next_billing_date,
         "input_has_subscription": req.has_subscription,
         "parsed_billing_date": str(parsed_billing_date) if parsed_billing_date else None,
-        "appstle_resp_is_valid": appstle_resp.is_valid,
-        "appstle_resp_subscription_status": appstle_resp.subscription_status,
-        "normalized_status": normalized,
+        "appstle_resp_product_subscriber_status": appstle_resp.product_subscriber_status,
+        "appstle_resp_next_billing_date": str(appstle_resp.next_billing_date) if appstle_resp.next_billing_date else None,
+        "status_upper": status_upper,
         "final_subscription_status": subscription_status,
         "final_status_code": result_status_code,
         "note": (
-            "This endpoint runs the EXACT step 4 logic from login(). "
-            "The current code has no 403 denial path — all non-active "
-            "statuses map to 'free'. PAUSED is treated as ACTIVE via tags."
+            "This endpoint runs the FIXED 5-scenario step 4 logic from login(). "
+            "PAUSED-expired and CANCELLED now return 403. "
+            "PAUSED-with-time-remaining returns 200/active."
         ),
     }
 

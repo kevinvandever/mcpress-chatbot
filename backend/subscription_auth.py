@@ -59,6 +59,8 @@ class AppstleSubscriptionResponse(BaseModel):
     subscription_status: Optional[str] = None  # "ACTIVE", "CANCELLED", "EXPIRED", "PAUSED", or None
     expiration_date: Optional[datetime] = None
     customer_email: Optional[str] = None
+    next_billing_date: Optional[datetime] = None  # Contract billing date from Appstle API
+    product_subscriber_status: Optional[str] = None  # Raw status: ACTIVE, PAUSED, CANCELLED
 
 
 class LoginSuccessResponse(BaseModel):
@@ -286,19 +288,85 @@ class SubscriptionAuthService:
         )
 
     # ------------------------------------------------------------------
+    # _parse_contract_response
+    # ------------------------------------------------------------------
+    def _parse_contract_response(self, data: Any, email: str) -> AppstleSubscriptionResponse:
+        """Parse Appstle API step 2 response using contract data to determine subscription status.
+
+        Extracts ``productSubscriberStatus`` and ``nextBillingDate`` from the
+        response.  Falls back to tag-based parsing via ``_parse_tags_response``
+        when contract fields are missing (defensive backward compatibility).
+        """
+        if not isinstance(data, dict):
+            logger.info(
+                "Contract response is not a dict for email=%s, falling back to tags",
+                email,
+            )
+            return self._parse_tags_response(data, email)
+
+        # 1. Extract productSubscriberStatus from top-level
+        product_subscriber_status: Optional[str] = data.get("productSubscriberStatus")
+
+        if not product_subscriber_status:
+            logger.info(
+                "No productSubscriberStatus in response for email=%s, falling back to tags",
+                email,
+            )
+            return self._parse_tags_response(data, email)
+
+        # 2. Extract nextBillingDate from subscriptionContracts.nodes[0].nextBillingDate
+        next_billing_date_str: Optional[str] = None
+        try:
+            nodes = data.get("subscriptionContracts", {}).get("nodes", [])
+            if nodes:
+                next_billing_date_str = nodes[0].get("nextBillingDate")
+        except (IndexError, AttributeError, TypeError):
+            logger.warning(
+                "Could not extract nextBillingDate from contract nodes for email=%s",
+                email,
+            )
+
+        # 3. Parse nextBillingDate string into a datetime object (ISO 8601)
+        next_billing_date: Optional[datetime] = None
+        if next_billing_date_str:
+            try:
+                next_billing_date = datetime.fromisoformat(
+                    next_billing_date_str.replace("Z", "+00:00")
+                )
+            except (ValueError, TypeError) as exc:
+                logger.warning(
+                    "Failed to parse nextBillingDate '%s' for email=%s: %s",
+                    next_billing_date_str, email, exc,
+                )
+
+        logger.info(
+            "Contract data for email=%s: productSubscriberStatus=%s, nextBillingDate=%s",
+            email, product_subscriber_status, next_billing_date,
+        )
+
+        # 4. Return response with contract fields populated
+        return AppstleSubscriptionResponse(
+            is_valid=True,
+            subscription_status=product_subscriber_status,
+            customer_email=email,
+            product_subscriber_status=product_subscriber_status,
+            next_billing_date=next_billing_date,
+        )
+
+    # ------------------------------------------------------------------
     # verify_subscription
     # ------------------------------------------------------------------
     async def verify_subscription(self, email: str) -> AppstleSubscriptionResponse:
         """
-        Two-step Appstle API flow to check subscription status via customer tags.
+        Two-step Appstle API flow to check subscription status via contract data.
 
         Step 1: GET {APPSTLE_API_URL}/api/external/v2/subscription-contract-details/customers?email={email}
                 → Extract customerId from the first customer record.
 
         Step 2: GET {APPSTLE_API_URL}/api/external/v2/subscription-customers/{customerId}
-                → Get full customer details including tags array.
+                → Get full customer details including contract data.
 
-        Step 3: Pass the customer data (with tags) to _parse_tags_response.
+        Step 3: Pass the customer data to _parse_contract_response (falls back to tags if contract fields missing).
 
         Both endpoints use the same base URL and API key.
 
@@ -375,8 +443,8 @@ class SubscriptionAuthService:
                     email, str(step2_data)[:500],
                 )
 
-                # Step 3: Parse the customer data (with tags) to determine status
-                return self._parse_tags_response(step2_data, email)
+                # Step 3: Parse the customer data (contract-based) to determine status
+                return self._parse_contract_response(step2_data, email)
 
     # ------------------------------------------------------------------
     # _extract_customer_id
@@ -567,17 +635,67 @@ class SubscriptionAuthService:
                 ).model_dump(),
             }
 
-        # 4. Determine subscription status — free-tier users are allowed to continue
-        raw_status = appstle_resp.subscription_status
-        normalized = _normalize_status(raw_status)
+        # 4. Determine subscription status using contract-based 5-scenario logic
+        status_upper = (appstle_resp.product_subscriber_status or "").upper()
+        next_billing = appstle_resp.next_billing_date
 
-        if appstle_resp.is_valid and normalized == "active":
+        if status_upper == "ACTIVE":
+            # Scenario 1: ACTIVE subscriber → full access
             subscription_status = "active"
+        elif status_upper == "PAUSED":
+            if next_billing is not None:
+                # Make comparison timezone-aware
+                now = datetime.now(timezone.utc)
+                if next_billing.tzinfo is None:
+                    next_billing = next_billing.replace(tzinfo=timezone.utc)
+                if next_billing > now:
+                    # Scenario 2: PAUSED + nextBillingDate in future → active (paid time remaining)
+                    subscription_status = "active"
+                else:
+                    # Scenario 3: PAUSED + nextBillingDate in past → deny
+                    logger.info(
+                        "Subscription expired for email=%s: status=PAUSED, nextBillingDate=%s (past)",
+                        email, next_billing,
+                    )
+                    return {
+                        "status_code": 403,
+                        "body": LoginDeniedResponse(
+                            error="Your subscription has expired. Resubscribe to continue.",
+                            subscription_status="paused",
+                            redirect_url=self.signup_url,
+                        ).model_dump(),
+                    }
+            else:
+                # Scenario 3b: PAUSED + null nextBillingDate → deny
+                logger.info(
+                    "Subscription expired for email=%s: status=PAUSED, nextBillingDate=None",
+                    email,
+                )
+                return {
+                    "status_code": 403,
+                    "body": LoginDeniedResponse(
+                        error="Your subscription has expired. Resubscribe to continue.",
+                        subscription_status="paused",
+                        redirect_url=self.signup_url,
+                    ).model_dump(),
+                }
+        elif status_upper == "CANCELLED":
+            # Scenario 4: CANCELLED → deny
+            logger.info("Subscription cancelled for email=%s", email)
+            return {
+                "status_code": 403,
+                "body": LoginDeniedResponse(
+                    error="Your subscription has been cancelled. Resubscribe to continue.",
+                    subscription_status="cancelled",
+                    redirect_url=self.signup_url,
+                ).model_dump(),
+            }
         else:
+            # Scenario 5: No subscription record (None/not found) → free-tier
             subscription_status = "free"
             logger.info(
-                "Free-tier login for email=%s: appstle_status=%s",
-                email, raw_status,
+                "Free-tier login for email=%s: product_subscriber_status=%s",
+                email, appstle_resp.product_subscriber_status,
             )
 
         # 5. Check password (regardless of subscription status)
@@ -730,13 +848,68 @@ class SubscriptionAuthService:
                 ).model_dump(),
             }
 
-        # 4. Determine subscription status
-        normalized = _normalize_status(appstle_resp.subscription_status)
+        # 4. Determine subscription status using contract-based 5-scenario logic
+        status_upper = (appstle_resp.product_subscriber_status or "").upper()
+        next_billing = appstle_resp.next_billing_date
 
-        if appstle_resp.is_valid and normalized == "active":
+        if status_upper == "ACTIVE":
+            # Scenario 1: ACTIVE subscriber → full access
             subscription_status = "active"
+        elif status_upper == "PAUSED":
+            if next_billing is not None:
+                # Make comparison timezone-aware
+                now = datetime.now(timezone.utc)
+                if next_billing.tzinfo is None:
+                    next_billing = next_billing.replace(tzinfo=timezone.utc)
+                if next_billing > now:
+                    # Scenario 2: PAUSED + nextBillingDate in future → active (paid time remaining)
+                    subscription_status = "active"
+                else:
+                    # Scenario 3: PAUSED + nextBillingDate in past → deny
+                    logger.info(
+                        "Refresh denied for email=%s: status=PAUSED, nextBillingDate=%s (past)",
+                        email, next_billing,
+                    )
+                    return {
+                        "status_code": 403,
+                        "body": RefreshResponse(
+                            success=False,
+                            error="Your subscription has expired. Resubscribe to continue.",
+                            redirect_url=self.signup_url,
+                        ).model_dump(),
+                    }
+            else:
+                # Scenario 3b: PAUSED + null nextBillingDate → deny
+                logger.info(
+                    "Refresh denied for email=%s: status=PAUSED, nextBillingDate=None",
+                    email,
+                )
+                return {
+                    "status_code": 403,
+                    "body": RefreshResponse(
+                        success=False,
+                        error="Your subscription has expired. Resubscribe to continue.",
+                        redirect_url=self.signup_url,
+                    ).model_dump(),
+                }
+        elif status_upper == "CANCELLED":
+            # Scenario 4: CANCELLED → deny
+            logger.info("Refresh denied for email=%s: subscription cancelled", email)
+            return {
+                "status_code": 403,
+                "body": RefreshResponse(
+                    success=False,
+                    error="Your subscription has been cancelled. Resubscribe to continue.",
+                    redirect_url=self.signup_url,
+                ).model_dump(),
+            }
         else:
+            # Scenario 5: No subscription record (None/not found) → free-tier
             subscription_status = "free"
+            logger.info(
+                "Free-tier refresh for email=%s: product_subscriber_status=%s",
+                email, appstle_resp.product_subscriber_status,
+            )
 
         new_token = self.create_token(
             email=email,

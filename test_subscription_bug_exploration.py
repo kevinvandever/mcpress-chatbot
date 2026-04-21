@@ -67,11 +67,11 @@ TIMEOUT = 30  # seconds
 # ---------------------------------------------------------------------------
 
 def call_subscription_decision(
-    product_subscriber_status: str | None,
-    next_billing_date: str | None,
-    has_subscription: bool = True,
-    email: str = "test-exploration@example.com",
-) -> dict:
+    product_subscriber_status,  # str or None
+    next_billing_date,  # str or None
+    has_subscription=True,  # bool
+    email="test-exploration@example.com",  # str
+):  # -> dict
     """Call the test endpoint and return the parsed response."""
     payload = {
         "email": email,

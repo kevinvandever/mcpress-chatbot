@@ -1,0 +1,163 @@
+# Implementation Plan
+
+- [x] 1. Write bug condition exploration test
+  - **Property 1: Bug Condition** — Paused-Expired, Cancelled, and Paused-With-Time-Remaining Users Get Wrong Access
+  - **CRITICAL**: This test MUST FAIL on unfixed code — failure confirms the bug exists
+  - **DO NOT attempt to fix the test or the code when it fails**
+  - **NOTE**: This test encodes the expected behavior — it will validate the fix when it passes after implementation
+  - **GOAL**: Surface counterexamples that demonstrate the bug exists in the login method's step 4
+  - **IMPORTANT**: This project has NO local testing. Create the test file as an API-based test script that runs against the deployed staging backend. Use `python3` not `python`. Mock the Appstle API by creating a temporary test endpoint in `backend/` that exercises the login decision logic directly with controlled `AppstleSubscriptionResponse` inputs.
+  - **Scoped PBT Approach**: Scope the property to the 4 concrete failing cases from the design:
+    - `productSubscriberStatus="PAUSED"` + `nextBillingDate` in the past → expect 403 with "Your subscription has expired. Resubscribe to continue." (will get 200 with "free")
+    - `productSubscriberStatus="CANCELLED"` → expect 403 with "Your subscription has been cancelled. Resubscribe to continue." (will get 200 with "free")
+    - `productSubscriberStatus="PAUSED"` + `nextBillingDate` in the future → expect 200 with `subscription_status="active"` (will get 200 with "free")
+    - `productSubscriberStatus="PAUSED"` + `nextBillingDate=null` → expect 403 with "Your subscription has expired. Resubscribe to continue." (will get 200 with "free")
+  - Bug Condition from design: `isBugCondition(input)` returns true when `hasSubscription AND (isPausedExpired OR isCancelled OR isPausedWithTimeRemaining)`
+  - The test assertions should match the Expected Behavior Properties from design (Properties 1 and 2)
+  - Run test on UNFIXED code (deploy to staging first)
+  - **EXPECTED OUTCOME**: Test FAILS — all 4 cases return `status_code=200` with `subscription_status="free"` instead of expected behavior
+  - Document counterexamples found: login step 4 has no denial path and no contract-based logic
+  - Mark task complete when test is written, run against staging, and failure is documented
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
+
+- [x] 2. Write preservation property tests (BEFORE implementing fix)
+  - **Property 2: Preservation** — ACTIVE Subscribers, No-Subscription Users, and Error Paths Unchanged
+  - **IMPORTANT**: Follow observation-first methodology — run UNFIXED code first, observe behavior, then write tests
+  - **IMPORTANT**: This project has NO local testing. Create the test as an API-based script that runs against the deployed staging backend. Use `python3` not `python`.
+  - Observe on UNFIXED code (staging):
+    - ACTIVE subscriber login → expect `status_code=200`, `subscription_status="active"`
+    - No-subscription user login → expect `status_code=200`, `subscription_status="free"`
+    - API timeout/error → expect `status_code=503`, error="Subscription service temporarily unavailable"
+    - Incorrect password → expect `status_code=401`, error="Invalid email or password"
+    - Rate-limited IP → expect `status_code=429`, error="Too many login attempts"
+  - Write property-based tests capturing observed behavior patterns from Preservation Requirements in design (Properties 3 and 4):
+    - For all ACTIVE subscribers: `status_code=200` and `subscription_status="active"`
+    - For all no-subscription users: `status_code=200` and `subscription_status="free"`
+    - For all API errors: `status_code=503`
+    - For all bad passwords: `status_code=401`
+    - For all rate-limited IPs: `status_code=429`
+  - Property-based testing generates many test cases for stronger preservation guarantees
+  - Run tests on UNFIXED code (staging)
+  - **EXPECTED OUTCOME**: Tests PASS — confirms baseline behavior to preserve
+  - Mark task complete when tests are written, run against staging, and passing on unfixed code
+  - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
+
+
+- [-] 3. Implement subscription status fix
+
+  - [x] 3.1 Update `AppstleSubscriptionResponse` model with contract fields
+    - Add `next_billing_date: Optional[datetime] = None` field to carry the contract billing date
+    - Add `product_subscriber_status: Optional[str] = None` field to carry the raw status (ACTIVE, PAUSED, CANCELLED)
+    - These fields pass contract data from the API response through to the login decision logic
+    - File: `backend/subscription_auth.py`
+    - _Bug_Condition: isBugCondition(input) — AppstleSubscriptionResponse currently lacks these fields, so contract data is lost before reaching login step 4_
+    - _Expected_Behavior: Model carries `product_subscriber_status` and `next_billing_date` so login step 4 can make contract-based decisions_
+    - _Preservation: Existing fields (`is_valid`, `subscription_status`, `expiration_date`, `customer_email`) remain unchanged_
+    - _Requirements: 2.4_
+
+  - [x] 3.2 Create `_parse_contract_response()` method
+    - Extract `productSubscriberStatus` from the top-level of the step 2 API response
+    - Extract `nextBillingDate` from `subscriptionContracts.nodes[0].nextBillingDate`
+    - Parse `nextBillingDate` string into a `datetime` object (ISO 8601 format)
+    - Populate `product_subscriber_status` and `next_billing_date` on `AppstleSubscriptionResponse`
+    - Set `is_valid=True` when a customer record with contract data is found
+    - Set `subscription_status` to the raw `productSubscriberStatus` value
+    - Fall back to tag-based logic via `_parse_tags_response()` if contract fields are missing (defensive)
+    - File: `backend/subscription_auth.py`
+    - _Bug_Condition: `_parse_tags_response()` uses unreliable customer tags; new method uses `productSubscriberStatus` and `nextBillingDate`_
+    - _Expected_Behavior: Accurate status derivation from contract data instead of tags_
+    - _Preservation: Tag-based fallback ensures no regression if contract fields are absent_
+    - _Requirements: 2.4_
+
+  - [x] 3.3 Update `verify_subscription()` to use `_parse_contract_response()`
+    - Replace the call to `self._parse_tags_response(step2_data, email)` with `self._parse_contract_response(step2_data, email)`
+    - Method signature and return type (`AppstleSubscriptionResponse`) remain the same
+    - File: `backend/subscription_auth.py`
+    - _Bug_Condition: Currently calls `_parse_tags_response()` which uses unreliable tags_
+    - _Expected_Behavior: Calls `_parse_contract_response()` which uses contract data_
+    - _Preservation: Return type unchanged; callers unaffected_
+    - _Requirements: 2.4_
+
+  - [x] 3.4 Rewrite login method step 4 with 5-scenario decision logic
+    - Extract `product_subscriber_status` and `next_billing_date` from `appstle_resp`
+    - Implement the decision tree:
+      - **ACTIVE** → `subscription_status = "active"` (200)
+      - **PAUSED + nextBillingDate in future** → `subscription_status = "active"` (200, paid time remaining)
+      - **PAUSED + nextBillingDate in past or null** → 403 with error="Your subscription has expired. Resubscribe to continue." and `redirect_url=self.signup_url`
+      - **CANCELLED** → 403 with error="Your subscription has been cancelled. Resubscribe to continue." and `redirect_url=self.signup_url`
+      - **No subscription record (None/not found)** → `subscription_status = "free"` (200)
+    - Use `LoginDeniedResponse` for 403 responses with `redirect_url`
+    - File: `backend/subscription_auth.py`
+    - _Bug_Condition: Current step 4 maps everything non-"active" to "free" — no denial path exists_
+    - _Expected_Behavior: 5-scenario logic from design — PAUSED-expired and CANCELLED get 403; PAUSED-with-time gets active; no-subscription gets free_
+    - _Preservation: ACTIVE → active and no-subscription → free paths unchanged_
+    - _Requirements: 2.1, 2.2, 2.3, 2.5, 2.6_
+
+  - [x] 3.5 Update refresh method with contract-based 5-scenario logic
+    - Apply the same 5-scenario decision tree from task 3.4 to the refresh method's step 4
+    - Currently the refresh method has the same binary active/free logic as login
+    - For 403 denial scenarios, return `RefreshResponse` with `success=False`, appropriate error message, and `redirect_url=self.signup_url`
+    - File: `backend/subscription_auth.py`
+    - _Bug_Condition: Refresh method has same binary active/free logic — no denial path_
+    - _Expected_Behavior: Refreshed tokens reflect accurate contract-based status; denied users get 403 with redirect_url_
+    - _Preservation: ACTIVE and no-subscription refresh paths unchanged; API error paths unchanged_
+    - _Requirements: 2.1, 2.2, 2.3, 2.5, 2.6_
+
+  - [x] 3.6 Verify FREE_QUESTION_LIMIT environment variable support
+    - Confirm that the free-tier question limit is read from `os.getenv("FREE_QUESTION_LIMIT")` and not hardcoded
+    - Check the usage gate logic that enforces the limit for free-tier users
+    - Document the configuration: which file reads it, default value, how it's used
+    - If hardcoded, update to use the environment variable
+    - File: `backend/subscription_auth.py` and related usage gate files
+    - _Preservation: Free-tier question limiting behavior unchanged; only ensuring it's configurable via env var_
+    - _Requirements: 2.6, 3.2, 3.7_
+
+  - [x] 3.7 Add frontend 403 denial handling in login page
+    - Add a `case 403:` block in the `handleSubmit` error switch in `frontend/app/login/page.tsx`
+    - Extract `error` message and `redirect_url` from the response body (`data.error`, `data.redirect_url`)
+    - Display the denial message in a styled alert (distinct from generic red error — use amber/orange styling similar to the subscription prompt)
+    - Show a "Resubscribe" link/button pointing to the `redirect_url`
+    - File: `frontend/app/login/page.tsx`
+    - _Bug_Condition: Frontend has no 403 handler — denied users would see "An unexpected error occurred"_
+    - _Expected_Behavior: Denied users see specific message ("Your subscription has expired/cancelled...") with resubscribe link_
+    - _Preservation: Existing 400, 401, 429, 503 handlers unchanged_
+    - _Requirements: 2.7_
+
+  - [-] 3.8 Verify bug condition exploration test now passes
+    - **Property 1: Expected Behavior** — Paused-Expired, Cancelled, and Paused-With-Time-Remaining Users Get Correct Access
+    - **IMPORTANT**: Re-run the SAME test from task 1 — do NOT write a new test
+    - The test from task 1 encodes the expected behavior
+    - Deploy the fix to staging first, then run the test
+    - When this test passes, it confirms the expected behavior is satisfied:
+      - PAUSED-expired → 403 with expiry message
+      - CANCELLED → 403 with cancellation message
+      - PAUSED-with-time-remaining → 200 with "active"
+      - PAUSED-null-date → 403 with expiry message
+    - **EXPECTED OUTCOME**: Test PASSES (confirms bug is fixed)
+    - _Requirements: 2.1, 2.2, 2.3, 2.5_
+
+  - [~] 3.9 Verify preservation tests still pass
+    - **Property 2: Preservation** — ACTIVE Subscribers, No-Subscription Users, and Error Paths Unchanged
+    - **IMPORTANT**: Re-run the SAME tests from task 2 — do NOT write new tests
+    - Deploy the fix to staging first, then run the preservation tests
+    - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions)
+    - Confirm all preservation tests still pass after fix:
+      - ACTIVE subscribers → 200 with "active"
+      - No-subscription users → 200 with "free"
+      - API errors → 503
+      - Bad passwords → 401
+      - Rate limits → 429
+
+- [~] 4. Checkpoint — Ensure all tests pass
+  - Deploy all changes to staging (backend to Railway, frontend to Netlify)
+  - Wait for staging deployment to complete (~10-15 min for Railway, ~2-3 min for Netlify)
+  - Run bug condition exploration test against staging — must PASS
+  - Run preservation property tests against staging — must PASS
+  - Manually verify the 5 login scenarios via curl against staging:
+    - ACTIVE subscriber → 200 with "active"
+    - PAUSED + future nextBillingDate → 200 with "active"
+    - PAUSED + past nextBillingDate → 403 with expiry message and redirect_url
+    - CANCELLED → 403 with cancellation message and redirect_url
+    - No subscription → 200 with "free"
+  - Verify frontend 403 handling at staging Netlify URL (https://staging--mc-chatmaster.netlify.app/login)
+  - Ensure all tests pass, ask the user if questions arise.
