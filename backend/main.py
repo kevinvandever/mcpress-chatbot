@@ -120,6 +120,7 @@ except Exception as e:
 # Import ingestion modules
 ingestion_service = None
 ingestion_scheduler_instance = None
+backfill_service = None
 try:
     try:
         from ingestion_service import IngestionService
@@ -137,6 +138,31 @@ except Exception as e:
     print(f"⚠️ Ingestion modules not available: {e}")
     INGESTION_AVAILABLE = False
     ingestion_router = None
+
+# Article Metadata Quality: Import services and routes
+article_metadata_available = False
+try:
+    try:
+        from excel_lookup_service import ExcelLookupService
+        from website_metadata_scraper import WebsiteMetadataScraper
+        from metadata_resolver import MetadataResolver
+        from metadata_backfill_service import MetadataBackfillService
+        from article_metadata_routes import router as article_metadata_router, set_backfill_service
+        from author_extractor import get_author_extractor
+        article_metadata_available = True
+        print("✅ Article metadata modules imported (Railway style)")
+    except ImportError:
+        from backend.excel_lookup_service import ExcelLookupService
+        from backend.website_metadata_scraper import WebsiteMetadataScraper
+        from backend.metadata_resolver import MetadataResolver
+        from backend.metadata_backfill_service import MetadataBackfillService
+        from backend.article_metadata_routes import router as article_metadata_router, set_backfill_service
+        from backend.author_extractor import get_author_extractor
+        article_metadata_available = True
+        print("✅ Article metadata modules imported (local style)")
+except Exception as e:
+    print(f"⚠️ Article metadata modules not available: {e}")
+    article_metadata_router = None
 
 # Check vector store preference - try multiple variable names due to Railway caching issues
 use_postgresql_env = os.getenv('USE_POSTGRESQL', '')
@@ -708,6 +734,62 @@ async def startup_event():
             import traceback
             print(traceback.format_exc())
 
+    # Article Metadata Quality: Initialize services and routes
+    global backfill_service
+    if article_metadata_available:
+        try:
+            database_url = os.getenv('DATABASE_URL')
+            if database_url and author_service and doc_author_service:
+                print("🔄 Initializing article metadata quality services...")
+
+                # Initialize ExcelLookupService with both spreadsheet paths
+                excel_lookup = ExcelLookupService(
+                    article_spreadsheet_path="export_subset_DMU_v2.xlsx",
+                    book_spreadsheet_path="MC Press Books - URL-Title-Author.xlsx",
+                )
+
+                # Initialize WebsiteMetadataScraper
+                website_scraper = WebsiteMetadataScraper()
+
+                # Initialize MetadataResolver with Excel lookup, website scraper, and AuthorExtractor
+                author_extractor = get_author_extractor()
+                metadata_resolver = MetadataResolver(
+                    excel_lookup=excel_lookup,
+                    website_scraper=website_scraper,
+                    author_extractor=author_extractor,
+                )
+
+                # Initialize MetadataBackfillService
+                backfill_service = MetadataBackfillService(
+                    database_url=database_url,
+                    metadata_resolver=metadata_resolver,
+                    author_service=author_service,
+                    document_author_service=doc_author_service,
+                )
+
+                # Create backfill_runs table if it doesn't exist
+                await backfill_service.ensure_table()
+
+                # Wire up routes
+                set_backfill_service(backfill_service)
+                app.include_router(article_metadata_router)
+                print("✅ Article metadata endpoints enabled at /api/articles/*, /api/diagnostics/article-metadata")
+
+                # Inject MetadataResolver into IngestionService for enhanced article metadata during ingestion
+                if ingestion_service:
+                    ingestion_service.metadata_resolver = metadata_resolver
+                    ingestion_service.author_service = author_service
+                    print("✅ MetadataResolver injected into IngestionService for article metadata resolution")
+            else:
+                if not database_url:
+                    print("⚠️ DATABASE_URL not set - article metadata services disabled")
+                else:
+                    print("⚠️ Author services not available - article metadata services disabled")
+        except Exception as e:
+            print(f"⚠️ Could not initialize article metadata services: {e}")
+            import traceback
+            print(traceback.format_exc())
+
 # Shutdown event handler
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -737,6 +819,14 @@ async def shutdown_event():
             print("✅ Ingestion scheduler shutdown complete")
         except Exception as e:
             print(f"⚠️  Error during ingestion scheduler shutdown: {e}")
+
+    # Article Metadata Quality: Close backfill service connections
+    if backfill_service:
+        try:
+            await backfill_service.close()
+            print("✅ Backfill service shutdown complete")
+        except Exception as e:
+            print(f"⚠️  Error during backfill service shutdown: {e}")
 
 # Initialize chat_handler without persistence first (works immediately)
 # Will be updated with conversation_service later if available

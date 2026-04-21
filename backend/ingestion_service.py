@@ -46,10 +46,14 @@ class IngestionService:
         vector_store,
         pdf_processor,
         category_mapper,
+        metadata_resolver=None,
+        author_service=None,
     ):
         self.vector_store = vector_store
         self.pdf_processor = pdf_processor
         self.category_mapper = category_mapper
+        self.metadata_resolver = metadata_resolver
+        self.author_service = author_service
 
         # FTP configuration from environment variables
         self.ftp_host = os.getenv("FTP_HOST", "209.142.66.171")
@@ -240,6 +244,39 @@ class IngestionService:
             category = self.category_mapper.get_category(filename)
             metadata = self._build_metadata(filename, author, category)
 
+            # Enhanced metadata resolution for numeric-filename articles
+            metadata_source = "default"
+            resolved_authors = []
+            if metadata["document_type"] == "article" and self.metadata_resolver:
+                try:
+                    resolved = await self.metadata_resolver.resolve(filename, file_path)
+                    metadata_source = resolved.source
+
+                    # Override title if resolver found a better one
+                    name_without_ext = filename.rsplit(".pdf", 1)[0] if filename.lower().endswith(".pdf") else filename
+                    if resolved.title != name_without_ext:
+                        metadata["title"] = resolved.title
+
+                    # Override author if resolver found a known author
+                    if resolved.authors and resolved.authors[0] != "Unknown Author":
+                        metadata["author"] = resolved.authors[0]
+                        author = resolved.authors[0]
+                        resolved_authors = resolved.authors
+
+                    logger.info(
+                        "Metadata resolved for '%s' via %s: title='%s', author='%s'",
+                        filename,
+                        metadata_source,
+                        metadata["title"],
+                        metadata["author"],
+                    )
+                except Exception as e:
+                    logger.warning(
+                        "Metadata resolution failed for '%s', using defaults: %s",
+                        filename,
+                        e,
+                    )
+
             # Store chunks with embeddings
             if chunks:
                 await self.vector_store.add_documents(chunks, metadata={"filename": filename})
@@ -248,10 +285,11 @@ class IngestionService:
             async with self.vector_store.pool.acquire() as conn:
                 await conn.execute(
                     """
-                    INSERT INTO books (filename, title, document_type, category, total_pages, processed_at)
-                    VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+                    INSERT INTO books (filename, title, author, document_type, category, total_pages, processed_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
                     ON CONFLICT (filename) DO UPDATE SET
                         title = EXCLUDED.title,
+                        author = EXCLUDED.author,
                         document_type = EXCLUDED.document_type,
                         category = EXCLUDED.category,
                         total_pages = EXCLUDED.total_pages,
@@ -259,10 +297,47 @@ class IngestionService:
                     """,
                     filename,
                     metadata["title"],
+                    metadata["author"],
                     metadata["document_type"],
                     category,
                     total_pages,
                 )
+
+                # Create author records and link via document_authors if resolver found authors
+                if resolved_authors and self.author_service:
+                    try:
+                        book_id = await conn.fetchval(
+                            "SELECT id FROM books WHERE filename = $1", filename
+                        )
+                        if book_id:
+                            for order, author_name in enumerate(resolved_authors):
+                                author_name = author_name.strip()
+                                if not author_name or author_name == "Unknown Author":
+                                    continue
+                                author_id = await self.author_service.get_or_create_author(author_name)
+                                # Insert into document_authors, skip if already linked
+                                await conn.execute(
+                                    """
+                                    INSERT INTO document_authors (book_id, author_id, author_order)
+                                    VALUES ($1, $2, $3)
+                                    ON CONFLICT (book_id, author_id) DO NOTHING
+                                    """,
+                                    book_id,
+                                    author_id,
+                                    order,
+                                )
+                            logger.info(
+                                "Linked %d author(s) for '%s' via %s",
+                                len(resolved_authors),
+                                filename,
+                                metadata_source,
+                            )
+                    except Exception as e:
+                        logger.warning(
+                            "Failed to create author records for '%s': %s",
+                            filename,
+                            e,
+                        )
 
             return {
                 "filename": filename,
@@ -270,6 +345,7 @@ class IngestionService:
                 "pages": total_pages,
                 "author": author,
                 "category": category,
+                "metadata_source": metadata_source,
             }
         finally:
             # Always clean up temp file
