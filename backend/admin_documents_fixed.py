@@ -678,20 +678,38 @@ async def delete_document(doc_id: int, current_user=Depends(get_current_user)):
             filename = book["filename"]
             title = book["title"] or filename
 
-            async with conn.transaction():
-                # 1. Delete author associations
-                da_result = await conn.execute(
-                    "DELETE FROM document_authors WHERE book_id = $1",
-                    doc_id
+            # Check which optional tables exist before starting transaction
+            has_document_authors = await conn.fetchval("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.columns
+                    WHERE table_name = 'document_authors' AND column_name = 'book_id'
                 )
-                author_associations_deleted = int(da_result.split()[-1])
+            """)
+            has_metadata_history = await conn.fetchval("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.columns
+                    WHERE table_name = 'metadata_history' AND column_name = 'book_id'
+                )
+            """)
 
-                # 2. Delete metadata history
-                mh_result = await conn.execute(
-                    "DELETE FROM metadata_history WHERE book_id = $1",
-                    doc_id
-                )
-                metadata_history_deleted = int(mh_result.split()[-1])
+            async with conn.transaction():
+                # 1. Delete author associations (if table/column exists)
+                author_associations_deleted = 0
+                if has_document_authors:
+                    da_result = await conn.execute(
+                        "DELETE FROM document_authors WHERE book_id = $1",
+                        doc_id
+                    )
+                    author_associations_deleted = int(da_result.split()[-1])
+
+                # 2. Delete metadata history (if table/column exists)
+                metadata_history_deleted = 0
+                if has_metadata_history:
+                    mh_result = await conn.execute(
+                        "DELETE FROM metadata_history WHERE book_id = $1",
+                        doc_id
+                    )
+                    metadata_history_deleted = int(mh_result.split()[-1])
 
                 # 3. Delete chunks from documents table by filename
                 chunks_result = await conn.execute(
@@ -754,25 +772,43 @@ async def bulk_delete_documents(request: BulkDeleteRequest, current_user=Depends
             total_author_associations_deleted = 0
             total_metadata_history_deleted = 0
 
+            # Check which optional tables exist before starting deletes
+            has_document_authors = await conn.fetchval("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.columns
+                    WHERE table_name = 'document_authors' AND column_name = 'book_id'
+                )
+            """)
+            has_metadata_history = await conn.fetchval("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.columns
+                    WHERE table_name = 'metadata_history' AND column_name = 'book_id'
+                )
+            """)
+
             # For each found document, perform cascading delete inside a transaction
             for row in rows:
                 doc_id = row["id"]
                 filename = row["filename"]
 
                 async with conn.transaction():
-                    # 1. Delete author associations
-                    da_result = await conn.execute(
-                        "DELETE FROM document_authors WHERE book_id = $1",
-                        doc_id
-                    )
-                    author_associations_deleted = int(da_result.split()[-1])
+                    # 1. Delete author associations (if table/column exists)
+                    author_associations_deleted = 0
+                    if has_document_authors:
+                        da_result = await conn.execute(
+                            "DELETE FROM document_authors WHERE book_id = $1",
+                            doc_id
+                        )
+                        author_associations_deleted = int(da_result.split()[-1])
 
-                    # 2. Delete metadata history
-                    mh_result = await conn.execute(
-                        "DELETE FROM metadata_history WHERE book_id = $1",
-                        doc_id
-                    )
-                    metadata_history_deleted = int(mh_result.split()[-1])
+                    # 2. Delete metadata history (if table/column exists)
+                    metadata_history_deleted = 0
+                    if has_metadata_history:
+                        mh_result = await conn.execute(
+                            "DELETE FROM metadata_history WHERE book_id = $1",
+                            doc_id
+                        )
+                        metadata_history_deleted = int(mh_result.split()[-1])
 
                     # 3. Delete chunks from documents table by filename
                     chunks_result = await conn.execute(
