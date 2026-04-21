@@ -730,7 +730,7 @@ async def delete_document(doc_id: int, current_user=Depends(get_current_user)):
         logger.error(f"Error deleting document {doc_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
-@router.delete("/documents/bulk", response_model=BulkRemovalSummary)
+@router.post("/documents/bulk-delete", response_model=BulkRemovalSummary)
 async def bulk_delete_documents(request: BulkDeleteRequest, current_user=Depends(get_current_user)):
     """Delete multiple documents with cascading cleanup"""
     if not request.ids:

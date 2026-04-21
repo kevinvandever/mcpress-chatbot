@@ -311,9 +311,15 @@ export default function DocumentsManagement() {
       await fetchDocuments(true, pagination.page, searchTerm, sortField, sortDirection);
       setSelectedDoc(null);
     } catch (err: unknown) {
-      const errorMessage = (err as { response?: { data?: { detail?: string } }; message?: string })?.response?.data?.detail
-        || (err as { message?: string })?.message
-        || 'Error deleting document';
+      const rawDetail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+      let errorMessage: string;
+      if (typeof rawDetail === 'string') {
+        errorMessage = rawDetail;
+      } else if (Array.isArray(rawDetail)) {
+        errorMessage = rawDetail.map((e: { msg?: string }) => e.msg || JSON.stringify(e)).join('; ');
+      } else {
+        errorMessage = (err as { message?: string })?.message || 'Error deleting document';
+      }
       setDeleteError(errorMessage);
     } finally {
       setDeleteLoading(false);
@@ -328,8 +334,8 @@ export default function DocumentsManagement() {
     setBulkDeleteSummary(null);
 
     try {
-      const response = await apiClient.delete(`${API_URL}/admin/documents/bulk`, {
-        data: { ids: [...selectedIds] },
+      const response = await apiClient.post(`${API_URL}/admin/documents/bulk-delete`, {
+        ids: [...selectedIds],
       });
       setBulkDeleteSummary(response.data);
 
@@ -338,11 +344,15 @@ export default function DocumentsManagement() {
       setSelectedDoc(null);
       await fetchDocuments(true, pagination.page, searchTerm, sortField, sortDirection);
     } catch (err: unknown) {
-      const errorMessage =
-        (err as { response?: { data?: { detail?: string } }; message?: string })?.response?.data
-          ?.detail ||
-        (err as { message?: string })?.message ||
-        'Error deleting documents';
+      const rawDetail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+      let errorMessage: string;
+      if (typeof rawDetail === 'string') {
+        errorMessage = rawDetail;
+      } else if (Array.isArray(rawDetail)) {
+        errorMessage = rawDetail.map((e: { msg?: string }) => e.msg || JSON.stringify(e)).join('; ');
+      } else {
+        errorMessage = (err as { message?: string })?.message || 'Error deleting documents';
+      }
       setBulkDeleteError(errorMessage);
     } finally {
       setBulkDeleteLoading(false);
