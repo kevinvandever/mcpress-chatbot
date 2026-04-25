@@ -9,6 +9,7 @@ interface ProgressiveWarningBannerProps {
   isPQL: boolean
   signupUrl: string
   onUpgradeClick: () => void
+  onSignIn: () => void
 }
 
 export default function ProgressiveWarningBanner({
@@ -17,6 +18,7 @@ export default function ProgressiveWarningBanner({
   isPQL,
   signupUrl,
   onUpgradeClick,
+  onSignIn,
 }: ProgressiveWarningBannerProps) {
   const stage = getWarningStage(questionsUsed, questionsLimit)
 
@@ -92,6 +94,13 @@ export default function ProgressiveWarningBanner({
           onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#990000' }}
         >
           Start Unlimited Access — $19.95/month
+        </button>
+
+        <button
+          onClick={onSignIn}
+          className="text-sm text-blue-600 hover:text-blue-800 underline underline-offset-2 transition-colors mt-3"
+        >
+          Already subscribed? Sign In
         </button>
       </div>
     </div>

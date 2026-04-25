@@ -767,6 +767,10 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
             isPQL={isPQL}
             signupUrl={signupUrl}
             onUpgradeClick={() => {}}
+            onSignIn={async () => {
+              try { await fetch('/api/auth/logout', { method: 'POST' }) } catch {}
+              router.push('/login')
+            }}
           />
         </div>
       )}
@@ -789,7 +793,10 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
       {showPaywall && (
         <PaywallOverlay
           signupUrl={signupUrl}
-          onSignIn={() => router.push('/login')}
+          onSignIn={async () => {
+            try { await fetch('/api/auth/logout', { method: 'POST' }) } catch {}
+            router.push('/login')
+          }}
           isPQL={isPQL}
         />
       )}
