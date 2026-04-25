@@ -33,7 +33,7 @@ class UsageGate:
     """
     Enforces free question limits for registered free-tier users.
 
-    Reads FREE_QUESTION_LIMIT from environment (default 5).
+    Reads FREE_QUESTION_LIMIT from environment (default 8).
     Tracks per-email question counts in the free_usage_tracking table.
     """
 
@@ -44,17 +44,17 @@ class UsageGate:
         logger.info(f"UsageGate initialized with free_question_limit={self.free_question_limit}")
 
     def _read_limit(self) -> int:
-        """Read FREE_QUESTION_LIMIT from env. Default 5. Log warning on bad value."""
+        """Read FREE_QUESTION_LIMIT from env. Default 8. Log warning on bad value."""
         raw = os.getenv("FREE_QUESTION_LIMIT")
         if raw is None:
-            return 5
+            return 8
         try:
             return int(raw)
         except (ValueError, TypeError):
             logger.warning(
-                f"FREE_QUESTION_LIMIT has non-integer value '{raw}', defaulting to 5"
+                f"FREE_QUESTION_LIMIT has non-integer value '{raw}', defaulting to 8"
             )
-            return 5
+            return 8
 
     async def init(self):
         """Create connection pool and ensure free_usage_tracking table exists with user_email column."""

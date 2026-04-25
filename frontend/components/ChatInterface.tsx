@@ -8,10 +8,13 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { useRouter } from 'next/navigation'
 import BookLink from './BookLink'
 import CompactSources from './CompactSources'
-import RemainingQuestionsBanner from './RemainingQuestionsBanner'
+import ProgressiveWarningBanner from './ProgressiveWarningBanner'
+import NewsletterCapturePrompt from './NewsletterCapturePrompt'
 import PaywallOverlay from './PaywallOverlay'
 import { API_URL } from '../config/api'
 import { getOrCreateGuestId } from '../utils/guestAuth'
+import { WarningStage, getWarningStage } from '../utils/warningStage'
+import { trackEvent } from '../utils/analytics'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -35,6 +38,7 @@ interface ChatInterfaceProps {
   subscriptionStatus?: string | null
   initialUsageExhausted?: boolean
   initialSignupUrl?: string
+  userEmail?: string
 }
 
 export interface ChatInterfaceRef {
@@ -70,7 +74,7 @@ const cleanText = (text: string): string => {
   return cleaned
 }
 
-const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDocuments = false, subscriptionStatus = null, initialUsageExhausted = false, initialSignupUrl = '' }, ref) => {
+const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDocuments = false, subscriptionStatus = null, initialUsageExhausted = false, initialSignupUrl = '', userEmail = '' }, ref) => {
   const router = useRouter()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -87,6 +91,11 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
   const [questionsLimit, setQuestionsLimit] = useState<number | null>(null)
   const [showPaywall, setShowPaywall] = useState(initialUsageExhausted)
   const [signupUrl, setSignupUrl] = useState(initialSignupUrl)
+  const [sessionQuestionCount, setSessionQuestionCount] = useState(0)
+  const [isPQL, setIsPQL] = useState(false)
+  const [newsletterDismissed, setNewsletterDismissed] = useState(false)
+  const [newsletterSignedUp, setNewsletterSignedUp] = useState(false)
+  const [previousWarningStage, setPreviousWarningStage] = useState<WarningStage>('silent')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -122,8 +131,9 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
   }, [messages, autoScroll])
 
   const sendMessage = async () => {
-    if (!input.trim() || isStreaming || showPaywall) {
-      console.log('Blocked send:', { input: input.trim(), isStreaming, showPaywall })
+    const isInputDisabledByStage = remainingQuestions !== null && questionsLimit !== null && ['upgrade', 'hardGate'].includes(getWarningStage(questionsLimit - remainingQuestions, questionsLimit))
+    if (!input.trim() || isStreaming || showPaywall || isInputDisabledByStage) {
+      console.log('Blocked send:', { input: input.trim(), isStreaming, showPaywall, isInputDisabledByStage })
       return
     }
 
@@ -260,8 +270,37 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
                   } else if (data.type === 'metadata' && data.usage) {
                     // Update remaining questions from usage metadata (free-tier users)
                     const remaining = data.usage.questions_remaining ?? null
+                    const usedCount = data.usage.questions_used ?? null
+                    const limitCount = data.usage.questions_limit ?? null
                     setRemainingQuestions(remaining)
-                    setQuestionsLimit(data.usage.questions_limit ?? null)
+                    setQuestionsLimit(limitCount)
+
+                    // Increment session question count and handle PQL detection
+                    setSessionQuestionCount(prev => {
+                      const newCount = prev + 1
+                      // PQL detection: set isPQL when session count reaches 3
+                      if (newCount >= 3 && prev < 3) {
+                        setIsPQL(true)
+                        trackEvent('pql_qualified', { sessionQuestionCount: newCount })
+                      }
+                      return newCount
+                    })
+
+                    // Warning stage tracking and transition events
+                    if (usedCount !== null && limitCount !== null) {
+                      const newStage = getWarningStage(usedCount, limitCount)
+                      setPreviousWarningStage(prev => {
+                        if (newStage !== prev && newStage !== 'silent') {
+                          trackEvent('warning_stage_change', {
+                            stage: newStage,
+                            questionsUsed: usedCount,
+                            questionsLimit: limitCount
+                          })
+                        }
+                        return newStage
+                      })
+                    }
+
                     // Show paywall immediately when last free question is used
                     if (remaining === 0) {
                       setShowPaywall(true)
@@ -719,12 +758,29 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
         )}
       </div>
       
-      {/* Remaining Questions Banner */}
+      {/* Progressive Warning Banner */}
       {subscriptionStatus === 'free' && remainingQuestions !== null && questionsLimit !== null && !showPaywall && (
         <div className="px-6 pt-3">
-          <RemainingQuestionsBanner
+          <ProgressiveWarningBanner
             questionsUsed={questionsLimit - remainingQuestions}
             questionsLimit={questionsLimit}
+            isPQL={isPQL}
+            signupUrl={signupUrl}
+            onUpgradeClick={() => {}}
+          />
+        </div>
+      )}
+
+      {/* Newsletter Capture Prompt — shown at soft warning stage for non-PQL users */}
+      {subscriptionStatus === 'free' && remainingQuestions !== null && questionsLimit !== null && !showPaywall &&
+        getWarningStage(questionsLimit - remainingQuestions, questionsLimit) === 'soft' &&
+        !isPQL && !newsletterDismissed && !newsletterSignedUp && (
+        <div className="px-6 pt-2">
+          <NewsletterCapturePrompt
+            userEmail={userEmail}
+            questionsUsed={questionsLimit - remainingQuestions}
+            onDismiss={() => setNewsletterDismissed(true)}
+            onSignup={() => setNewsletterSignedUp(true)}
           />
         </div>
       )}
@@ -734,6 +790,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
         <PaywallOverlay
           signupUrl={signupUrl}
           onSignIn={() => router.push('/login')}
+          isPQL={isPQL}
         />
       )}
 
@@ -748,7 +805,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
               onKeyDown={handleKeyDown}
               placeholder={hasDocuments ? "Ask MC ChatMaster Anything About IBM i, RPG, DB2..." : "Upload documents first to start chatting..."}
               className="w-full px-6 py-4 border-2 border-gray-200 rounded-2xl focus:border-mc-blue focus:ring-4 focus:ring-blue-100 transition-all text-lg placeholder-gray-400 shadow-sm hover:shadow-md resize-none min-h-[60px] max-h-[120px]"
-              disabled={isStreaming || showPaywall}
+              disabled={isStreaming || showPaywall || (remainingQuestions !== null && questionsLimit !== null && ['upgrade', 'hardGate'].includes(getWarningStage(questionsLimit - remainingQuestions, questionsLimit)))}
               rows={1}
               style={{
                 height: 'auto',
@@ -774,7 +831,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
           </div>
           <button
             onClick={sendMessage}
-            disabled={!input.trim() || isStreaming || showPaywall}
+            disabled={!input.trim() || isStreaming || showPaywall || (remainingQuestions !== null && questionsLimit !== null && ['upgrade', 'hardGate'].includes(getWarningStage(questionsLimit - remainingQuestions, questionsLimit)))}
             className="text-white font-semibold py-3 px-6 rounded-2xl transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 text-base flex-shrink-0 self-end min-h-[44px] w-full sm:w-auto"
             style={{ backgroundColor: '#990000' }}
             onMouseEnter={(e) => { if (!e.currentTarget.disabled) e.currentTarget.style.backgroundColor = '#7a0000' }}
@@ -795,7 +852,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
             )}
           </button>
         </div>
-        <p className="text-xs text-gray-400 mt-2 text-center">Unlimited Queries • 24/7 • Sources Always Linked</p>
+        <p className="text-xs text-gray-400 mt-2 text-center">{subscriptionStatus !== 'free' ? 'Unlimited Queries • ' : ''}24/7 • Sources Always Linked</p>
         <p className="text-xs text-gray-400 mt-1 text-center">MC ChatMaster is powered by AI and can make mistakes — so it&apos;s always a good idea to double-check cited sources. Also, just a heads up: it isn&apos;t able to help with coding.</p>
         
         {/* Smart Suggestions - Disabled for now */}
