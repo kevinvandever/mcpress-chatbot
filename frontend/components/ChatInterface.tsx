@@ -775,7 +775,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
         </div>
       )}
 
-      {/* Newsletter Capture Prompt — shown at soft warning stage for non-PQL users */}
+      {/* Newsletter Capture Prompt — disabled until real newsletter backend is integrated
       {subscriptionStatus === 'free' && remainingQuestions !== null && questionsLimit !== null && !showPaywall &&
         getWarningStage(questionsLimit - remainingQuestions, questionsLimit) === 'soft' &&
         !isPQL && !newsletterDismissed && !newsletterSignedUp && (
@@ -788,6 +788,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
           />
         </div>
       )}
+      */}
 
       {/* Paywall Overlay */}
       {showPaywall && (
