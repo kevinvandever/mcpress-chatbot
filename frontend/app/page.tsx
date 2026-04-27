@@ -359,7 +359,7 @@ export default function Home() {
                   </div>
                 )}
                 
-                <ChatInterface ref={chatInterfaceRef} hasDocuments={hasDocuments} subscriptionStatus={subscriptionStatus} initialUsageExhausted={usageExhausted} initialSignupUrl={signupUrl} />
+                <ChatInterface ref={chatInterfaceRef} hasDocuments={hasDocuments} subscriptionStatus={subscriptionStatus} initialUsageExhausted={usageExhausted} initialSignupUrl={signupUrl} userEmail={userEmail ?? undefined} />
               </div>
             </div>
 
