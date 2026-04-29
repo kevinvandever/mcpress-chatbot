@@ -741,12 +741,12 @@ class SubscriptionAuthService:
         token = self.create_token(
             email=email,
             subscription_status=subscription_status,
-            expires_at=appstle_resp.expiration_date,
+            expires_at=appstle_resp.expiration_date if appstle_resp else None,
         )
 
         expires_at_iso = (
             appstle_resp.expiration_date.isoformat()
-            if appstle_resp.expiration_date
+            if appstle_resp and appstle_resp.expiration_date
             else None
         )
 
@@ -895,7 +895,7 @@ class SubscriptionAuthService:
         new_token = self.create_token(
             email=email,
             subscription_status=subscription_status,
-            expires_at=appstle_resp.expiration_date,
+            expires_at=appstle_resp.expiration_date if appstle_resp else None,
         )
         logger.info("Token refreshed for email=%s subscription_status=%s", email, subscription_status)
         return {
