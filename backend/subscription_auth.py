@@ -592,70 +592,59 @@ class SubscriptionAuthService:
             }
 
         # 3. Call Appstle API to verify subscription FIRST (for all users)
+        # If Appstle is unavailable, fall through to free-tier instead of blocking login
+        appstle_resp = None
         try:
             appstle_resp = await self.verify_subscription(email)
         except asyncio.TimeoutError:
-            logger.error("Appstle API timeout for email=%s", email)
-            return {
-                "status_code": 503,
-                "body": LoginDeniedResponse(
-                    error="Subscription service temporarily unavailable",
-                    subscription_status=None,
-                    redirect_url=None,
-                ).model_dump(),
-            }
+            logger.error("Appstle API timeout for email=%s — falling back to free-tier", email)
         except aiohttp.ClientResponseError as exc:
-            logger.error("Appstle API error: status=%s for email=%s", exc.status, email)
-            return {
-                "status_code": 503,
-                "body": LoginDeniedResponse(
-                    error="Subscription service temporarily unavailable",
-                    subscription_status=None,
-                    redirect_url=None,
-                ).model_dump(),
-            }
+            logger.error("Appstle API error: status=%s for email=%s — falling back to free-tier", exc.status, email)
         except ValueError as exc:
-            logger.error("Malformed Appstle response for email=%s: %s", email, exc)
-            return {
-                "status_code": 500,
-                "body": LoginDeniedResponse(
-                    error="An unexpected error occurred",
-                    subscription_status=None,
-                    redirect_url=None,
-                ).model_dump(),
-            }
+            logger.error("Malformed Appstle response for email=%s: %s — falling back to free-tier", email, exc)
         except Exception as exc:
-            logger.error("Unexpected error calling Appstle API for email=%s: %s", email, exc)
-            return {
-                "status_code": 503,
-                "body": LoginDeniedResponse(
-                    error="Subscription service temporarily unavailable",
-                    subscription_status=None,
-                    redirect_url=None,
-                ).model_dump(),
-            }
+            logger.error("Unexpected error calling Appstle API for email=%s: %s — falling back to free-tier", email, exc)
 
         # 4. Determine subscription status using contract-based 5-scenario logic
-        status_upper = (appstle_resp.product_subscriber_status or "").upper()
-        next_billing = appstle_resp.next_billing_date
+        # If Appstle was unavailable (appstle_resp is None), default to free-tier
+        if appstle_resp is None:
+            subscription_status = "free"
+            logger.info("Free-tier login (Appstle unavailable) for email=%s", email)
+        else:
+            status_upper = (appstle_resp.product_subscriber_status or "").upper()
+            next_billing = appstle_resp.next_billing_date
 
-        if status_upper == "ACTIVE":
-            # Scenario 1: ACTIVE subscriber → full access
-            subscription_status = "active"
-        elif status_upper == "PAUSED":
-            if next_billing is not None:
-                # Make comparison timezone-aware
-                now = datetime.now(timezone.utc)
-                if next_billing.tzinfo is None:
-                    next_billing = next_billing.replace(tzinfo=timezone.utc)
-                if next_billing > now:
-                    # Scenario 2: PAUSED + nextBillingDate in future → active (paid time remaining)
-                    subscription_status = "active"
+            if status_upper == "ACTIVE":
+                # Scenario 1: ACTIVE subscriber → full access
+                subscription_status = "active"
+            elif status_upper == "PAUSED":
+                if next_billing is not None:
+                    # Make comparison timezone-aware
+                    now = datetime.now(timezone.utc)
+                    if next_billing.tzinfo is None:
+                        next_billing = next_billing.replace(tzinfo=timezone.utc)
+                    if next_billing > now:
+                        # Scenario 2: PAUSED + nextBillingDate in future → active (paid time remaining)
+                        subscription_status = "active"
+                    else:
+                        # Scenario 3: PAUSED + nextBillingDate in past → deny
+                        logger.info(
+                            "Subscription expired for email=%s: status=PAUSED, nextBillingDate=%s (past)",
+                            email, next_billing,
+                        )
+                        return {
+                            "status_code": 403,
+                            "body": LoginDeniedResponse(
+                                error="Your subscription has expired. Resubscribe to continue.",
+                                subscription_status="paused",
+                                redirect_url=self.signup_url,
+                            ).model_dump(),
+                        }
                 else:
-                    # Scenario 3: PAUSED + nextBillingDate in past → deny
+                    # Scenario 3b: PAUSED + null nextBillingDate → deny
                     logger.info(
-                        "Subscription expired for email=%s: status=PAUSED, nextBillingDate=%s (past)",
-                        email, next_billing,
+                        "Subscription expired for email=%s: status=PAUSED, nextBillingDate=None",
+                        email,
                     )
                     return {
                         "status_code": 403,
@@ -665,38 +654,24 @@ class SubscriptionAuthService:
                             redirect_url=self.signup_url,
                         ).model_dump(),
                     }
-            else:
-                # Scenario 3b: PAUSED + null nextBillingDate → deny
-                logger.info(
-                    "Subscription expired for email=%s: status=PAUSED, nextBillingDate=None",
-                    email,
-                )
+            elif status_upper == "CANCELLED":
+                # Scenario 4: CANCELLED → deny
+                logger.info("Subscription cancelled for email=%s", email)
                 return {
                     "status_code": 403,
                     "body": LoginDeniedResponse(
-                        error="Your subscription has expired. Resubscribe to continue.",
-                        subscription_status="paused",
+                        error="Your subscription has been cancelled. Resubscribe to continue.",
+                        subscription_status="cancelled",
                         redirect_url=self.signup_url,
                     ).model_dump(),
                 }
-        elif status_upper == "CANCELLED":
-            # Scenario 4: CANCELLED → deny
-            logger.info("Subscription cancelled for email=%s", email)
-            return {
-                "status_code": 403,
-                "body": LoginDeniedResponse(
-                    error="Your subscription has been cancelled. Resubscribe to continue.",
-                    subscription_status="cancelled",
-                    redirect_url=self.signup_url,
-                ).model_dump(),
-            }
-        else:
-            # Scenario 5: No subscription record (None/not found) → free-tier
-            subscription_status = "free"
-            logger.info(
-                "Free-tier login for email=%s: product_subscriber_status=%s",
-                email, appstle_resp.product_subscriber_status,
-            )
+            else:
+                # Scenario 5: No subscription record (None/not found) → free-tier
+                subscription_status = "free"
+                logger.info(
+                    "Free-tier login for email=%s: product_subscriber_status=%s",
+                    email, appstle_resp.product_subscriber_status,
+                )
 
         # 5. Check password (regardless of subscription status)
         existing_record = None
@@ -827,28 +802,34 @@ class SubscriptionAuthService:
             }
 
         # 3. Re-verify subscription
+        # If Appstle is unavailable, preserve the current subscription status from the token
+        appstle_resp = None
         try:
             appstle_resp = await self.verify_subscription(email)
         except asyncio.TimeoutError:
-            logger.error("Appstle API timeout during refresh for email=%s", email)
-            return {
-                "status_code": 503,
-                "body": RefreshResponse(
-                    success=False,
-                    error="Subscription service temporarily unavailable",
-                ).model_dump(),
-            }
+            logger.error("Appstle API timeout during refresh for email=%s — preserving current status", email)
         except Exception as exc:
-            logger.error("Appstle API error during refresh for email=%s: %s", email, exc)
+            logger.error("Appstle API error during refresh for email=%s: %s — preserving current status", email, exc)
+
+        # 4. Determine subscription status using contract-based 5-scenario logic
+        # If Appstle was unavailable, preserve the current status from the JWT claims
+        if appstle_resp is None:
+            subscription_status = claims.get("subscription_status", "free")
+            logger.info("Refresh with preserved status=%s (Appstle unavailable) for email=%s", subscription_status, email)
+            new_token = self.create_token(
+                email=email,
+                subscription_status=subscription_status,
+                expires_at=None,
+            )
+            logger.info("Token refreshed for email=%s subscription_status=%s", email, subscription_status)
             return {
-                "status_code": 503,
+                "status_code": 200,
                 "body": RefreshResponse(
-                    success=False,
-                    error="Subscription service temporarily unavailable",
+                    success=True,
+                    token=new_token,
                 ).model_dump(),
             }
 
-        # 4. Determine subscription status using contract-based 5-scenario logic
         status_upper = (appstle_resp.product_subscriber_status or "").upper()
         next_billing = appstle_resp.next_billing_date
 
