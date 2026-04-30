@@ -43,7 +43,7 @@
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
 
 
-- [-] 3. Implement subscription status fix
+- [x] 3. Implement subscription status fix
 
   - [x] 3.1 Update `AppstleSubscriptionResponse` model with contract fields
     - Add `next_billing_date: Optional[datetime] = None` field to carry the contract billing date
@@ -123,7 +123,7 @@
     - _Preservation: Existing 400, 401, 429, 503 handlers unchanged_
     - _Requirements: 2.7_
 
-  - [-] 3.8 Verify bug condition exploration test now passes
+  - [x] 3.8 Verify bug condition exploration test now passes
     - **Property 1: Expected Behavior** — Paused-Expired, Cancelled, and Paused-With-Time-Remaining Users Get Correct Access
     - **IMPORTANT**: Re-run the SAME test from task 1 — do NOT write a new test
     - The test from task 1 encodes the expected behavior
@@ -136,7 +136,7 @@
     - **EXPECTED OUTCOME**: Test PASSES (confirms bug is fixed)
     - _Requirements: 2.1, 2.2, 2.3, 2.5_
 
-  - [~] 3.9 Verify preservation tests still pass
+  - [x] 3.9 Verify preservation tests still pass
     - **Property 2: Preservation** — ACTIVE Subscribers, No-Subscription Users, and Error Paths Unchanged
     - **IMPORTANT**: Re-run the SAME tests from task 2 — do NOT write new tests
     - Deploy the fix to staging first, then run the preservation tests
@@ -148,7 +148,7 @@
       - Bad passwords → 401
       - Rate limits → 429
 
-- [~] 4. Checkpoint — Ensure all tests pass
+- [x] 4. Checkpoint — Ensure all tests pass
   - Deploy all changes to staging (backend to Railway, frontend to Netlify)
   - Wait for staging deployment to complete (~10-15 min for Railway, ~2-3 min for Netlify)
   - Run bug condition exploration test against staging — must PASS

@@ -37,7 +37,7 @@
   - Mark task complete when tests are written, run, and passing on unfixed code
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-- [ ] 3. Implement the fix for missing author site_url during book import
+- [x] 3. Implement the fix for missing author site_url during book import
 
   - [x] 3.1 Add `build_author_url_mapping()` method to `ExcelImportService`
     - Add new method in `backend/excel_import_service.py`
@@ -98,7 +98,7 @@
     - Use staging URL by default: `https://mcpress-chatbot-staging.up.railway.app`
     - _Requirements: 2.1, 2.2, 2.3_
 
-  - [-] 3.7 Verify bug condition exploration test now passes
+  - [x] 3.7 Verify bug condition exploration test now passes
     - **Property 1: Expected Behavior** - Book Authors Get site_url From Article Data
     - **IMPORTANT**: Re-run the SAME test from task 1 - do NOT write a new test
     - After deploying the fix to staging and running the backfill script:
@@ -108,7 +108,7 @@
     - **EXPECTED OUTCOME**: Test PASSES (confirms bug is fixed)
     - _Requirements: 2.1, 2.2_
 
-  - [-] 3.8 Verify preservation tests still pass
+  - [x] 3.8 Verify preservation tests still pass
     - **Property 2: Preservation** - Existing Import Behavior Unchanged
     - **IMPORTANT**: Re-run the SAME tests from task 2 - do NOT write new tests
     - Re-run `tests/test_author_url_preservation.py` against staging

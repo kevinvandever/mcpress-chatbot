@@ -105,6 +105,19 @@ except Exception as e:
     print(f"⚠️ UsageGate not available: {e}")
     USAGE_GATE_AVAILABLE = False
 
+# Import freemium export routes
+try:
+    try:
+        from freemium_export_routes import router as freemium_export_router, set_database_url as set_freemium_export_db_url
+    except ImportError:
+        from backend.freemium_export_routes import router as freemium_export_router, set_database_url as set_freemium_export_db_url
+    FREEMIUM_EXPORT_AVAILABLE = True
+    print("✅ Freemium export module loaded")
+except Exception as e:
+    print(f"⚠️ Freemium export module not available: {e}")
+    FREEMIUM_EXPORT_AVAILABLE = False
+    freemium_export_router = None
+
 # Import SubscriptionAuthService for cookie-based auth detection in /chat
 subscription_auth_service = None
 try:
@@ -699,6 +712,19 @@ async def startup_event():
             print(f"⚠️ Could not initialize usage gate: {e}")
             import traceback
             print(traceback.format_exc())
+
+    # Initialize Freemium Export endpoint
+    if FREEMIUM_EXPORT_AVAILABLE:
+        try:
+            database_url = os.getenv("DATABASE_URL")
+            if database_url:
+                set_freemium_export_db_url(database_url)
+                app.include_router(freemium_export_router)
+                print("✅ Freemium export endpoint enabled at /api/admin/freemium-export")
+            else:
+                print("⚠️ DATABASE_URL not set - freemium export disabled")
+        except Exception as e:
+            print(f"⚠️ Could not enable freemium export: {e}")
 
     # Register migration 006 endpoint
     try:
