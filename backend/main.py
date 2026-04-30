@@ -1446,7 +1446,7 @@ async def get_usage_status(request: Request):
 
     email = claims.get("sub", "")
     if not email or not usage_gate:
-        fallback_limit = int(os.getenv("FREE_QUESTION_LIMIT", "5"))
+        fallback_limit = int(os.getenv("FREE_QUESTION_LIMIT", "8"))
         return {"subscription_status": "free", "usage": {"questions_used": 0, "questions_limit": fallback_limit, "questions_remaining": fallback_limit}}
 
     result = await usage_gate.check_usage(email)
