@@ -868,7 +868,7 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-500 hover:text-blue-700 hover:underline font-medium"
-              >Upgrade</a>
+              >Subscribe</a>
             </>
           ) : (
             <>Unlimited Queries • 24/7 • Sources Always Linked</>

@@ -175,7 +175,7 @@ export default function Home() {
                       rel="noopener noreferrer"
                       className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200 hover:bg-amber-200 transition-colors cursor-pointer"
                     >
-                      Free Plan · Upgrade
+                      Free Plan · Subscribe
                     </a>
                   )}
                   {subscriptionStatus === 'free' && usageExhausted && (
