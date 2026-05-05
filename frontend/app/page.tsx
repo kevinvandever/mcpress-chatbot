@@ -169,9 +169,14 @@ export default function Home() {
                 <div className="hidden sm:flex items-center gap-2 mr-2">
                   <span className="text-sm text-gray-500">{userEmail}</span>
                   {subscriptionStatus === 'free' && !usageExhausted && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
-                      Free Plan
-                    </span>
+                    <a
+                      href={signupUrl || 'https://mc-store.com/products/mc-chatmaster'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200 hover:bg-amber-200 transition-colors cursor-pointer"
+                    >
+                      Free Plan · Upgrade
+                    </a>
                   )}
                   {subscriptionStatus === 'free' && usageExhausted && (
                     <a
