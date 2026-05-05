@@ -860,7 +860,20 @@ const ChatInterface = forwardRef<ChatInterfaceRef, ChatInterfaceProps>(({ hasDoc
             )}
           </button>
         </div>
-        <p className="text-xs text-gray-400 mt-2 text-center">{subscriptionStatus !== 'free' ? 'Unlimited Queries • ' : ''}24/7 • Sources Always Linked</p>
+        <p className="text-xs text-gray-400 mt-2 text-center">
+          {subscriptionStatus === 'free' ? (
+            <>
+              Free Plan • {remainingQuestions !== null ? `${remainingQuestions} questions remaining` : '24/7'} • <a
+                href={signupUrl || 'https://mc-store.com/products/mc-chatmaster'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-500 hover:text-blue-700 hover:underline font-medium"
+              >Subscribe</a>
+            </>
+          ) : (
+            <>Unlimited Queries • 24/7 • Sources Always Linked</>
+          )}
+        </p>
         <p className="text-xs text-gray-400 mt-1 text-center">MC ChatMaster is powered by AI and can make mistakes — so it&apos;s always a good idea to double-check cited sources. Also, just a heads up: it isn&apos;t able to help with coding.</p>
         
         {/* Smart Suggestions - Disabled for now */}
