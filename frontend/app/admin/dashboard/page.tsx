@@ -11,6 +11,132 @@ interface Stats {
   lastUpload: string | null;
 }
 
+function FreemiumExportSection() {
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [exporting, setExporting] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const handleExport = async (format: 'csv' | 'json') => {
+    setExporting(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        setError('Not authenticated. Please log in again.');
+        setExporting(false);
+        return;
+      }
+
+      const params = new URLSearchParams({ format });
+      if (startDate) params.set('start_date', startDate);
+      if (endDate) params.set('end_date', endDate);
+
+      const response = await fetch(`${API_URL}/api/admin/freemium-export?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        setError(data.detail || `Export failed (${response.status})`);
+        setExporting(false);
+        return;
+      }
+
+      // Trigger file download
+      const blob = await response.blob();
+      const today = new Date().toISOString().split('T')[0];
+      const filename = `freemium-usage-export-${today}.${format}`;
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      setSuccess(`Exported to ${filename}`);
+    } catch (err: any) {
+      setError(err.message || 'Export failed');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  return (
+    <div className="bg-white shadow rounded-lg">
+      <div className="px-4 py-5 sm:p-6">
+        <h3 className="text-lg leading-6 font-medium text-gray-900">
+          Freemium Usage Export
+        </h3>
+        <p className="mt-1 text-sm text-gray-500">
+          Download free-tier user engagement data with funnel summary statistics.
+        </p>
+
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 items-end">
+          <div>
+            <label htmlFor="export-start-date" className="block text-sm font-medium text-gray-700">
+              Start Date
+            </label>
+            <input
+              id="export-start-date"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            />
+          </div>
+          <div>
+            <label htmlFor="export-end-date" className="block text-sm font-medium text-gray-700">
+              End Date
+            </label>
+            <input
+              id="export-end-date"
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            />
+          </div>
+          <div>
+            <button
+              onClick={() => handleExport('csv')}
+              disabled={exporting}
+              className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {exporting ? 'Exporting...' : 'Download CSV'}
+            </button>
+          </div>
+          <div>
+            <button
+              onClick={() => handleExport('json')}
+              disabled={exporting}
+              className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {exporting ? 'Exporting...' : 'Download JSON'}
+            </button>
+          </div>
+        </div>
+
+        {error && (
+          <p className="mt-3 text-sm text-red-600">{error}</p>
+        )}
+        {success && (
+          <p className="mt-3 text-sm text-green-600">{success}</p>
+        )}
+
+        <p className="mt-3 text-xs text-gray-400">
+          Leave dates empty to export all data. CSV includes summary rows at the bottom.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats>({
     totalDocuments: 0,
@@ -160,6 +286,9 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
+
+        {/* Freemium Usage Export */}
+        <FreemiumExportSection />
 
         {/* Recent Activity */}
         <div className="bg-white shadow rounded-lg">
