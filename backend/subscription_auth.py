@@ -591,23 +591,35 @@ class SubscriptionAuthService:
                 ).model_dump(),
             }
 
+        # 2b. Bypass subscription check for configured emails (cofounders, partners)
+        bypass_raw = os.getenv("BYPASS_EMAILS", "")
+        bypass_list = [e.strip().lower() for e in bypass_raw.split(",") if e.strip()]
+        is_bypass_user = email.lower() in bypass_list
+        if is_bypass_user:
+            logger.info("Bypass user detected: %s — skipping subscription check", email)
+
         # 3. Call Appstle API to verify subscription FIRST (for all users)
         # If Appstle is unavailable, fall through to free-tier instead of blocking login
         appstle_resp = None
-        try:
-            appstle_resp = await self.verify_subscription(email)
-        except asyncio.TimeoutError:
-            logger.error("Appstle API timeout for email=%s — falling back to free-tier", email)
-        except aiohttp.ClientResponseError as exc:
-            logger.error("Appstle API error: status=%s for email=%s — falling back to free-tier", exc.status, email)
-        except ValueError as exc:
-            logger.error("Malformed Appstle response for email=%s: %s — falling back to free-tier", email, exc)
-        except Exception as exc:
-            logger.error("Unexpected error calling Appstle API for email=%s: %s — falling back to free-tier", email, exc)
+        if not is_bypass_user:
+            try:
+                appstle_resp = await self.verify_subscription(email)
+            except asyncio.TimeoutError:
+                logger.error("Appstle API timeout for email=%s — falling back to free-tier", email)
+            except aiohttp.ClientResponseError as exc:
+                logger.error("Appstle API error: status=%s for email=%s — falling back to free-tier", exc.status, email)
+            except ValueError as exc:
+                logger.error("Malformed Appstle response for email=%s: %s — falling back to free-tier", email, exc)
+            except Exception as exc:
+                logger.error("Unexpected error calling Appstle API for email=%s: %s — falling back to free-tier", email, exc)
 
         # 4. Determine subscription status using contract-based 5-scenario logic
         # If Appstle was unavailable (appstle_resp is None), default to free-tier
-        if appstle_resp is None:
+        # Bypass users always get "active" status
+        if is_bypass_user:
+            subscription_status = "active"
+            logger.info("Bypass user granted active status: email=%s", email)
+        elif appstle_resp is None:
             subscription_status = "free"
             logger.info("Free-tier login (Appstle unavailable) for email=%s", email)
         else:
