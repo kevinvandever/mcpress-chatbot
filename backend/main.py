@@ -425,7 +425,16 @@ async def get_cached_documents(force_refresh: bool = False):
     if _documents_cache is None or cache_expired or force_refresh:
         print(f"📊 Refreshing documents cache...")
         start_time = time.time()
-        _documents_cache = await vector_store.list_documents()
+        try:
+            _documents_cache = await vector_store.list_documents()
+        except RuntimeError as e:
+            if "Event loop is closed" in str(e) or "is closed" in str(e):
+                print(f"⚠️ Pool event loop closed — reinitializing database pool...")
+                vector_store.pool = None
+                await vector_store.init_database()
+                _documents_cache = await vector_store.list_documents()
+            else:
+                raise
         _cache_timestamp = current_time
         elapsed = time.time() - start_time
         

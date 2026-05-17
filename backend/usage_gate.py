@@ -88,12 +88,31 @@ class UsageGate:
             """)
         logger.info("UsageGate: free_usage_tracking table ready")
 
+    def _is_bypass_email(self, email: str) -> bool:
+        """Check if email is in the BYPASS_EMAILS env var (comma-separated, case-insensitive)."""
+        bypass_raw = os.getenv("BYPASS_EMAILS", "")
+        if not bypass_raw:
+            return False
+        bypass_list = [e.strip().lower() for e in bypass_raw.split(",") if e.strip()]
+        return email.lower() in bypass_list
+
     async def check_usage(self, user_email: str) -> UsageResult:
         """
         Check if user_email is under the free question limit.
         Returns UsageResult with allowed/denied status and current counts.
         Does NOT increment — call record_question() after successful stream.
         """
+        # Bypass all limits for configured emails (cofounders, partners, etc.)
+        if self._is_bypass_email(user_email):
+            return UsageResult(
+                allowed=True,
+                usage=UsageInfo(
+                    questions_used=0,
+                    questions_limit=999999,
+                    questions_remaining=999999,
+                ),
+            )
+
         questions_used = 0
         async with self.pool.acquire() as conn:
             row = await conn.fetchrow(
@@ -132,6 +151,14 @@ class UsageGate:
         Called after the chat response stream starts successfully.
         Returns updated UsageInfo for the SSE metadata event.
         """
+        # Don't track usage for bypass emails
+        if self._is_bypass_email(user_email):
+            return UsageInfo(
+                questions_used=0,
+                questions_limit=999999,
+                questions_remaining=999999,
+            )
+
         async with self.pool.acquire() as conn:
             row = await conn.fetchrow(
                 """
