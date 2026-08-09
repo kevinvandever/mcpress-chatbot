@@ -1,0 +1,297 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "3. Extract the `_appstle_get()` test seam (behavior-preserving, before any property test)": [
+      {
+        "executionId": "82630e74-742d-4d5a-b14c-6badae12c98d",
+        "chatSessionId": "sess_beb031e1-21d5-4e60-9fc9-77d9ce41afb6",
+        "timestamp": 1786240439909
+      },
+      {
+        "executionId": "82630e74-742d-4d5a-b14c-6badae12c98d",
+        "chatSessionId": "sess_beb031e1-21d5-4e60-9fc9-77d9ce41afb6",
+        "timestamp": 1786240808327
+      }
+    ],
+    "4. Build the offline test harness with a URL-keyed payload router": [
+      {
+        "executionId": "7a87fc15-32c1-4d76-9a81-306cf6e06fba",
+        "chatSessionId": "sess_65a51dcb-2b15-4a9f-bd65-a2bcc5579a5e",
+        "timestamp": 1786241332620
+      },
+      {
+        "executionId": "7a87fc15-32c1-4d76-9a81-306cf6e06fba",
+        "chatSessionId": "sess_65a51dcb-2b15-4a9f-bd65-a2bcc5579a5e",
+        "timestamp": 1786242252448
+      }
+    ],
+    "5. Write the bug condition exploration test": [
+      {
+        "executionId": "f302327f-c367-4a8a-ab9f-295738c139a0",
+        "chatSessionId": "sess_b993191c-b05f-4a74-ac2c-dcd20a21d537",
+        "timestamp": 1786242591857
+      },
+      {
+        "executionId": "f302327f-c367-4a8a-ab9f-295738c139a0",
+        "chatSessionId": "sess_b993191c-b05f-4a74-ac2c-dcd20a21d537",
+        "timestamp": 1786243285593
+      }
+    ],
+    "6. Write the remaining fix-checking property tests (BEFORE implementing the fix)": [
+      {
+        "executionId": "010ee7a7-194c-4317-a5a5-0d470caf0a6c",
+        "chatSessionId": "sess_0306f638-d980-4a03-8de9-114a1fccf4fc",
+        "timestamp": 1786243377544
+      },
+      {
+        "executionId": "010ee7a7-194c-4317-a5a5-0d470caf0a6c",
+        "chatSessionId": "sess_0306f638-d980-4a03-8de9-114a1fccf4fc",
+        "timestamp": 1786244288307
+      }
+    ],
+    "7. Write preservation property tests and record the unfixed-code goldens (BEFORE implementing fix)": [
+      {
+        "executionId": "4ccd440e-da61-484a-a145-6c649ca064d0",
+        "chatSessionId": "sess_22f6950d-da97-43fd-9a42-aa7f482c7f64",
+        "timestamp": 1786244395934
+      },
+      {
+        "executionId": "4ccd440e-da61-484a-a145-6c649ca064d0",
+        "chatSessionId": "sess_22f6950d-da97-43fd-9a42-aa7f482c7f64",
+        "timestamp": 1786245847168
+      }
+    ],
+    "8.1 Add `python-dateutil` to `requirements.txt`": [
+      {
+        "executionId": "13bda063-8b8d-48f5-b33b-1267792522c6",
+        "chatSessionId": "sess_2e29076d-ee48-4c18-b66b-f483a84c69a9",
+        "timestamp": 1786245940249
+      },
+      {
+        "executionId": "13bda063-8b8d-48f5-b33b-1267792522c6",
+        "chatSessionId": "sess_2e29076d-ee48-4c18-b66b-f483a84c69a9",
+        "timestamp": 1786246062531
+      }
+    ],
+    "8.2 Add `ContractView` and `_parse_iso8601()`": [
+      {
+        "executionId": "13bda063-8b8d-48f5-b33b-1267792522c6",
+        "chatSessionId": "sess_2e29076d-ee48-4c18-b66b-f483a84c69a9",
+        "timestamp": 1786246065365
+      },
+      {
+        "executionId": "13bda063-8b8d-48f5-b33b-1267792522c6",
+        "chatSessionId": "sess_2e29076d-ee48-4c18-b66b-f483a84c69a9",
+        "timestamp": 1786246221567
+      }
+    ],
+    "8.3 Add `_add_calendar_interval()` **[BLOCKED ON TASK 1]**": [
+      {
+        "executionId": "13bda063-8b8d-48f5-b33b-1267792522c6",
+        "chatSessionId": "sess_2e29076d-ee48-4c18-b66b-f483a84c69a9",
+        "timestamp": 1786246224548
+      },
+      {
+        "executionId": "13bda063-8b8d-48f5-b33b-1267792522c6",
+        "chatSessionId": "sess_2e29076d-ee48-4c18-b66b-f483a84c69a9",
+        "timestamp": 1786246571660
+      }
+    ],
+    "8.4 Add `_paid_through()` and `_contract_grants()` **[BLOCKED ON TASK 1]**": [
+      {
+        "executionId": "13bda063-8b8d-48f5-b33b-1267792522c6",
+        "chatSessionId": "sess_2e29076d-ee48-4c18-b66b-f483a84c69a9",
+        "timestamp": 1786246574706
+      },
+      {
+        "executionId": "13bda063-8b8d-48f5-b33b-1267792522c6",
+        "chatSessionId": "sess_2e29076d-ee48-4c18-b66b-f483a84c69a9",
+        "timestamp": 1786247182207
+      }
+    ],
+    "8.5 Align `DENIAL_MESSAGES` to the live inline strings and make the dict the live source": [
+      {
+        "executionId": "13bda063-8b8d-48f5-b33b-1267792522c6",
+        "chatSessionId": "sess_2e29076d-ee48-4c18-b66b-f483a84c69a9",
+        "timestamp": 1786247185131
+      },
+      {
+        "executionId": "13bda063-8b8d-48f5-b33b-1267792522c6",
+        "chatSessionId": "sess_2e29076d-ee48-4c18-b66b-f483a84c69a9",
+        "timestamp": 1786247413840
+      }
+    ],
+    "8.6 Add `AccessDecision` and `decide_access()` — the single decision path": [
+      {
+        "executionId": "13bda063-8b8d-48f5-b33b-1267792522c6",
+        "chatSessionId": "sess_2e29076d-ee48-4c18-b66b-f483a84c69a9",
+        "timestamp": 1786247416652
+      },
+      {
+        "executionId": "13bda063-8b8d-48f5-b33b-1267792522c6",
+        "chatSessionId": "sess_2e29076d-ee48-4c18-b66b-f483a84c69a9",
+        "timestamp": 1786248127612
+      }
+    ],
+    "8. Build the pure decision layer in `backend/subscription_auth.py`": [
+      {
+        "executionId": "13bda063-8b8d-48f5-b33b-1267792522c6",
+        "chatSessionId": "sess_2e29076d-ee48-4c18-b66b-f483a84c69a9",
+        "timestamp": 1786248127656
+      }
+    ],
+    "9.1 Rewrite contract parsing into `_parse_contract_nodes()`": [
+      {
+        "executionId": "19918e91-557e-4db9-a36a-711475de18c6",
+        "chatSessionId": "sess_185282e4-3aae-4d23-961c-61ce5b3527b2",
+        "timestamp": 1786248180446
+      },
+      {
+        "executionId": "19918e91-557e-4db9-a36a-711475de18c6",
+        "chatSessionId": "sess_185282e4-3aae-4d23-961c-61ce5b3527b2",
+        "timestamp": 1786248660646
+      }
+    ],
+    "9.2 Replace `_extract_customer_id()` with `_extract_customer_ids()`": [
+      {
+        "executionId": "19918e91-557e-4db9-a36a-711475de18c6",
+        "chatSessionId": "sess_185282e4-3aae-4d23-961c-61ce5b3527b2",
+        "timestamp": 1786248664677
+      },
+      {
+        "executionId": "0dc4ba4a-20dc-4327-881f-84af20e58a3d",
+        "chatSessionId": "sess_185282e4-3aae-4d23-961c-61ce5b3527b2",
+        "timestamp": 1786249474857
+      }
+    ],
+    "9.3 Add `_fetch_contract_pages()` pagination **[BLOCKED ON TASK 1]**": [
+      {
+        "executionId": "ba85d265-8089-44e7-be9d-8db4071e5571",
+        "chatSessionId": "sess_45a73133-69a5-4812-86ce-7fe91b0ea9df",
+        "timestamp": 1786249503055
+      },
+      {
+        "executionId": "ba85d265-8089-44e7-be9d-8db4071e5571",
+        "chatSessionId": "sess_45a73133-69a5-4812-86ce-7fe91b0ea9df",
+        "timestamp": 1786250063781
+      }
+    ],
+    "9.4 Rewrite `verify_subscription()` for multi-record, multi-page collection **[BLOCKED ON TASK 1]**": [
+      {
+        "executionId": "c559e8bf-285e-4732-b9b8-7f8ad2fa8380",
+        "chatSessionId": "sess_4c1a8261-4cc9-43ee-9e07-d416c3a15165",
+        "timestamp": 1786250114972
+      },
+      {
+        "executionId": "c559e8bf-285e-4732-b9b8-7f8ad2fa8380",
+        "chatSessionId": "sess_4c1a8261-4cc9-43ee-9e07-d416c3a15165",
+        "timestamp": 1786250834730
+      }
+    ],
+    "9.5 Rewrite `login()` step 4 onto `decide_access()`": [
+      {
+        "executionId": "8426455f-2c2e-4241-a7fb-50b005a7e09c",
+        "chatSessionId": "sess_ca12281e-fe66-4f40-8036-2b7d875632c3",
+        "timestamp": 1786251292083
+      },
+      {
+        "executionId": "8426455f-2c2e-4241-a7fb-50b005a7e09c",
+        "chatSessionId": "sess_ca12281e-fe66-4f40-8036-2b7d875632c3",
+        "timestamp": 1786251639042
+      }
+    ],
+    "9.6 Rewrite `refresh()` step 4 and add the missing bypass check": [
+      {
+        "executionId": "8bc1147e-805b-4779-b6bb-64f0be0dd0e6",
+        "chatSessionId": "sess_d0fe34d0-f408-433e-9a97-ad293b77ca2b",
+        "timestamp": 1786251684540
+      },
+      {
+        "executionId": "8bc1147e-805b-4779-b6bb-64f0be0dd0e6",
+        "chatSessionId": "sess_d0fe34d0-f408-433e-9a97-ad293b77ca2b",
+        "timestamp": 1786252062629
+      }
+    ],
+    "9.7 Delete the tag-based fallback": [
+      {
+        "executionId": "95b3bec6-bfad-4b42-a009-02736ae4869b",
+        "chatSessionId": "sess_6ad62f2a-dabc-4533-b034-a788a31efe2a",
+        "timestamp": 1786252423126
+      },
+      {
+        "executionId": "95b3bec6-bfad-4b42-a009-02736ae4869b",
+        "chatSessionId": "sess_6ad62f2a-dabc-4533-b034-a788a31efe2a",
+        "timestamp": 1786253135498
+      }
+    ],
+    "9.8 Delete the fourth copy of the decision logic and retire its tests": [
+      {
+        "executionId": "f0922e56-6bb0-4efc-ab7b-1e0c35a0f060",
+        "chatSessionId": "sess_e9791f1f-0c22-4b9a-a078-f9d850a07af1",
+        "timestamp": 1786253530330
+      },
+      {
+        "executionId": "f0922e56-6bb0-4efc-ab7b-1e0c35a0f060",
+        "chatSessionId": "sess_e9791f1f-0c22-4b9a-a078-f9d850a07af1",
+        "timestamp": 1786254368903
+      }
+    ],
+    "9. Wire the decision layer into data collection and the callers": [
+      {
+        "executionId": "f0922e56-6bb0-4efc-ab7b-1e0c35a0f060",
+        "chatSessionId": "sess_e9791f1f-0c22-4b9a-a078-f9d850a07af1",
+        "timestamp": 1786254368945
+      }
+    ],
+    "10.1 Verify the bug condition exploration test now passes": [
+      {
+        "executionId": "dc19567b-a971-4d2f-93e8-5f58de3c1bb5",
+        "chatSessionId": "sess_b41ec30c-8c18-4460-807f-fb542b713a49",
+        "timestamp": 1786254395402
+      },
+      {
+        "executionId": "dc19567b-a971-4d2f-93e8-5f58de3c1bb5",
+        "chatSessionId": "sess_b41ec30c-8c18-4460-807f-fb542b713a49",
+        "timestamp": 1786254450638
+      }
+    ],
+    "10.2 Verify the remaining fix-checking properties now pass": [
+      {
+        "executionId": "dc19567b-a971-4d2f-93e8-5f58de3c1bb5",
+        "chatSessionId": "sess_b41ec30c-8c18-4460-807f-fb542b713a49",
+        "timestamp": 1786254453575
+      },
+      {
+        "executionId": "dc19567b-a971-4d2f-93e8-5f58de3c1bb5",
+        "chatSessionId": "sess_b41ec30c-8c18-4460-807f-fb542b713a49",
+        "timestamp": 1786254740791
+      }
+    ],
+    "10.3 Verify preservation tests still pass": [
+      {
+        "executionId": "dc19567b-a971-4d2f-93e8-5f58de3c1bb5",
+        "chatSessionId": "sess_b41ec30c-8c18-4460-807f-fb542b713a49",
+        "timestamp": 1786254744921
+      },
+      {
+        "executionId": "dc19567b-a971-4d2f-93e8-5f58de3c1bb5",
+        "chatSessionId": "sess_b41ec30c-8c18-4460-807f-fb542b713a49",
+        "timestamp": 1786254860754
+      }
+    ],
+    "10. Verify the fix against the pre-fix suites": [
+      {
+        "executionId": "dc19567b-a971-4d2f-93e8-5f58de3c1bb5",
+        "chatSessionId": "sess_b41ec30c-8c18-4460-807f-fb542b713a49",
+        "timestamp": 1786254860804
+      }
+    ],
+    "11. Verify against real Appstle data on staging": [
+      {
+        "executionId": "6002fbc6-3fc6-4738-8510-19c110dcbfd1",
+        "chatSessionId": "sess_ae3c1044-d508-4d70-8761-273646d04b5a",
+        "timestamp": 1786254924453
+      }
+    ]
+  }
+}

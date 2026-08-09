@@ -1,0 +1,19 @@
+{
+  "__typename": "Customer",
+  "id": "gid://shopify/Customer/7000000016",
+  "productSubscriberStatus": "ACTIVE",
+  "tags": [
+    "appstle_subscription_active_customer"
+  ],
+  "subscriptionContracts": {
+    "__typename": "SubscriptionContractConnection",
+    "nodes": [],
+    "pageInfo": {
+      "__typename": "PageInfo",
+      "hasPreviousPage": false,
+      "hasNextPage": false,
+      "startCursor": "SYNTHETIC_PLACEHOLDER_CURSOR_START",
+      "endCursor": "SYNTHETIC_PLACEHOLDER_CURSOR_END"
+    }
+  }
+}

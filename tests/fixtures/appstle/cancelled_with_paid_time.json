@@ -1,0 +1,73 @@
+{
+  "__typename": "Customer",
+  "id": "gid://shopify/Customer/7000000021",
+  "productSubscriberStatus": "CANCELLED",
+  "tags": [
+    "appstle_subscription_cancelled_customer"
+  ],
+  "subscriptionContracts": {
+    "__typename": "SubscriptionContractConnection",
+    "nodes": [
+      {
+        "__typename": "SubscriptionContract",
+        "id": "gid://shopify/SubscriptionContract/9000000211",
+        "createdAt": "2026-07-31T01:31:12Z",
+        "nextBillingDate": "2026-08-30T01:31:12Z",
+        "status": "CANCELLED",
+        "deliveryPrice": {
+          "__typename": "MoneyV2",
+          "amount": "0.0"
+        },
+        "lastPaymentStatus": "SUCCEEDED",
+        "billingPolicy": {
+          "__typename": "SubscriptionBillingPolicy",
+          "interval": "MONTH",
+          "intervalCount": 1
+        },
+        "lines": {
+          "__typename": "SubscriptionLineConnection",
+          "nodes": [
+            {
+              "__typename": "SubscriptionLine",
+              "id": "gid://shopify/SubscriptionLine/9000000211",
+              "sellingPlanName": "Monthly Subscription",
+              "productId": "gid://shopify/Product/7787055874113",
+              "sku": "ChatMaster",
+              "title": "MC ChatMaster",
+              "variantId": "gid://shopify/ProductVariant/43539392430145",
+              "quantity": 1,
+              "currentPrice": {
+                "__typename": "MoneyV2",
+                "amount": "10.95",
+                "currencyCode": "USD"
+              },
+              "variantTitle": null,
+              "discountAllocations": [],
+              "pricingPolicy": null,
+              "taxable": true,
+              "customAttributes": []
+            }
+          ],
+          "pageInfo": {
+            "__typename": "PageInfo",
+            "hasPreviousPage": false,
+            "hasNextPage": false,
+            "startCursor": "SYNTHETIC_PLACEHOLDER_CURSOR_LINE_9000000211",
+            "endCursor": "SYNTHETIC_PLACEHOLDER_CURSOR_LINE_9000000211"
+          }
+        },
+        "customer": {
+          "__typename": "Customer",
+          "id": "gid://shopify/Customer/7000000021"
+        }
+      }
+    ],
+    "pageInfo": {
+      "__typename": "PageInfo",
+      "hasPreviousPage": false,
+      "hasNextPage": false,
+      "startCursor": "SYNTHETIC_PLACEHOLDER_CURSOR_START",
+      "endCursor": "SYNTHETIC_PLACEHOLDER_CURSOR_END"
+    }
+  }
+}

@@ -1,0 +1,126 @@
+{
+  "__typename": "Customer",
+  "id": "gid://shopify/Customer/7000000015",
+  "productSubscriberStatus": "CANCELLED",
+  "tags": [
+    "appstle_subscription_cancelled_customer"
+  ],
+  "subscriptionContracts": {
+    "__typename": "SubscriptionContractConnection",
+    "nodes": [
+      {
+        "__typename": "SubscriptionContract",
+        "id": "gid://shopify/SubscriptionContract/9000000151",
+        "createdAt": "2026-04-11T01:31:12Z",
+        "nextBillingDate": "2026-05-11T01:31:12Z",
+        "status": "PAUSED",
+        "deliveryPrice": {
+          "__typename": "MoneyV2",
+          "amount": "0.0"
+        },
+        "lastPaymentStatus": null,
+        "billingPolicy": {
+          "__typename": "SubscriptionBillingPolicy",
+          "interval": "DAY",
+          "intervalCount": 30
+        },
+        "lines": {
+          "__typename": "SubscriptionLineConnection",
+          "nodes": [
+            {
+              "__typename": "SubscriptionLine",
+              "id": "gid://shopify/SubscriptionLine/9000000151",
+              "sellingPlanName": "30-Day Access",
+              "productId": "gid://shopify/Product/7787055874113",
+              "sku": "ChatMaster",
+              "title": "MC ChatMaster",
+              "variantId": "gid://shopify/ProductVariant/43539392430145",
+              "quantity": 1,
+              "currentPrice": {
+                "__typename": "MoneyV2",
+                "amount": "10.95",
+                "currencyCode": "USD"
+              },
+              "variantTitle": null,
+              "discountAllocations": [],
+              "pricingPolicy": null,
+              "taxable": true,
+              "customAttributes": []
+            }
+          ],
+          "pageInfo": {
+            "__typename": "PageInfo",
+            "hasPreviousPage": false,
+            "hasNextPage": false,
+            "startCursor": "SYNTHETIC_PLACEHOLDER_CURSOR_LINE_9000000151",
+            "endCursor": "SYNTHETIC_PLACEHOLDER_CURSOR_LINE_9000000151"
+          }
+        },
+        "customer": {
+          "__typename": "Customer",
+          "id": "gid://shopify/Customer/7000000015"
+        }
+      },
+      {
+        "__typename": "SubscriptionContract",
+        "id": "gid://shopify/SubscriptionContract/9000000152",
+        "createdAt": "2026-06-30T01:31:12Z",
+        "nextBillingDate": "2026-07-30T01:31:12Z",
+        "status": "CANCELLED",
+        "deliveryPrice": {
+          "__typename": "MoneyV2",
+          "amount": "0.0"
+        },
+        "lastPaymentStatus": "SUCCEEDED",
+        "billingPolicy": {
+          "__typename": "SubscriptionBillingPolicy",
+          "interval": "MONTH",
+          "intervalCount": 1
+        },
+        "lines": {
+          "__typename": "SubscriptionLineConnection",
+          "nodes": [
+            {
+              "__typename": "SubscriptionLine",
+              "id": "gid://shopify/SubscriptionLine/9000000152",
+              "sellingPlanName": "Monthly Subscription",
+              "productId": "gid://shopify/Product/7787055874113",
+              "sku": "ChatMaster",
+              "title": "MC ChatMaster",
+              "variantId": "gid://shopify/ProductVariant/43539392430145",
+              "quantity": 1,
+              "currentPrice": {
+                "__typename": "MoneyV2",
+                "amount": "10.95",
+                "currencyCode": "USD"
+              },
+              "variantTitle": null,
+              "discountAllocations": [],
+              "pricingPolicy": null,
+              "taxable": true,
+              "customAttributes": []
+            }
+          ],
+          "pageInfo": {
+            "__typename": "PageInfo",
+            "hasPreviousPage": false,
+            "hasNextPage": false,
+            "startCursor": "SYNTHETIC_PLACEHOLDER_CURSOR_LINE_9000000152",
+            "endCursor": "SYNTHETIC_PLACEHOLDER_CURSOR_LINE_9000000152"
+          }
+        },
+        "customer": {
+          "__typename": "Customer",
+          "id": "gid://shopify/Customer/7000000015"
+        }
+      }
+    ],
+    "pageInfo": {
+      "__typename": "PageInfo",
+      "hasPreviousPage": false,
+      "hasNextPage": false,
+      "startCursor": "SYNTHETIC_PLACEHOLDER_CURSOR_START",
+      "endCursor": "SYNTHETIC_PLACEHOLDER_CURSOR_END"
+    }
+  }
+}
