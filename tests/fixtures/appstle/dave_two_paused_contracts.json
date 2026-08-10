@@ -1,0 +1,140 @@
+{
+  "__typename": "Customer",
+  "id": "gid://shopify/Customer/2788838535",
+  "productSubscriberStatus": "PAUSED",
+  "tags": [
+    "appstle_subscription_paused_customer",
+    "Login with Shop",
+    "Shop"
+  ],
+  "subscriptionContracts": {
+    "__typename": "SubscriptionContractConnection",
+    "nodes": [
+      {
+        "__typename": "SubscriptionContract",
+        "id": "gid://shopify/SubscriptionContract/84206911553",
+        "createdAt": "2026-06-02T22:27:41Z",
+        "nextBillingDate": "2026-07-02T22:00:00Z",
+        "status": "PAUSED",
+        "deliveryPrice": {
+          "__typename": "MoneyV2",
+          "amount": "0.0"
+        },
+        "lastPaymentStatus": null,
+        "billingPolicy": {
+          "__typename": "SubscriptionBillingPolicy",
+          "interval": "DAY",
+          "intervalCount": 30
+        },
+        "lines": {
+          "__typename": "SubscriptionLineConnection",
+          "nodes": [
+            {
+              "__typename": "SubscriptionLine",
+              "id": "gid://shopify/SubscriptionLine/b2111f97-50d2-4a22-bbd8-a9f416b75689",
+              "sellingPlanId": "gid://shopify/SellingPlan/3430187073",
+              "sellingPlanName": "One-time Purchase",
+              "productId": "gid://shopify/Product/7787055874113",
+              "sku": "ChatMaster",
+              "title": "MC ChatMaster",
+              "variantId": "gid://shopify/ProductVariant/43539392430145",
+              "quantity": 1,
+              "lineDiscountedPrice": {
+                "__typename": "MoneyV2",
+                "amount": "19.95",
+                "currencyCode": "USD"
+              },
+              "variantTitle": null,
+              "currentPrice": {
+                "__typename": "MoneyV2",
+                "amount": "19.95",
+                "currencyCode": "USD"
+              },
+              "discountAllocations": [],
+              "pricingPolicy": null,
+              "taxable": true,
+              "customAttributes": []
+            }
+          ],
+          "pageInfo": {
+            "__typename": "PageInfo",
+            "hasPreviousPage": false,
+            "hasNextPage": false,
+            "startCursor": "eyJsYXN0X2lkIjoiYjIxMTFmOTctNTBkMi00YTIyLWJiZDgtYTlmNDE2Yjc1Njg5IiwibGFzdF92YWx1ZSI6ImIyMTExZjk3LTUwZDItNGEyMi1iYmQ4LWE5ZjQxNmI3NTY4OSJ9",
+            "endCursor": "eyJsYXN0X2lkIjoiYjIxMTFmOTctNTBkMi00YTIyLWJiZDgtYTlmNDE2Yjc1Njg5IiwibGFzdF92YWx1ZSI6ImIyMTExZjk3LTUwZDItNGEyMi1iYmQ4LWE5ZjQxNmI3NTY4OSJ9"
+          }
+        },
+        "customer": {
+          "__typename": "Customer",
+          "id": "gid://shopify/Customer/2788838535"
+        }
+      },
+      {
+        "__typename": "SubscriptionContract",
+        "id": "gid://shopify/SubscriptionContract/87268229185",
+        "createdAt": "2026-07-28T19:33:13Z",
+        "nextBillingDate": "2026-08-27T19:00:00Z",
+        "status": "PAUSED",
+        "deliveryPrice": {
+          "__typename": "MoneyV2",
+          "amount": "0.0"
+        },
+        "lastPaymentStatus": null,
+        "billingPolicy": {
+          "__typename": "SubscriptionBillingPolicy",
+          "interval": "DAY",
+          "intervalCount": 30
+        },
+        "lines": {
+          "__typename": "SubscriptionLineConnection",
+          "nodes": [
+            {
+              "__typename": "SubscriptionLine",
+              "id": "gid://shopify/SubscriptionLine/103415da-d8be-468c-a54d-4ed1258c60f1",
+              "sellingPlanId": "gid://shopify/SellingPlan/3430187073",
+              "sellingPlanName": "30-Day Access — $10.95",
+              "productId": "gid://shopify/Product/7787055874113",
+              "sku": "ChatMaster",
+              "title": "MC ChatMaster",
+              "variantId": "gid://shopify/ProductVariant/43539392430145",
+              "quantity": 1,
+              "lineDiscountedPrice": {
+                "__typename": "MoneyV2",
+                "amount": "10.95",
+                "currencyCode": "USD"
+              },
+              "variantTitle": null,
+              "currentPrice": {
+                "__typename": "MoneyV2",
+                "amount": "10.95",
+                "currencyCode": "USD"
+              },
+              "discountAllocations": [],
+              "pricingPolicy": null,
+              "taxable": true,
+              "customAttributes": []
+            }
+          ],
+          "pageInfo": {
+            "__typename": "PageInfo",
+            "hasPreviousPage": false,
+            "hasNextPage": false,
+            "startCursor": "eyJsYXN0X2lkIjoiMTAzNDE1ZGEtZDhiZS00NjhjLWE1NGQtNGVkMTI1OGM2MGYxIiwibGFzdF92YWx1ZSI6IjEwMzQxNWRhLWQ4YmUtNDY4Yy1hNTRkLTRlZDEyNThjNjBmMSJ9",
+            "endCursor": "eyJsYXN0X2lkIjoiMTAzNDE1ZGEtZDhiZS00NjhjLWE1NGQtNGVkMTI1OGM2MGYxIiwibGFzdF92YWx1ZSI6IjEwMzQxNWRhLWQ4YmUtNDY4Yy1hNTRkLTRlZDEyNThjNjBmMSJ9"
+          }
+        },
+        "customer": {
+          "__typename": "Customer",
+          "id": "gid://shopify/Customer/2788838535"
+        }
+      }
+    ],
+    "pageInfo": {
+      "__typename": "PageInfo",
+      "hasPreviousPage": false,
+      "hasNextPage": false,
+      "startCursor": "eyJsYXN0X2lkIjoxMjQ3ODExNjAwNDQ5LCJsYXN0X3ZhbHVlIjoiMjAyNi0wNi0wMiAyMjoyNzo0MS4yMDg1MzUifQ==",
+      "endCursor": "eyJsYXN0X2lkIjoxMjk0NjYwNjY1NDA5LCJsYXN0X3ZhbHVlIjoiMjAyNi0wNy0yOCAxOTozMzoxMy43MDYwNTUifQ=="
+    }
+  }
+}

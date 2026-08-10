@@ -1,0 +1,4660 @@
+{
+  "_meta": {
+    "what": "Preservation baseline for the subscription-multi-contract-access bugfix (Property 2). Each entry is the literal (status_code, normalized_body) that login()/refresh() returned, plus the token's decoded claims with iat/exp reduced to exp_minus_iat_seconds.",
+    "recorded_from": "UNFIXED backend/subscription_auth.py",
+    "fixed_decision_layer_present": false,
+    "git_commit": "f2382a2650a05c03fd79e0b86a19be685e23dcbf",
+    "recorded_by": "python3 -m tests.test_subscription_preservation_properties --record",
+    "regenerate": "Check out the pre-fix revision of backend/subscription_auth.py, then run python3 -m tests.test_subscription_preservation_properties --record. Do NOT re-record after the fix: Task 10.3 re-asserts these same goldens.",
+    "fixture_now": "2026-08-09T01:31:12Z",
+    "clock_seam": "backend.subscription_auth._utcnow monkeypatched to fixture_now()",
+    "appstle_base_url": "https://appstle.test",
+    "token_normalization": "body.token -> {'claim_keys': [...]}; claims recorded separately with exp_minus_iat_seconds instead of the moving iat/exp pair",
+    "corpus_seed": 20260809,
+    "corpus_size": 100,
+    "corpus_draw_budget": 40000,
+    "named_case_count": 24,
+    "excluded": "The three Preservation Exceptions (2.3/1.7, 2.6/1.6, 2.16/1.14) are deliberately absent \u2014 they are asserted separately with their intended NEW values. Inputs where the legacy and fixed decisions disagree for any other reason are excluded too; see the module docstring."
+  },
+  "named": {
+    "login/active_contract_past_billing_dunning": {
+      "status_code": 200,
+      "body": {
+        "success": true,
+        "token": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ]
+        },
+        "email": "dunning@example.com",
+        "subscription_status": "active",
+        "expires_at": null
+      },
+      "token_claims": {
+        "claim_keys": [
+          "exp",
+          "iat",
+          "sub",
+          "subscription_expires_at",
+          "subscription_status"
+        ],
+        "sub": "dunning@example.com",
+        "subscription_status": "active",
+        "subscription_expires_at": null,
+        "exp_minus_iat_seconds": 3600
+      }
+    },
+    "login/active_subscriber": {
+      "status_code": 200,
+      "body": {
+        "success": true,
+        "token": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ]
+        },
+        "email": "renewed.monthly@example.com",
+        "subscription_status": "active",
+        "expires_at": null
+      },
+      "token_claims": {
+        "claim_keys": [
+          "exp",
+          "iat",
+          "sub",
+          "subscription_expires_at",
+          "subscription_status"
+        ],
+        "sub": "renewed.monthly@example.com",
+        "subscription_status": "active",
+        "subscription_expires_at": null,
+        "exp_minus_iat_seconds": 3600
+      }
+    },
+    "login/all_contracts_expired": {
+      "status_code": 403,
+      "body": {
+        "success": false,
+        "error": "Your subscription has expired. Resubscribe to continue.",
+        "subscription_status": "paused",
+        "redirect_url": "https://mcpress.test/subscribe"
+      }
+    },
+    "login/all_contracts_expired_multi_contract": {
+      "status_code": 403,
+      "body": {
+        "success": false,
+        "error": "Your subscription has expired. Resubscribe to continue.",
+        "subscription_status": "paused",
+        "redirect_url": "https://mcpress.test/subscribe"
+      }
+    },
+    "login/appstle_http_500": {
+      "status_code": 200,
+      "body": {
+        "success": true,
+        "token": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ]
+        },
+        "email": "renewed.monthly@example.com",
+        "subscription_status": "free",
+        "expires_at": null
+      },
+      "token_claims": {
+        "claim_keys": [
+          "exp",
+          "iat",
+          "sub",
+          "subscription_expires_at",
+          "subscription_status"
+        ],
+        "sub": "renewed.monthly@example.com",
+        "subscription_status": "free",
+        "subscription_expires_at": null,
+        "exp_minus_iat_seconds": 3600
+      }
+    },
+    "login/appstle_malformed_json": {
+      "status_code": 200,
+      "body": {
+        "success": true,
+        "token": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ]
+        },
+        "email": "renewed.monthly@example.com",
+        "subscription_status": "free",
+        "expires_at": null
+      },
+      "token_claims": {
+        "claim_keys": [
+          "exp",
+          "iat",
+          "sub",
+          "subscription_expires_at",
+          "subscription_status"
+        ],
+        "sub": "renewed.monthly@example.com",
+        "subscription_status": "free",
+        "subscription_expires_at": null,
+        "exp_minus_iat_seconds": 3600
+      }
+    },
+    "login/appstle_timeout": {
+      "status_code": 200,
+      "body": {
+        "success": true,
+        "token": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ]
+        },
+        "email": "renewed.monthly@example.com",
+        "subscription_status": "free",
+        "expires_at": null
+      },
+      "token_claims": {
+        "claim_keys": [
+          "exp",
+          "iat",
+          "sub",
+          "subscription_expires_at",
+          "subscription_status"
+        ],
+        "sub": "renewed.monthly@example.com",
+        "subscription_status": "free",
+        "subscription_expires_at": null,
+        "exp_minus_iat_seconds": 3600
+      }
+    },
+    "login/bypass_email": {
+      "status_code": 200,
+      "body": {
+        "success": true,
+        "token": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ]
+        },
+        "email": "bypass.user@example.com",
+        "subscription_status": "active",
+        "expires_at": null
+      },
+      "token_claims": {
+        "claim_keys": [
+          "exp",
+          "iat",
+          "sub",
+          "subscription_expires_at",
+          "subscription_status"
+        ],
+        "sub": "bypass.user@example.com",
+        "subscription_status": "active",
+        "subscription_expires_at": null,
+        "exp_minus_iat_seconds": 3600
+      }
+    },
+    "login/empty_nodes_status_active": {
+      "status_code": 200,
+      "body": {
+        "success": true,
+        "token": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ]
+        },
+        "email": "empty.nodes@example.com",
+        "subscription_status": "active",
+        "expires_at": null
+      },
+      "token_claims": {
+        "claim_keys": [
+          "exp",
+          "iat",
+          "sub",
+          "subscription_expires_at",
+          "subscription_status"
+        ],
+        "sub": "empty.nodes@example.com",
+        "subscription_status": "active",
+        "subscription_expires_at": null,
+        "exp_minus_iat_seconds": 3600
+      }
+    },
+    "login/empty_nodes_status_cancelled": {
+      "status_code": 403,
+      "body": {
+        "success": false,
+        "error": "Your subscription has been cancelled. Resubscribe to continue.",
+        "subscription_status": "cancelled",
+        "redirect_url": "https://mcpress.test/subscribe"
+      }
+    },
+    "login/empty_nodes_status_missing": {
+      "status_code": 200,
+      "body": {
+        "success": true,
+        "token": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ]
+        },
+        "email": "missing.status@example.com",
+        "subscription_status": "free",
+        "expires_at": null
+      },
+      "token_claims": {
+        "claim_keys": [
+          "exp",
+          "iat",
+          "sub",
+          "subscription_expires_at",
+          "subscription_status"
+        ],
+        "sub": "missing.status@example.com",
+        "subscription_status": "free",
+        "subscription_expires_at": null,
+        "exp_minus_iat_seconds": 3600
+      }
+    },
+    "login/empty_nodes_status_paused": {
+      "status_code": 403,
+      "body": {
+        "success": false,
+        "error": "Your subscription has expired. Resubscribe to continue.",
+        "subscription_status": "paused",
+        "redirect_url": "https://mcpress.test/subscribe"
+      }
+    },
+    "login/missing_appstle_config": {
+      "status_code": 503,
+      "body": {
+        "success": false,
+        "error": "Subscription service temporarily unavailable",
+        "subscription_status": null,
+        "redirect_url": null
+      }
+    },
+    "login/new_user_weak_password": {
+      "status_code": 400,
+      "body": {
+        "success": false,
+        "error": "Password validation failed",
+        "failed_rules": [
+          "Password must be at least 8 characters long",
+          "Password must contain at least one uppercase letter",
+          "Password must contain at least one digit",
+          "Password must contain at least one special character"
+        ]
+      }
+    },
+    "login/no_appstle_record": {
+      "status_code": 200,
+      "body": {
+        "success": true,
+        "token": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ]
+        },
+        "email": "no.subscription@example.com",
+        "subscription_status": "free",
+        "expires_at": null
+      },
+      "token_claims": {
+        "claim_keys": [
+          "exp",
+          "iat",
+          "sub",
+          "subscription_expires_at",
+          "subscription_status"
+        ],
+        "sub": "no.subscription@example.com",
+        "subscription_status": "free",
+        "subscription_expires_at": null,
+        "exp_minus_iat_seconds": 3600
+      }
+    },
+    "login/rate_limit_fifth_attempt": {
+      "status_code": 401,
+      "body": {
+        "success": false,
+        "error": "Invalid email or password",
+        "subscription_status": null,
+        "redirect_url": null
+      }
+    },
+    "login/rate_limit_sixth_attempt": {
+      "status_code": 429,
+      "body": {
+        "success": false,
+        "error": "Too many login attempts. Please try again later.",
+        "subscription_status": null,
+        "redirect_url": null
+      }
+    },
+    "login/wrong_password_with_active_subscription": {
+      "status_code": 401,
+      "body": {
+        "success": false,
+        "error": "Invalid email or password",
+        "subscription_status": null,
+        "redirect_url": null
+      }
+    },
+    "refresh/active_subscriber": {
+      "status_code": 200,
+      "body": {
+        "success": true,
+        "token": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ]
+        },
+        "error": null,
+        "redirect_url": null
+      },
+      "token_claims": {
+        "claim_keys": [
+          "exp",
+          "iat",
+          "sub",
+          "subscription_expires_at",
+          "subscription_status"
+        ],
+        "sub": "renewed.monthly@example.com",
+        "subscription_status": "active",
+        "subscription_expires_at": null,
+        "exp_minus_iat_seconds": 3600
+      }
+    },
+    "refresh/all_contracts_expired": {
+      "status_code": 403,
+      "body": {
+        "success": false,
+        "token": null,
+        "error": "Your subscription has expired. Resubscribe to continue.",
+        "redirect_url": "https://mcpress.test/subscribe"
+      }
+    },
+    "refresh/appstle_down_preserves_active_claim": {
+      "status_code": 200,
+      "body": {
+        "success": true,
+        "token": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ]
+        },
+        "error": null,
+        "redirect_url": null
+      },
+      "token_claims": {
+        "claim_keys": [
+          "exp",
+          "iat",
+          "sub",
+          "subscription_expires_at",
+          "subscription_status"
+        ],
+        "sub": "renewed.monthly@example.com",
+        "subscription_status": "active",
+        "subscription_expires_at": null,
+        "exp_minus_iat_seconds": 3600
+      }
+    },
+    "refresh/appstle_down_preserves_free_claim": {
+      "status_code": 200,
+      "body": {
+        "success": true,
+        "token": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ]
+        },
+        "error": null,
+        "redirect_url": null
+      },
+      "token_claims": {
+        "claim_keys": [
+          "exp",
+          "iat",
+          "sub",
+          "subscription_expires_at",
+          "subscription_status"
+        ],
+        "sub": "renewed.monthly@example.com",
+        "subscription_status": "free",
+        "subscription_expires_at": null,
+        "exp_minus_iat_seconds": 3600
+      }
+    },
+    "refresh/ten_minutes_expired_beyond_grace": {
+      "status_code": 401,
+      "body": {
+        "success": false,
+        "token": null,
+        "error": "Token expired beyond grace window",
+        "redirect_url": null
+      }
+    },
+    "refresh/two_minutes_expired_within_grace": {
+      "status_code": 200,
+      "body": {
+        "success": true,
+        "token": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ]
+        },
+        "error": null,
+        "redirect_url": null
+      },
+      "token_claims": {
+        "claim_keys": [
+          "exp",
+          "iat",
+          "sub",
+          "subscription_expires_at",
+          "subscription_status"
+        ],
+        "sub": "renewed.monthly@example.com",
+        "subscription_status": "active",
+        "subscription_expires_at": null,
+        "exp_minus_iat_seconds": 3600
+      }
+    }
+  },
+  "corpus": [
+    {
+      "case_id": "corpus/000",
+      "fingerprint": "97dfd29f5e231300f25af6fed330a27d51536375a50d858292ae3b739cfe9766",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus001@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus001@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus001@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/001",
+      "fingerprint": "85909fba831d6d3ecf811c80ef7af14dc940f28dbafd0f17c8934ab9051593f5",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus003@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus003@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus003@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/002",
+      "fingerprint": "b41e7f82c4eede5f419a0c0e36115c62f7ab3d6a4e1e48253305c48f7adb9ecd",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "subscription_status": "cancelled",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/003",
+      "fingerprint": "44bf9f0afe76dc4a3726f6741e5e486d6f45d63be8526609983bf95c2108b301",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "subscription_status": "cancelled",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/004",
+      "fingerprint": "b5a19b2c5eea8c5db4b015296de16c7299232e493d88e7d0e4469c19bfb71efe",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus006@example.com",
+          "subscription_status": "free",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus006@example.com",
+          "subscription_status": "free",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus006@example.com",
+          "subscription_status": "free",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/005",
+      "fingerprint": "a54dbd67898ee61cd2998b72eea93eb8162a25fe44022eb12288c3cb3584fe05",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/006",
+      "fingerprint": "a4e18854b3bfe3e6477b77c3ba977e88caeaf7de3ef1bf6dc206c5d673d71276",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus010@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus010@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus010@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/007",
+      "fingerprint": "dfa3c95389add8fe770a4bbd82f030d60fe6d7dba85011f4f3b9c2951173395b",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/008",
+      "fingerprint": "e17e1640283ed88ad4cfeedb7ddddec1dd13cfc453be32f2507e8d61fde95387",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus012@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus012@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus012@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/009",
+      "fingerprint": "5f682832f39dbec9eab27d8c87da50191d5ff8f4175e310591ced1f73aadb7d4",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus014@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus014@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus014@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/010",
+      "fingerprint": "920e74f732423a0685479896a46dff5b3a29a1a479e67b0f21e78a9a3bd9060a",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus015@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus015@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus015@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/011",
+      "fingerprint": "d7d7b43bb2b103f12157526104aadbc01eead37c47c6d5a1623f871e956f32f2",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/012",
+      "fingerprint": "0f1c32f459477c547d665a6087225a5c0aa0ebada7e2915ded3e91e2631f0d27",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus017@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus017@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus017@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/013",
+      "fingerprint": "be30540f25d69b2d6962ff48fc808dfd85289d5b5e227d6c574663fc56a8d1bf",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "subscription_status": "cancelled",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/014",
+      "fingerprint": "8417e00657a67372dccfc742de7c6ee2329a89f3dd74490e496aa49d87e09312",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus019@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus019@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus019@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/015",
+      "fingerprint": "6787abe42fb1ccc85379f4f3c01fecf1ef1207cb15b9ebcad0e89ab177d91bc1",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus022@example.com",
+          "subscription_status": "free",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus022@example.com",
+          "subscription_status": "free",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus022@example.com",
+          "subscription_status": "free",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/016",
+      "fingerprint": "7901f6c2e1683dfe7237281568d139ba0c625cf767564967c87f5cdc0f068be9",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus023@example.com",
+          "subscription_status": "free",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus023@example.com",
+          "subscription_status": "free",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus023@example.com",
+          "subscription_status": "free",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/017",
+      "fingerprint": "8d6c17757e8762150e3bcf39bec8f97dfa6c2d407d73f922fa60f219c34333da",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus024@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus024@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus024@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/018",
+      "fingerprint": "99542edca2b655c40668f96580a4133320c1b2e009b486358551e056e942a384",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus025@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus025@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus025@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/019",
+      "fingerprint": "51353919cd32a876460dbf613f466d7b63ee7f5cc2362fb1d5d3ccf642c6e1bd",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/020",
+      "fingerprint": "869f49acd0971a3d50146a02df1604772442321c223d4727e51a924a1eb88f5c",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/021",
+      "fingerprint": "7e578f801f97c646e6c7f64d05d9dad490a6f8453f6322e75d82b9aff2a59aa2",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "subscription_status": "cancelled",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/022",
+      "fingerprint": "b709574a3131612e9c82f6fb820a38b014e094f8d18ccaad970a0ba31f23695d",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/023",
+      "fingerprint": "4e113021883bd26ee00b1ea99922a8b4008f827e40a6d619ad53ed7f5983353f",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/024",
+      "fingerprint": "7df3c7c2215d3f1ea0e8f286252666486d3bfd6e32acaaa44fe8d29e0845d3d0",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus031@example.com",
+          "subscription_status": "free",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus031@example.com",
+          "subscription_status": "free",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus031@example.com",
+          "subscription_status": "free",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/025",
+      "fingerprint": "9dc7e6bdb46cb38f1387f611b1476abc7f20fd2bd5dad7e799524870a9fbf459",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus034@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus034@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus034@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/026",
+      "fingerprint": "8b342d98cc5a15b138d71b6b4baf54dd5f97f016f8ddd19b880d87bc475a7cf6",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "subscription_status": "cancelled",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/027",
+      "fingerprint": "42452f67548c29d4912b70bfa0d1f4d486842a07951e13b351b5f7b2fdd4d403",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/028",
+      "fingerprint": "1e26ad4d67006b7104db1c2c5681578bacb64aa16e6349e8b47a8dcdc2d53c6f",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus037@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus037@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus037@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/029",
+      "fingerprint": "c4045c3d6fa4247b0f3e77f7bf90d87072c47e44e0038e522b72156f952be423",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/030",
+      "fingerprint": "57e050df3684e342f099ccdc669a4a206888fb63de20bb49bad6252682f09719",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/031",
+      "fingerprint": "cd51d006a6763ff581f0a0f72259efa2ba28cc0e4d8a4a07fb2b3a239761235f",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/032",
+      "fingerprint": "f5494b4a6ebdfd700011d797dc0bb125db53693877cc77e1fdcc073b0e82b590",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus041@example.com",
+          "subscription_status": "free",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus041@example.com",
+          "subscription_status": "free",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus041@example.com",
+          "subscription_status": "free",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/033",
+      "fingerprint": "36becad081dccadd363caf741e6b0bd95658c6085b967d85debd0cf98ccb08c8",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/034",
+      "fingerprint": "b5a19b2c5eea8c5db4b015296de16c7299232e493d88e7d0e4469c19bfb71efe",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus044@example.com",
+          "subscription_status": "free",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus044@example.com",
+          "subscription_status": "free",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus044@example.com",
+          "subscription_status": "free",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/035",
+      "fingerprint": "a39d843c72ba7f37b63af0e5882e22ec425ed4946351b7439453436de20fbfdf",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "subscription_status": "cancelled",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/036",
+      "fingerprint": "381125ae658ffb55f0310c0cd2cdae880ce8e2325fa9f2d07c6a589ae4eb1fe6",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/037",
+      "fingerprint": "658ebf1ef2f58e855312032596029cd06b74dc4b4b887509083cb778fbe9a31e",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus048@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus048@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus048@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/038",
+      "fingerprint": "5ab7d23cb7bef8457c58de0d28e8ff18e26be60184d557dfb8b47cabc270249f",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/039",
+      "fingerprint": "af1f1713db2e623e318e114d8e1f69f34b5541be652078e0504c985f6f066ce9",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus050@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus050@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus050@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/040",
+      "fingerprint": "7936477f5f571566c9e3c39b05c235e6a035551a5822ba55bdb4a477c8f900e5",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus051@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus051@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus051@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/041",
+      "fingerprint": "6c2c5a8fa7cc86187370de520887c8cb99eef3882c25e59b9f24f117facab89b",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/042",
+      "fingerprint": "9fd511ac6057b4ab9d75576801aa1a4acc790437495084c70383e1fa8a2a15c2",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus054@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus054@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus054@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/043",
+      "fingerprint": "710fd1326fbff7495a60ab3965fd47081f95a3979e633ca3f9406757ca8c166f",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/044",
+      "fingerprint": "a7710df051e5d13ea955143066a43cda5049fa383a86d2da27b005a6e29770e7",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/045",
+      "fingerprint": "c1076be3c339328358d36a614a9848300591c714fed9f7f120e5c745d90173b0",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "subscription_status": "cancelled",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/046",
+      "fingerprint": "395b0a8e063199ea9f2145844e9a0a3355b2cb35aba278e94e59e5378f4e17b4",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/047",
+      "fingerprint": "f75e532f103495d4abefa83c2dc517c6e1127dc088c1d27561f23f2b17a1ac6b",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "subscription_status": "cancelled",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/048",
+      "fingerprint": "7901f6c2e1683dfe7237281568d139ba0c625cf767564967c87f5cdc0f068be9",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus061@example.com",
+          "subscription_status": "free",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus061@example.com",
+          "subscription_status": "free",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus061@example.com",
+          "subscription_status": "free",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/049",
+      "fingerprint": "28c9e80cbf2f129843422d1ef8c079686bf59cb1b938b4a88b17867862183f7d",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/050",
+      "fingerprint": "d14c2470ff92af5f073cf2cddb37003fab718f441d7acbc953b3313d6638c03f",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "subscription_status": "cancelled",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/051",
+      "fingerprint": "d8279c25f361a50aa78f7caedd142ff8a48305c37a023f171b5f1bce92e6777c",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus064@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus064@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus064@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/052",
+      "fingerprint": "6dade195ea28eb258382531db86ccec4a45f18e116ce2d6eb46888b6e114f6a2",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus065@example.com",
+          "subscription_status": "free",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus065@example.com",
+          "subscription_status": "free",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus065@example.com",
+          "subscription_status": "free",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/053",
+      "fingerprint": "8ef62945a58f6f20976983658b2a67755bfbbe63e7d34da53d09e9dbca666b28",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/054",
+      "fingerprint": "0f8596141ad4e528e3b42430bb4a52f7e66aea725a8d18bee4111aeabf52d5f2",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus068@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus068@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus068@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/055",
+      "fingerprint": "eef0363915b39cc2d87687db5830777cf9882382eece816d87460e7f24209a88",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus070@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus070@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus070@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/056",
+      "fingerprint": "6a05c87b37b3222076cd3345fceae342ef1799b73589afd1f011967c0c9332d4",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "subscription_status": "cancelled",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/057",
+      "fingerprint": "40169f549009864cf629a28b681711894f664c9851b0db9f192388a98c040455",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "subscription_status": "cancelled",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/058",
+      "fingerprint": "e3556b4acb40860b0c2aded2a8ff665894414ab6e678cf79ae305a53b9285736",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "subscription_status": "cancelled",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/059",
+      "fingerprint": "df4b211eb4fdc763ee8de15965e538a1fbf863188cb5e605872e05b466093ad9",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/060",
+      "fingerprint": "d3a117e4da80e2a05c2c8eb29839cdb55875c7960ede0afc9ed74ed5ea379504",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/061",
+      "fingerprint": "076014ca8bb491d2f22c6685a11af9c588887e72c5c13f098387d3940d55ab88",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "subscription_status": "cancelled",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/062",
+      "fingerprint": "7bc9d53b5ce83cb7e18de614cbd2ce8871c6eda39021d1f8b7ed945f692692b6",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/063",
+      "fingerprint": "25c6a58fcb939bb1a7f477164c0adb750727a768d6c4b9ef31e0f421d00a57e5",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus080@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus080@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus080@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/064",
+      "fingerprint": "58146368923bc42994e1c994239ee1aa033f4ce7587db934fa37459204fecf08",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus081@example.com",
+          "subscription_status": "free",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus081@example.com",
+          "subscription_status": "free",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus081@example.com",
+          "subscription_status": "free",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/065",
+      "fingerprint": "52e7b3f8c08569d6025260539615c4852ed8896f3208b62cba6f373053f79390",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus083@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus083@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus083@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/066",
+      "fingerprint": "1e65c41f0dbfe886cfb0dc4266fb1e8cfab62254d1f124e09eafa48e72e012fb",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "subscription_status": "cancelled",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/067",
+      "fingerprint": "b8606fbb69769c2c4673bfaa49ce7c274a2629bfd8ab61360776bffc52c8e0d7",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/068",
+      "fingerprint": "85cfb81c9cecacbc81e729f843c6956c95d3ccfe17b7f9ba0da441e2993977bb",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "subscription_status": "cancelled",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/069",
+      "fingerprint": "2e350ba27354141385405f261ac76c0b53d5be72dcb853ac2893f27c225756ac",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/070",
+      "fingerprint": "c43ac5d3d8812a890053ce9676860d68d98b404b5c13ba9b8e2a96097ef5e33f",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/071",
+      "fingerprint": "c95e7f401c3b6693c617a4511e083546d88935088cde277e3e50e362dc95bace",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus089@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus089@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus089@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/072",
+      "fingerprint": "20f18b1e0e6a91841f62366b58b32cbe6aee1270d637af8743cd14f98122dc45",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/073",
+      "fingerprint": "41bc0deaf86df662faf1f021a046cb97059395c6566148dd3773b2f630bb975c",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus091@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus091@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus091@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/074",
+      "fingerprint": "7e8bbe0fa1af8f463ec542461f99b746873210525f2934a809f2f4317d0c4f04",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/075",
+      "fingerprint": "fa3a4fd7338757903a86c96a0bf4743a3c479e73993b06a066add25b05842b72",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/076",
+      "fingerprint": "fbcca565a5b0bb46c2624582d36273a2c8758b43b4c1b7d99b41636286323287",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus094@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus094@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus094@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/077",
+      "fingerprint": "e0c6c7e7089e9e91e98c2ae1d13f1ba81665b8ba6b0396bafdd91bfc409a51cf",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/078",
+      "fingerprint": "47a5a53f2121634721478ba9e29cb3cc315fd221fcc4f6907377e8f9c18a2734",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/079",
+      "fingerprint": "910ade376da16d0914b831d5737aa4e9d471be9e82ed7eba9d55347aef79e23d",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/080",
+      "fingerprint": "6d0af77a800d5331be2d3f1d107c452a14e92422f675d1855c5cd4b2e7450058",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/081",
+      "fingerprint": "16399a61b0af691e09af518612a43f7e0eb973bf19625685aba75d32c062e0e0",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/082",
+      "fingerprint": "cefbef912e41f3dd999de7b6cc9c9a4ab3c557ff02633c650a1986893467e2e5",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "subscription_status": "cancelled",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/083",
+      "fingerprint": "b97ea199e724b09ff976a2e350f0e6cf771dededa3f2aabfe054ea515cbabcb9",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus101@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus101@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus101@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/084",
+      "fingerprint": "6539823fbf2b36c1003f384597e23e87878a24ea4579c4fc6ada81203d62269a",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "subscription_status": "cancelled",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/085",
+      "fingerprint": "ed8e9cfd22db8eaf155a05146c2d7465a600d0ffa73aa0b758ba026a93a01834",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus103@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus103@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus103@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/086",
+      "fingerprint": "4fc26fddeb1e03206c5b4e4ab1b5747cc242aa0ec70734b36e1c18c38bd17aac",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus104@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus104@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus104@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/087",
+      "fingerprint": "8070258457e06512f8b3ec533534c520f1da109eafeb9280267f74da43c8298b",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus105@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus105@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus105@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/088",
+      "fingerprint": "eae6a4343f84db41731a63ece710f0125479844f19be0a155df12b831122526d",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/089",
+      "fingerprint": "7df3c7c2215d3f1ea0e8f286252666486d3bfd6e32acaaa44fe8d29e0845d3d0",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus107@example.com",
+          "subscription_status": "free",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus107@example.com",
+          "subscription_status": "free",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus107@example.com",
+          "subscription_status": "free",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/090",
+      "fingerprint": "bbc246f370fc3f73b2b96702be2903f3337a833a7c3ddd26235bc148ad76f98d",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus108@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus108@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus108@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/091",
+      "fingerprint": "93c41a0e5e4a0b834266a95f90c3948f7a3d22da5881399bde04b406d32157d2",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus110@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus110@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus110@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/092",
+      "fingerprint": "a1da82ce26c398680d0d867dac7955631d434ab0fb6bc35ad793d2452d9e9024",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus112@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus112@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus112@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/093",
+      "fingerprint": "ad14d718996dd9026e5507adae4a9db602a4de56795d093434bd15ded41126ac",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/094",
+      "fingerprint": "f3313f4bde02a43ab9f166f64f917547f0a6b4b8744836c7fdae382bdec7c139",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus115@example.com",
+          "subscription_status": "free",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus115@example.com",
+          "subscription_status": "free",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus115@example.com",
+          "subscription_status": "free",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/095",
+      "fingerprint": "0049349e838579fdbafd41b46af5b56134a65369d960de35eebaa246ee5bc235",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "subscription_status": "cancelled",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has been cancelled. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/096",
+      "fingerprint": "6e4895ca82f69c14ffd545565c5b90cf2d1ac6b1ecfd4cce31358d613acaab5b",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus117@example.com",
+          "subscription_status": "free",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus117@example.com",
+          "subscription_status": "free",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus117@example.com",
+          "subscription_status": "free",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/097",
+      "fingerprint": "7df3c7c2215d3f1ea0e8f286252666486d3bfd6e32acaaa44fe8d29e0845d3d0",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus119@example.com",
+          "subscription_status": "free",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus119@example.com",
+          "subscription_status": "free",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus119@example.com",
+          "subscription_status": "free",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    },
+    {
+      "case_id": "corpus/098",
+      "fingerprint": "cd32b4ce6cdb43c50317c5b4ec49efcccb9da3dff6e99a43c09a3cc56fae8a85",
+      "login": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "subscription_status": "paused",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      },
+      "refresh": {
+        "status_code": 403,
+        "body": {
+          "success": false,
+          "token": null,
+          "error": "Your subscription has expired. Resubscribe to continue.",
+          "redirect_url": "https://mcpress.test/subscribe"
+        }
+      }
+    },
+    {
+      "case_id": "corpus/099",
+      "fingerprint": "0cde8480e25bf3a6286b9d385a74f5df449b52b7fd12a6dbfbc0871c4877bd22",
+      "login": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "email": "corpus122@example.com",
+          "subscription_status": "active",
+          "expires_at": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus122@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      },
+      "refresh": {
+        "status_code": 200,
+        "body": {
+          "success": true,
+          "token": {
+            "claim_keys": [
+              "exp",
+              "iat",
+              "sub",
+              "subscription_expires_at",
+              "subscription_status"
+            ]
+          },
+          "error": null,
+          "redirect_url": null
+        },
+        "token_claims": {
+          "claim_keys": [
+            "exp",
+            "iat",
+            "sub",
+            "subscription_expires_at",
+            "subscription_status"
+          ],
+          "sub": "corpus122@example.com",
+          "subscription_status": "active",
+          "subscription_expires_at": null,
+          "exp_minus_iat_seconds": 3600
+        }
+      }
+    }
+  ]
+}

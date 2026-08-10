@@ -1,0 +1,68 @@
+{
+  "__typename": "Customer",
+  "id": "gid://shopify/Customer/7000000014",
+  "productSubscriberStatus": "PAUSED",
+  "tags": [
+    "appstle_subscription_paused_customer"
+  ],
+  "subscriptionContracts": {
+    "__typename": "SubscriptionContractConnection",
+    "nodes": [
+      {
+        "__typename": "SubscriptionContract",
+        "id": "gid://shopify/SubscriptionContract/9000000141",
+        "createdAt": "2026-08-01T01:31:12Z",
+        "nextBillingDate": null,
+        "status": "PAUSED",
+        "deliveryPrice": {
+          "__typename": "MoneyV2",
+          "amount": "0.0"
+        },
+        "lastPaymentStatus": null,
+        "lines": {
+          "__typename": "SubscriptionLineConnection",
+          "nodes": [
+            {
+              "__typename": "SubscriptionLine",
+              "id": "gid://shopify/SubscriptionLine/9000000141",
+              "sellingPlanName": "Monthly Subscription",
+              "productId": "gid://shopify/Product/7787055874113",
+              "sku": "ChatMaster",
+              "title": "MC ChatMaster",
+              "variantId": "gid://shopify/ProductVariant/43539392430145",
+              "quantity": 1,
+              "currentPrice": {
+                "__typename": "MoneyV2",
+                "amount": "10.95",
+                "currencyCode": "USD"
+              },
+              "variantTitle": null,
+              "discountAllocations": [],
+              "pricingPolicy": null,
+              "taxable": true,
+              "customAttributes": []
+            }
+          ],
+          "pageInfo": {
+            "__typename": "PageInfo",
+            "hasPreviousPage": false,
+            "hasNextPage": false,
+            "startCursor": "SYNTHETIC_PLACEHOLDER_CURSOR_LINE_9000000141",
+            "endCursor": "SYNTHETIC_PLACEHOLDER_CURSOR_LINE_9000000141"
+          }
+        },
+        "customer": {
+          "__typename": "Customer",
+          "id": "gid://shopify/Customer/7000000014"
+        }
+      }
+    ],
+    "pageInfo": {
+      "__typename": "PageInfo",
+      "hasPreviousPage": false,
+      "hasNextPage": false,
+      "startCursor": "SYNTHETIC_PLACEHOLDER_CURSOR_START",
+      "endCursor": "SYNTHETIC_PLACEHOLDER_CURSOR_END"
+    }
+  }
+}
