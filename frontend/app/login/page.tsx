@@ -4,6 +4,14 @@ import { useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+// MC Store product page for MC ChatMaster (subscription plan and variant preselected)
+const MC_CHATMASTER_PRODUCT_URL =
+  'https://mc-store.com/products/mc-chatmaster' +
+  '?_su_rec=fYGIi-kvZuN7dNk3D3XY6U8fb1eOcFQgCOVD3hqgWGqx4_eNKeryaspZy8aUzGs8Z91vea5mKNLMeMJbEcODZoVKTM4folmkaYVCkwB5wNTy34nwVFdjesb4phFicXZh74zSKJYs-V7tCtgJexPi2aVV5EjdsW6EIsIh-DCO2XrHqqT3ZbIIWhyVlwWIZCGW0CELOu-uSvDE0rFCCIeOgsVWCkV5PZx6IroyCaNIx4ZXTGIDkXsLrYwVMXL9NIyt2NWJWAn9KMZ-uqQdBKJKFq_uaeXqrSFSNCSTMUEi2oR9m0QIJ1QAxaxW8OnooUlMmDv5ZBArX5Qw9Q' +
+  '&_su_rec_id=28fdace2-606b-44a9-9781-4d81934af01c-1793020840' +
+  '&selling_plan=3430187073' +
+  '&variant=43539392430145';
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -346,6 +354,17 @@ export default function LoginPage() {
           </p>
           <p className="text-xs text-gray-400">
             No subscription? No problem — try MC ChatMaster free with a limited number of questions.
+          </p>
+          <p className="text-sm">
+            <a
+              href={MC_CHATMASTER_PRODUCT_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-800 hover:underline"
+            >
+              Find Out More
+              <span className="sr-only"> about MC ChatMaster (opens in a new tab)</span>
+            </a>
           </p>
         </div>
         </>
