@@ -245,7 +245,7 @@ Task 1 is a hard blocker. Every task marked **[BLOCKED ON TASK 1]** touches `_pa
     - Pay particular attention to case 3 (all contracts expired): the denial copy must be byte-identical to the golden, which is what Task 8.5 protects
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 3.12, 3.13_
 
-- [-] 11. Verify against real Appstle data on staging
+- [x] 11. Verify against real Appstle data on staging
   - No local dev environment and no local database, so this step runs after deploy and never through `railway shell`
   - Deploy on the staging-first path: `feature/subscription-multi-contract-access` → `staging`, wait for the Railway staging deploy to finish
   - Create `verify_subscription_access_staging.py` (project root, API-based, `requests` only) that POSTs to `$API_URL/api/auth/login` against `https://mcpress-chatbot-staging.up.railway.app` for the three captured customers and prints each `status_code`, `subscription_status`, `error`, and `redirect_url`
@@ -255,7 +255,7 @@ Task 1 is a hard blocker. Every task marked **[BLOCKED ON TASK 1]** touches `_pa
   - Confirm a free-tier customer exhausting `FREE_QUESTION_LIMIT` still gets the frontend subscription prompt with a signup URL
   - _Requirements: 2.11, 2.14, 2.15, 2.19, 2.20, 3.14_
 
-- [ ] 12. Checkpoint - Ensure all tests pass
+- [x] 12. Checkpoint - Ensure all tests pass
   - Run the full offline suite: `python3 -m pytest tests/test_subscription_bug_condition.py tests/test_subscription_fix_checking.py tests/test_subscription_preservation_properties.py tests/test_subscription_helpers.py tests/test_decide_access.py`
   - Confirm all 13 design properties are green and the three Preservation Exceptions assert their intended new values
   - Confirm no root-level test file still targets the deleted `/api/test/subscription-decision` endpoint
